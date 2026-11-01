@@ -614,6 +614,28 @@ render();
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
   }
   if(st.typography){const t=st.typography;const allowedHead=['Arial','Georgia','Impact','Barlow Condensed'],allowedBody=['Arial','Georgia','Inter','Verdana'];if(allowedHead.includes(t.heading_font))document.querySelectorAll('.hero h1,.event-main h3,.summary-top h2').forEach(el=>el.style.fontFamily='"'+t.heading_font+'",sans-serif');if(allowedBody.includes(t.body_font))document.body.style.fontFamily='"'+t.body_font+'",sans-serif';if(Number(t.body_size)>=12&&Number(t.body_size)<=24)document.body.style.fontSize=t.body_size+'px';if(Number(t.heading_size)>=20&&Number(t.heading_size)<=100)document.querySelectorAll('.event-main h3').forEach(el=>el.style.fontSize=t.heading_size+'px')}
+  if(st.design){
+    const d=st.design;
+    const accepted=['Arial','Verdana','Georgia','Tahoma','Trebuchet MS','Inter','Barlow Condensed','Impact','system-ui'];
+    const groups={hero:'.hero h1',section:'.summary-top h2,.aside-card h3',card:'.event-main h3,.dialog-head h2',body:'.hero p,.event-main p,.dialog-body article,.bottom-cta p',time:'.time-big',menu:'.topbar,.day-switch button,.filters .chip',button:'.action-btn,.ghost-btn,.ticket-btn,.cta-buttons a,.cta-buttons button'};
+    const rules=[];
+    for(const [area,selectors] of Object.entries(groups)){
+      const f=d.fonts?.[area];if(!f)continue;
+      const font=accepted.includes(f.family)?f.family:'Arial';
+      const size=Number(f.size);const weight=Number(f.weight);
+      const color=/^#[a-f0-9]{6}$/i.test(f.color||'')?f.color:'#10263d';
+      rules.push(`${selectors}{font-family:"${font}",sans-serif!important;${size>=10&&size<=120?'font-size:'+size+'px!important;':''}font-weight:${[400,500,600,700,800,900].includes(weight)?weight:700}!important;color:${color}!important}`);
+    }
+    const col=v=>/^#[a-f0-9]{6}$/i.test(v||'')?v:null;
+    const radius=v=>Number.isFinite(Number(v))?Math.max(0,Math.min(50,Number(v))):null;
+    if(col(d.card_background))rules.push(`.event-card,.lead-card,.aside-card{background:${d.card_background}!important}`);
+    if(col(d.button_background))rules.push(`.action-btn,.ticket-btn,.cta-buttons a{background:${d.button_background}!important}`);
+    if(col(d.button_text))rules.push(`.action-btn,.ticket-btn,.cta-buttons a{color:${d.button_text}!important}`);
+    if(radius(d.card_radius)!==null)rules.push(`.event-card,.lead-card,.aside-card{border-radius:${radius(d.card_radius)}px!important}`);
+    if(radius(d.button_radius)!==null)rules.push(`.action-btn,.ghost-btn,.ticket-btn,.cta-buttons a,.cta-buttons button{border-radius:${radius(d.button_radius)}px!important}`);
+    const w=Number(d.content_width);if(w>=850&&w<=1600)rules.push(`:root{--max:${w}px}`);
+    const style=document.createElement('style');style.id='zika-custom-design';style.textContent=rules.join('\n');document.head.append(style);
+  }
   if(st.hero){const hero=document.querySelector('.hero');if(st.hero.background_image&&/^https:\/\//.test(st.hero.background_image)){hero.style.backgroundImage='linear-gradient(#07142666,#07142666),url("'+st.hero.background_image.replace(/["'<>]/g,'')+'")';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}if(st.hero.background_video&&/^https:\/\//.test(st.hero.background_video)&&/\.mp4(?:[?#]|$)/i.test(st.hero.background_video)){const v=document.createElement('video');v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true;v.setAttribute('aria-hidden','true');v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:'+Math.max(0,Math.min(100,Number(st.hero.video_opacity)||0))/100+';';const src=document.createElement('source');src.src=st.hero.background_video;src.type='video/mp4';v.append(src);hero.prepend(v)}}
   if(st.branding?.title){document.querySelector('.brand strong').textContent=st.branding.title}
   if(st.branding?.logo_url){const mark=document.querySelector('.logo-mark');mark.style.background='url("'+st.branding.logo_url.replace(/"/g,'')+'") center/contain no-repeat';}
