@@ -526,7 +526,7 @@ function render(){
           <h3>${escapeHtml(e.title)}</h3>
           <p>${escapeHtml(e.short)}</p>
           <div class="meta-row">
-            <span class="meta">📍 ${escapeHtml(e.place)}</span>
+            <span class="meta">📍 ${escapeHtml(e.place)}</span>${/^https:\/\//.test(e.mapUrl||'')?`<a class="meta" target="_blank" rel="noopener noreferrer" href="${escapeHtml(e.mapUrl)}">Voir sur le plan ↗</a>`:''}
             <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':'Concerts payants'}</span>
           </div>
         </div>
@@ -553,6 +553,14 @@ function openModal(id){
   $('modalShort').textContent=e.short;
   $('modalDetails').innerHTML=`<span>${escapeHtml(eventDay(e))}</span><span>${escapeHtml(e.time)}</span><span>${escapeHtml(e.place)}</span><span>${e.free?'Accès gratuit':'Concerts payants'}</span>`;
   $('modalText').textContent=e.description;
+  const oldExtras=$('modalExtras'); if(oldExtras)oldExtras.remove();
+  if((e.schedule&&e.schedule.length)||e.customDate||e.mapUrl){
+   const panel=document.createElement('div');panel.id='modalExtras';panel.style.cssText='margin-top:20px;display:grid;gap:9px';
+   if(e.customDate){const d=document.createElement('div');d.textContent='Date : '+e.customDate;panel.append(d)}
+   for(const x of (e.schedule||[])){const d=document.createElement('div');d.style.cssText='padding:11px 14px;background:#f3f7fa;border-radius:12px';d.textContent=[x.date,[x.start,x.end].filter(Boolean).join(' – '),x.label].filter(Boolean).join(' · ');panel.append(d)}
+   if(/^https:\/\//i.test(e.mapUrl||'')){const link=document.createElement('a');link.href=e.mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Situer sur le plan interactif';link.style.cssText='display:inline-block;font-weight:800;color:#1874b9;padding:12px 0';panel.append(link)}
+   $('modalText').after(panel);
+  }
   $('modalCalendar').style.display=e.start?'inline-block':'none';
   syncModalFav();
   $('modal').classList.add('show');
@@ -600,7 +608,7 @@ render();
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false}));render();}
+    free:!!r.is_free,customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:r.extra?.map_url||'',url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false}));render();}
   const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
