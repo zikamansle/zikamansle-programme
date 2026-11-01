@@ -648,6 +648,15 @@ function openModal(id){
   for(const [role,selector] of Object.entries({frame:'.dialog',head:'.dialog-head',body:'.dialog-body',category:'#modalCategory',title:'#modalTitle',summary:'#modalShort',details:'#modalDetails',description:'#modalText',calendar:'#modalCalendar',favorite:'#modalFavorite',extras:'#modalExtras'})){
     const node=$('modal').querySelector(selector);if(node)node.dataset.zvRole=role;
   }
+  // Chaque sous-élément de la fiche dispose d'une cible stable et indépendante.
+  [...$('modalDetails').children].forEach((el,i)=>{el.dataset.zvRole='detail-'+(i+1)});
+  const extra=$('modalExtras');
+  if(extra)[...extra.children].forEach((el,i)=>{el.dataset.zvRole='extra-'+(i+1)});
+  const actionRow=$('modal').querySelector('.dialog-actions');
+  if(actionRow)actionRow.dataset.zvRole='actions';
+  const close=$('close');if(close)close.dataset.zvRole='close';
+  const inner=$('modal').querySelector('.dialog-head-inner');
+  if(inner)inner.dataset.zvRole='head-inner';
   syncModalFav();
   $('modal').classList.add('show');
   // Rejouer les réglages personnalisés après le remplissage de la fiche.
@@ -818,7 +827,7 @@ function zvMarkNodes(doc){
  });
 }
 
-const zvEventKey=k=>/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="(?:frame|head|body|category|title|summary|details|description|calendar|favorite|extras)"\]$/.test(k);
+const zvEventKey=k=>/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="(?:frame|head|head-inner|body|category|title|summary|details|detail-[1-9][0-9]*|description|calendar|favorite|extras|extra-[1-9][0-9]*|actions|close)"\]$/.test(k);
 const allowed=new Set(['.zika-banner__image','.zika-banner__video','.zika-banner__veil','.event-card img','.zika-banner','.zika-banner h1','.zika-banner p','.zika-banner__button','.topbar','.logo-mark','.brand','.hero-panel','h2','h1','.control-panel','.control-card','.content','.tool-btn','.event-card','.event-card h3','.primary','#zikaMapHost','#zikaTimelineHost','.results','footer','body']);
 function generate(data){if(!data||typeof data!=='object'||Array.isArray(data))return '';let css='';for(const [selector,v] of Object.entries(data)){
 if(!/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="frame"\]$/.test(selector)||!v||typeof v!=='object')continue;

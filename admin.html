@@ -988,23 +988,21 @@ function newBlock(kind){snapshot();const id='zv-'+Date.now().toString(36)+'-'+Ma
 function renderHidden(){const el=by('zvHiddenList');if(!el)return;el.replaceChildren();const keys=Object.keys(draft).filter(k=>draft[k]?.hidden===true);if(!keys.length){el.textContent='Aucun élément masqué.';return}for(const k of keys){const b=document.createElement('button');b.type='button';b.className='smallbtn';b.style.display='block';b.textContent='↩ Rétablir : '+(targets.find(t=>t[1]===k)?.[0]||k);b.onclick=()=>{snapshot();delete draft[k].hidden;apply();renderHidden();status('Élément rétabli (non publié)')};el.append(b)}}
 function status(text){by('zvStatus').textContent=text;by('zvDirty').textContent=text;by('zvPreviewNotice').textContent=text}function snapshot(){history.push(JSON.stringify(draft));if(history.length>50)history.shift();redo=[]}
 function setKey(key){if(!key){selectedKey='';by('zvFields').hidden=true;apply();return}selectedKey=key;by('zvFields').hidden=!key;const nodeForLabel=frameDoc()?.querySelector(key);by('zvSelectInfo').textContent=key==='body'?'Fond de page — couleur, image Wix, opacité et cadrage':nodeForLabel?.matches('.fact')?'Encart individuel — fond, bordure et coins':nodeForLabel?.matches('.fact strong,.fact span')?'Texte de l’encart — police et couleur':(targets.find(x=>x[1]===key)?.[0]||(zvNodeKey(key)?'Élément individuel sélectionné':'Élément'));const val=draft[key]||{};by('zvShape').value=['0','10','22','999'].includes(String(val.borderRadius??''))?String(val.borderRadius):'';by('zvTextContent').value=val.content??(key&&!customKey(key)?(frameDoc()?.querySelector(key)?.textContent||''):'');by('zvLink').value=val.href||'';by('zvImageSrc').value=val.src||'';by('zvBackgroundImage').value=val.backgroundImage||'';by('zvTextContent').parentElement.querySelector('label[for=zvTextContent]');by('zvTextContent').style.display=(eventSelector.test(key)||val.kind==='text'||(!val.kind&&!!frameDoc()?.querySelector(key)?.matches('h1,h2,h3,h4,p,span,a,button,label,.panel-big,.panel-title,.panel-chip')))?'block':'none';by('zvLink').style.display=frameDoc()?.querySelector(key)?.matches('a')?'block':'none';by('zvImageSrc').style.display=['image','media'].includes(val.kind)?'block':'none';for(const [id,k] of Object.entries(props)){const el=by(id);if(['zvColor','zvBg','zvBorderColor'].includes(id)){el.value=/^#[\da-f]{6}$/i.test(val[k]||'')?val[k]:(id==='zvColor'?'#182e43':'#ffffff')}else if(['zvOpacity','zvBgX','zvBgY','zvBgZoom'].includes(id))el.value=val[k]??(id==='zvOpacity'?100:id==='zvBgZoom'?100:50);else el.value=val[k]??''}apply()}
-const eventSelector=/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="(?:frame|head|body|category|title|summary|details|description|calendar|favorite|extras)"\]$/;
+const eventSelector=/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="(?:frame|head|head-inner|body|category|title|summary|details|detail-[1-9][0-9]*|description|calendar|favorite|extras|extra-[1-9][0-9]*|actions|close)"\]$/;
 function eventKey(node){
  const doc=frameDoc(),modal=node?.closest?.('#modal[data-zv-event]');
  if(!modal||!doc)return '';
  const id=modal.dataset.zvEvent||'';
  if(!/^[a-zA-Z0-9_-]{1,100}$/.test(id))return '';
- let el=node;
- const text=node.closest?.('#modalTitle,#modalShort,#modalText,#modalCategory,#modalCalendar,#modalFavorite');
- const block=node.closest?.('.dialog-head,.dialog-body,.dialog,#modalDetails,#modalExtras');
- if(pickMode==='text'&&text)el=text;
- else if(pickMode==='block'&&block)el=block;
- else if(text)el=text;
- else if(block)el=block;
- else return '';
- const role=el.dataset.zvRole;
+ // Ne jamais sélectionner le conteneur lorsque l'utilisateur clique sur un texte précis.
+ const textTarget=node.closest?.('[data-zv-role="title"],[data-zv-role="summary"],[data-zv-role="category"],[data-zv-role="description"],[data-zv-role^="detail-"],[data-zv-role^="extra-"],[data-zv-role="calendar"],[data-zv-role="favorite"],[data-zv-role="close"]');
+ const elementTarget=node.closest?.('[data-zv-role]');
+ const chosen=pickMode==='text'?(textTarget||elementTarget):(elementTarget||textTarget);
+ if(!chosen)return '';
+ const role=chosen.dataset.zvRole;
  return role?'#modal[data-zv-event="'+id+'"] [data-zv-role="'+role+'"]':'';
 }
+
 function getTarget(node){
  const doc=frameDoc();if(!doc||!node)return 'body';
  let el=node.nodeType===3?node.parentElement:node;
