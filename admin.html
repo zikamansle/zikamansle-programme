@@ -11,10 +11,17 @@
 #eventForm .grid>div:has(>label>input[name="share_slug"]){display:none}
 #eventForm .grid>div:has(>label>input[name="directions_url"]){display:none}
 #eventForm .grid>div:has(>label>input[name="map_url"]){display:none}
+</style><style>.zika-tarifs{border:1px solid #d5e2ed;border-radius:12px;padding:14px 16px;margin:2px 0 6px;background:#fafcff}.zika-tarifs summary{font-weight:700;cursor:pointer}.zika-tarifs[open] summary{margin-bottom:12px}.zika-tarifs .grid{margin-top:12px}</style><style>
+.zika-pill-grid{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 13px}
+.zika-category-choice{display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid #d5e2ed;border-left:4px solid transparent;border-radius:10px;cursor:pointer;min-height:43px;background:#fff}
+.zika-category-choice input[type="radio"],.zika-category-choice input[type="checkbox"]{width:18px;height:18px;margin:0;flex:0 0 auto}
+.zika-category-color{width:32px;height:30px;min-width:32px;border:none;padding:1px;margin-left:6px;cursor:pointer;background:transparent}
+.zika-pill-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.zika-choices-root>h3{margin:15px 0 6px}
 </style></head><body><div class="page">
 <div class="top"><div><h1>Administration ZikaMansle</h1><div class="muted">Éditeur privé du programme 2027</div></div><div><a href="./index.html">Voir le programme public</a> <button class="btn secondary hidden" id="logout">Déconnexion</button></div></div>
 <div class="card login" id="loginPanel"><h2>Connexion administrateur</h2><p class="muted">Utilise le compte créé dans Supabase. Aucun mot de passe n'est enregistré dans le code.</p><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Mot de passe</label><input id="password" type="password" autocomplete="current-password" required><div class="buttons"><button class="btn" type="submit">Se connecter</button></div></form><div id="loginMsg" class="msg"></div></div>
-<div id="editorPanel" class="hidden"><div class="card headstrip"><div class="tools"><button class="active" data-tab="events">Événements</button><button data-tab="theme">Design complet</button><button data-tab="links">Redirections</button><button data-tab="backup">Sauvegardes</button><button data-tab="experience">Plan & alertes</button><button data-tab="bootstrap">Initialisation</button></div><p class="notice">Les modifications sont enregistrées directement dans Supabase. Pour les photos et logos : colle le lien direct d'une image hébergée sur Wix. Le public ne voit que les fiches marquées « Publié ».</p><div class="msg" id="msg"></div></div>
+<div id="editorPanel" class="hidden"><div class="card headstrip"><div class="tools"><button class="active" data-tab="events">Événements</button><button data-tab="categories">Catégories & couleurs</button><button data-tab="theme">Design complet</button><button data-tab="links">Redirections</button><button data-tab="backup">Sauvegardes</button><button data-tab="experience">Plan & alertes</button><button data-tab="bootstrap">Initialisation</button></div><p class="notice">Les modifications sont enregistrées directement dans Supabase. Pour les photos et logos : colle le lien direct d'une image hébergée sur Wix. Le public ne voit que les fiches marquées « Publié ».</p><div class="msg" id="msg"></div></div>
 <section data-section="events" class="card"><div class="layout"><div><h2>Fiches <button class="btn" id="add">+ Ajouter</button></h2><div id="list"></div></div><div><h2 id="editTitle">Sélectionner une fiche</h2><form id="eventForm" class="hidden"><div class="grid"><div class="wide"><label>Titre</label><input name="title" required></div><div class="wide"><h3>Dates et heures</h3></div>
 <div><label for="zikaDateStart">Date de début</label><input type="date" id="zikaDateStart" required></div>
 <div><label for="zikaTimeStart">Heure de début</label><input type="time" id="zikaTimeStart" required></div>
@@ -23,7 +30,13 @@
 <div class="wide"><label>Lieu sur le plan du festival</label><select name="map_marker" id="zikaMapPlace"><option value="">Sélectionner un lieu…</option><option value="1">Place de l’Hôtel de Ville — ZikaVillage</option><option value="2">Square de Verdun — ZikaLudik</option><option value="3">Salle Gautier Capuçon</option><option value="4">Médiathèque</option><option value="5">Parc Floral Jean-Pierre Lanson</option><option value="parade">Parcours de la ZikaParade</option></select><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:9px"><a id="zikaViewPlace" class="btn secondary" href="./plan.html" target="_blank" rel="noopener">Voir ce lieu sur le plan</a><span class="muted">Le lien s'adapte au lieu choisi.</span></div></div>
 <!-- Anciens champs conservés seulement pour compatibilité avec les événements déjà enregistrés. -->
 <div hidden><select name="day"><option value="samedi">Samedi</option><option value="dimanche">Dimanche</option></select><input name="event_date_custom" type="date"><textarea name="schedule_text"></textarea><input name="category"><input name="time_label"><input name="display_order" type="number"><input name="start_time" type="time"><input name="end_time" type="time"><input name="location"><input name="map_url" type="url"></div>
-<div class="wide"><label>Résumé</label><textarea name="short"></textarea></div><div class="wide"><label>Description</label><textarea name="description" rows="5"></textarea></div><div class="wide" hidden><label>URL de la photo (copiée depuis Wix)</label><input name="image_url" type="url" placeholder="https://static.wixstatic.com/media/..."><img id="photoPreview" class="preview hidden" alt="Aperçu photo"></div><div class="wide" hidden><label>URL du logo de cette fiche (Wix)</label><input name="logo_url" type="url" placeholder="https://static.wixstatic.com/media/..."></div><div class="wide" hidden><label>URL vidéo (MP4 direct ou YouTube)</label><input name="video_url" type="url" placeholder="https://..."></div><div class="wide" hidden><label>Image de couverture de la vidéo</label><input name="video_poster_url" type="url"></div><div><label><input class="check" type="checkbox" name="video_autoplay"> Lecture automatique (si compatible)</label></div><div><label><input class="check" type="checkbox" name="video_loop"> Vidéo en boucle</label></div><div><label><input class="check" type="checkbox" name="video_muted"> Son désactivé</label></div><div class="wide" hidden><label>Lien personnalisé / redirection</label><input name="link_url" type="url" placeholder="https://..."></div><div><label><input class="check" name="is_free" type="checkbox">Accès gratuit</label></div><div hidden><label><input class="check" name="both" type="checkbox">Les deux jours</label></div><div class="wide"><label><input class="check" name="published" type="checkbox">Publié (visible par les visiteurs)</label></div></div><div class="wide"><h3>Catégorie, publics et tarifs</h3></div><div><label>Discipline principale</label><select name="discipline"><option>Musique</option><option>Cinéma</option><option>Danse</option><option>Associations</option><option>Sport</option><option>Exposition</option><option>Théâtre et spectacle</option><option>Littérature</option><option>Jeux</option><option>Arts et création</option><option>Parade</option><option>Patrimoine</option><option>Prévention et santé</option><option>Environnement</option><option>Atelier</option><option>Autre</option></select></div><div hidden><label>Autres disciplines (séparées par des virgules)</label><input name="disciplines_extra" placeholder="Danse, Musique, Associations..."></div><div><label>Public ciblé</label><select name="audience"><option value="Tous publics">Tous publics</option><option>Enfants</option><option>Familles</option><option>Adolescents</option><option>Adultes</option><option>Seniors</option><option>Professionnels</option><option>Public scolaire</option></select></div><div hidden><label>Autres publics (séparés par des virgules)</label><input name="audiences_extra" placeholder="Familles, Adolescents..."></div><div><label>Tarif minimum (€)</label><input type="number" min="0" step="0.01" name="price_min" placeholder="0"></div><div><label>Tarif maximum (€)</label><input type="number" min="0" step="0.01" name="price_max" placeholder="25"></div><div hidden><input type="datetime-local" name="starts_at"><input type="datetime-local" name="ends_at"></div><div class="wide"><h3>Médias de cette fiche</h3><p class="muted">Utilise « Bibliothèque Wix » pour choisir plusieurs photos, vidéos, MP3 ou documents. Les liens techniques sont masqués.</p><div hidden><label>Photos supplémentaires (une URL Wix HTTPS par ligne)</label><textarea name="gallery_urls" rows="4" placeholder="https://static.wixstatic.com/media/..."></textarea><p class="muted">Sélection multiple possible : choisis toutes les photos souhaitées, puis clique sur « Ajouter les fichiers sélectionnés ».</p><label>Fichiers associés (PDF, musique MP3, documents, vidéos : une URL par ligne)</label><textarea name="attachment_urls" rows="4" placeholder="https://... (un document par ligne)"></textarea><p class="muted">Les liens sont enregistrés dans la fiche. Leur affichage public dépend des capacités du programme.</p><p class="muted">Les médias sélectionnés seront enregistrés avec la fiche.</p></div></div><div class="wide"><h3>Plan et informations pratiques</h3><label>Accessibilité et informations du lieu</label><textarea name="accessibility" placeholder="Accès PMR confirmé, toilettes, stationnement..."></textarea><label>Adresse / itinéraire HTTPS (facultatif)</label><input name="directions_url" type="url" placeholder="https://..."></div><div class="wide"><h3>Partage et billetterie</h3><label>Identifiant du lien partageable (facultatif)</label><input name="share_slug" placeholder="ex. kamini"><label>Lien billetterie propre à cette fiche (facultatif)</label><input name="ticket_url" type="url" placeholder="https://www.helloasso.com/..."></div><div class="buttons"><button class="btn secondary" id="previewEvent" type="button">Aperçu de la fiche</button><button class="btn" type="submit">Enregistrer cette fiche</button><button class="btn danger" type="button" id="remove">Supprimer</button></div></form></div></div></section>
+<div class="wide"><label>Résumé</label><textarea name="short"></textarea></div><div class="wide"><label>Description</label><textarea name="description" rows="5"></textarea></div><div class="wide" hidden><label>URL de la photo (copiée depuis Wix)</label><input name="image_url" type="url" placeholder="https://static.wixstatic.com/media/..."><img id="photoPreview" class="preview hidden" alt="Aperçu photo"></div><div class="wide" hidden><label>URL du logo de cette fiche (Wix)</label><input name="logo_url" type="url" placeholder="https://static.wixstatic.com/media/..."></div><div class="wide" hidden><label>URL vidéo (MP4 direct ou YouTube)</label><input name="video_url" type="url" placeholder="https://..."></div><div class="wide" hidden><label>Image de couverture de la vidéo</label><input name="video_poster_url" type="url"></div><div><label><input class="check" type="checkbox" name="video_autoplay"> Lecture automatique (si compatible)</label></div><div><label><input class="check" type="checkbox" name="video_loop"> Vidéo en boucle</label></div><div><label><input class="check" type="checkbox" name="video_muted"> Son désactivé</label></div><div class="wide" hidden><label>Lien personnalisé / redirection</label><input name="link_url" type="url" placeholder="https://..."></div><div hidden><label><input class="check" name="is_free" type="checkbox">Accès gratuit</label></div><div hidden><label><input class="check" name="both" type="checkbox">Les deux jours</label></div><div class="wide"><label><input class="check" name="published" type="checkbox">Publié (visible par les visiteurs)</label></div></div><div class="wide"><h3>Catégorie, publics et tarifs</h3></div><div><label>Discipline principale</label><select name="discipline"><option>Musique</option><option>Cinéma</option><option>Danse</option><option>Associations</option><option>Sport</option><option>Exposition</option><option>Théâtre et spectacle</option><option>Littérature</option><option>Jeux</option><option>Arts et création</option><option>Parade</option><option>Patrimoine</option><option>Prévention et santé</option><option>Environnement</option><option>Atelier</option><option>Autre</option></select></div><div hidden><label>Autres disciplines (séparées par des virgules)</label><input name="disciplines_extra" placeholder="Danse, Musique, Associations..."></div><div><label>Public ciblé</label><select name="audience"><option value="Tous publics">Tous publics</option><option>Enfants</option><option>Familles</option><option>Adolescents</option><option>Adultes</option><option>Seniors</option><option>Professionnels</option><option>Public scolaire</option></select></div><div hidden><label>Autres publics (séparés par des virgules)</label><input name="audiences_extra" placeholder="Familles, Adolescents..."></div><div class="wide" hidden><details class="zika-tarifs"><summary>Tarifs de l’événement (facultatif)</summary><p class="muted">Coche « Accès gratuit » plus haut si l’événement est gratuit. Sinon, indique le prix d’entrée ; le prix le plus élevé est facultatif.</p><div class="grid"><div><label>Prix d’entrée (€)</label><input type="number" min="0" step="0.01" name="price_min" placeholder="Ex. 23"></div><div><label>Prix le plus élevé (€) — facultatif</label><input type="number" min="0" step="0.01" name="price_max" placeholder="Ex. 25"></div></div></details></div><div hidden><input type="datetime-local" name="starts_at"><input type="datetime-local" name="ends_at"></div><div class="wide"><h3>Médias de cette fiche</h3><p class="muted">Utilise « Bibliothèque Wix » pour choisir plusieurs photos, vidéos, MP3 ou documents. Les liens techniques sont masqués.</p><div hidden><label>Photos supplémentaires (une URL Wix HTTPS par ligne)</label><textarea name="gallery_urls" rows="4" placeholder="https://static.wixstatic.com/media/..."></textarea><p class="muted">Sélection multiple possible : choisis toutes les photos souhaitées, puis clique sur « Ajouter les fichiers sélectionnés ».</p><label>Fichiers associés (PDF, musique MP3, documents, vidéos : une URL par ligne)</label><textarea name="attachment_urls" rows="4" placeholder="https://... (un document par ligne)"></textarea><p class="muted">Les liens sont enregistrés dans la fiche. Leur affichage public dépend des capacités du programme.</p><p class="muted">Les médias sélectionnés seront enregistrés avec la fiche.</p></div></div><div class="wide"><h3>Informations pratiques</h3><p class="muted">Facultatif : précise seulement ce que le public doit savoir pour venir.</p><label>Informations utiles (accessibilité, stationnement, accueil…)</label><textarea name="accessibility" rows="3" placeholder="Ex. Accès PMR, parking à proximité, toilettes sur place…"></textarea><div hidden><label>Adresse / itinéraire HTTPS (technique)</label><input name="directions_url" type="url" placeholder="https://..."></div></div><div class="wide"><h3>Accès à l’événement</h3>
+<div class="zika-access-wrap"><label for="zikaAccessMode">Type d’accès</label>
+<select id="zikaAccessMode"><option value="free">Gratuit</option><option value="reservation">Gratuit sur réservation</option><option value="paid">Payant</option></select>
+<div id="zikaAccessLink" hidden style="margin-top:12px"><label id="zikaAccessLinkLabel" for="zikaAccessLinkInput">Lien de réservation</label>
+<input id="zikaAccessLinkInput" type="url" placeholder="https://..." autocomplete="off"><p class="muted">Facultatif : ajoute le lien vers la réservation ou la billetterie.</p></div></div>
+<div hidden><label>Lien technique</label><input name="ticket_url" type="url" placeholder="https://www.helloasso.com/..."></div><div hidden><label>Identifiant du lien partageable (technique)</label><input name="share_slug" placeholder="ex. kamini"></div></div><div class="buttons"><button class="btn secondary" id="previewEvent" type="button">Aperçu de la fiche</button><button class="btn" type="submit">Enregistrer cette fiche</button><button class="btn danger" type="button" id="remove">Supprimer</button></div></form></div></div></section>
+<section data-section="categories" class="card hidden"><h2>Catégories et couleurs</h2><p class="muted">Personnalise ici les couleurs des catégories pour tout le festival. Ce réglage s'applique à toutes les fiches.</p><div id="zikaCategoryColorSettings" class="zika-pill-grid"></div><div class="buttons"><button type="button" class="btn secondary" id="zikaSettingsNewCategory">+ Nouvelle catégorie</button><button type="button" class="btn secondary" id="zikaSettingsManageCategories">Gérer les catégories</button></div><p class="muted">Les couleurs sont enregistrées dans les paramètres Supabase.</p></section>
 <section data-section="theme" class="card hidden"><h2>Identité visuelle</h2><div class="grid"><div><label>Bleu</label><input type="color" id="blue" value="#168fdf"></div><div><label>Orange</label><input type="color" id="orange" value="#f88722"></div><div><label>Fond</label><input type="color" id="background" value="#ffffff"></div><div><label>Texte</label><input type="color" id="textColor" value="#172b3c"></div><div class="wide"><label>Titre du festival</label><input id="brandTitle" value="ZikaMansle Festival 2027"></div><div><label>Police des titres</label><select id="headingFont"><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Impact">Impact</option><option value="system-ui">system-ui</option><option value="Inter">Inter</option><option value="Roboto">Roboto</option><option value="Open Sans">Open Sans</option><option value="Montserrat">Montserrat</option><option value="Poppins">Poppins</option><option value="Lato">Lato</option><option value="Nunito">Nunito</option><option value="Raleway">Raleway</option><option value="Rubik">Rubik</option><option value="Work Sans">Work Sans</option><option value="DM Sans">DM Sans</option><option value="Manrope">Manrope</option><option value="Outfit">Outfit</option><option value="Plus Jakarta Sans">Plus Jakarta Sans</option><option value="Urbanist">Urbanist</option><option value="Mulish">Mulish</option><option value="Quicksand">Quicksand</option><option value="Josefin Sans">Josefin Sans</option><option value="Barlow">Barlow</option><option value="Barlow Condensed">Barlow Condensed</option><option value="Oswald">Oswald</option><option value="Anton">Anton</option><option value="Alfabet">Alfabet (Adobe Fonts)</option><option value="Bebas Neue">Bebas Neue</option><option value="Archivo Black">Archivo Black</option><option value="Teko">Teko</option><option value="Rajdhani">Rajdhani</option><option value="Saira Condensed">Saira Condensed</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Fjalla One">Fjalla One</option><option value="Playfair Display">Playfair Display</option><option value="Merriweather">Merriweather</option><option value="Libre Baskerville">Libre Baskerville</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Lora">Lora</option><option value="DM Serif Display">DM Serif Display</option><option value="Abril Fatface">Abril Fatface</option><option value="Cinzel">Cinzel</option><option value="Bodoni Moda">Bodoni Moda</option><option value="Pacifico">Pacifico</option><option value="Dancing Script">Dancing Script</option><option value="Caveat">Caveat</option><option value="Great Vibes">Great Vibes</option><option value="Satisfy">Satisfy</option><option value="Lobster">Lobster</option><option value="Permanent Marker">Permanent Marker</option><option value="Kalam">Kalam</option><option value="Amatic SC">Amatic SC</option><option value="Fredoka">Fredoka</option><option value="Comfortaa">Comfortaa</option><option value="Baloo 2">Baloo 2</option><option value="Righteous">Righteous</option><option value="Bangers">Bangers</option><option value="Alfa Slab One">Alfa Slab One</option><option value="Space Grotesk">Space Grotesk</option><option value="Space Mono">Space Mono</option><option value="Orbitron">Orbitron</option><option value="Audiowide">Audiowide</option><option value="Exo 2">Exo 2</option></select></div><div><label>Police du texte</label><select id="bodyFont"><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Impact">Impact</option><option value="system-ui">system-ui</option><option value="Inter">Inter</option><option value="Roboto">Roboto</option><option value="Open Sans">Open Sans</option><option value="Montserrat">Montserrat</option><option value="Poppins">Poppins</option><option value="Lato">Lato</option><option value="Nunito">Nunito</option><option value="Raleway">Raleway</option><option value="Rubik">Rubik</option><option value="Work Sans">Work Sans</option><option value="DM Sans">DM Sans</option><option value="Manrope">Manrope</option><option value="Outfit">Outfit</option><option value="Plus Jakarta Sans">Plus Jakarta Sans</option><option value="Urbanist">Urbanist</option><option value="Mulish">Mulish</option><option value="Quicksand">Quicksand</option><option value="Josefin Sans">Josefin Sans</option><option value="Barlow">Barlow</option><option value="Barlow Condensed">Barlow Condensed</option><option value="Oswald">Oswald</option><option value="Anton">Anton</option><option value="Alfabet">Alfabet (Adobe Fonts)</option><option value="Bebas Neue">Bebas Neue</option><option value="Archivo Black">Archivo Black</option><option value="Teko">Teko</option><option value="Rajdhani">Rajdhani</option><option value="Saira Condensed">Saira Condensed</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Fjalla One">Fjalla One</option><option value="Playfair Display">Playfair Display</option><option value="Merriweather">Merriweather</option><option value="Libre Baskerville">Libre Baskerville</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Lora">Lora</option><option value="DM Serif Display">DM Serif Display</option><option value="Abril Fatface">Abril Fatface</option><option value="Cinzel">Cinzel</option><option value="Bodoni Moda">Bodoni Moda</option><option value="Pacifico">Pacifico</option><option value="Dancing Script">Dancing Script</option><option value="Caveat">Caveat</option><option value="Great Vibes">Great Vibes</option><option value="Satisfy">Satisfy</option><option value="Lobster">Lobster</option><option value="Permanent Marker">Permanent Marker</option><option value="Kalam">Kalam</option><option value="Amatic SC">Amatic SC</option><option value="Fredoka">Fredoka</option><option value="Comfortaa">Comfortaa</option><option value="Baloo 2">Baloo 2</option><option value="Righteous">Righteous</option><option value="Bangers">Bangers</option><option value="Alfa Slab One">Alfa Slab One</option><option value="Space Grotesk">Space Grotesk</option><option value="Space Mono">Space Mono</option><option value="Orbitron">Orbitron</option><option value="Audiowide">Audiowide</option><option value="Exo 2">Exo 2</option></select></div><div><label>Taille des titres (px)</label><input id="headingSize" type="number" min="20" max="100" value="48"></div><div><label>Taille du texte (px)</label><input id="bodySize" type="number" min="12" max="24" value="16"></div><div class="wide"><label>Vidéo de fond de la bannière (MP4 direct)</label><input id="heroVideo" type="url" placeholder="https://..."></div><div class="wide"><label>Image de fond de la bannière</label><input id="heroImage" type="url" placeholder="https://..."></div><div><label>Opacité de la vidéo (%)</label><input id="heroOpacity" type="range" min="0" max="100" value="60"></div><div class="wide"><label>Lien du logo Wix</label><input id="logoUrl" type="url" placeholder="https://static.wixstatic.com/media/..."></div></div><div class="card" style="background:#f8fbfe;border-color:#e0e9f2"><h2>Typographie détaillée</h2><div style="padding:12px;margin:10px 0;background:#fff6e9;border-radius:10px"><label>Adobe Fonts — URL de ton kit (nécessaire pour Alfabet)</label><input id="adobeKitUrl" type="url" placeholder="https://use.typekit.net/xxxxxxx.css"><p class="muted">Anton fonctionne déjà sans réglage. Pour Alfabet, ajoute un kit Adobe Fonts autorisé pour ce site. Une simple sélection du nom ne charge pas la police.</p></div><p class="muted">Réglage indépendant de chaque zone du programme public. Plus de 60 polices disponibles : classiques, modernes, condensées, élégantes, manuscrites et créatives. Réglage indépendant de chaque zone.</p><div id="fontControls" class="grid"></div><div id="designPreview" style="margin-top:18px;padding:24px;border:1px solid #dbe5ee;border-radius:16px;background:white"><div data-demo="hero" style="font-size:30px">LE PROGRAMME 2027</div><div data-demo="section" style="font-size:22px">Samedi 24 avril</div><div data-demo="card" style="font-size:26px">ZikaVillage</div><div data-demo="body">Animations et rencontres pour tous</div><div data-demo="time">14h – 17h</div><div data-demo="menu">TOUT LE FESTIVAL · SAMEDI · DIMANCHE</div><span data-demo="button" style="display:inline-block;padding:10px 15px;border-radius:9px;background:#168fdf;color:white">Découvrir</span></div></div><div class="card" style="background:#f8fbfe;border-color:#e0e9f2"><h2>Présentation et boutons</h2><div class="grid"><div><label>Couleur des cartes</label><input id="cardBackground" type="color" value="#ffffff"></div><div><label>Couleur des boutons</label><input id="buttonBackground" type="color" value="#168fdf"></div><div><label>Couleur du texte des boutons</label><input id="buttonText" type="color" value="#ffffff"></div><div><label>Arrondi des cartes (px)</label><input id="cardRadius" type="number" min="0" max="50" value="26"></div><div><label>Arrondi des boutons (px)</label><input id="buttonRadius" type="number" min="0" max="50" value="16"></div><div><label>Largeur maximale du contenu (px)</label><input id="contentWidth" type="number" min="850" max="1600" value="1260"></div></div></div><div class="buttons"><button class="btn" id="saveTheme">Enregistrer l'apparence</button></div></section>
 <section data-section="links" class="card hidden"><h2>Redirections générales</h2><label>Billetterie HelloAsso (adresse exacte)</label><input type="url" id="ticketUrl" placeholder="https://www.helloasso.com/..."><div class="buttons"><button class="btn" id="saveLinks">Enregistrer la redirection</button></div></section>
 <section data-section="experience" class="card hidden"><h2>Affichage, plan et alertes</h2><p class="muted">Pour le plan Wix, indique l’URL de la page existante. Le ciblage direct d’un marqueur dépend des ancres ou paramètres pris en charge par cette page.</p><label>URL du plan interactif existant</label><input id="globalMapUrl" type="url" placeholder="https://www.zikamansle.fr/..."><label>Titre du bandeau d'information</label><input id="alertTitle" placeholder="Information aux festivaliers"><label>Texte du bandeau</label><textarea id="alertText" placeholder="Modification d'horaire, entrée, consigne pratique..."></textarea><label><input id="alertEnabled" class="check" type="checkbox"> Afficher le bandeau sur le programme public</label><label>Disposition publique</label><select id="publicLayout"><option value="cards">Cartes détaillées</option><option value="compact">Cartes compactes</option></select><div class="buttons"><button class="btn" id="saveExperience">Enregistrer ces réglages</button></div></section><section data-section="bootstrap" class="card hidden"><h2>Importer le programme initial</h2><p>Cette opération ajoute dans Supabase les fiches du programme existant. Elle est à faire <strong>une seule fois</strong>, après vérification : elle ne remplace pas les fiches déjà présentes.</p><button class="btn" id="importInitial">Importer les fiches initiales</button><p class="muted">Tu peux aussi laisser la base vide et créer tes fiches une par une. Le programme public conserve temporairement les fiches intégrées tant qu'aucune fiche publiée n'existe dans Supabase.</p></section>
@@ -417,98 +430,131 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
 })();
 </script><script>
 (function(){
+ const form=document.getElementById('eventForm');if(!form)return;
+ const discipline=form.elements.discipline, audience=form.elements.audience, extra=form.elements.audiences_extra;
+ if(!discipline||!audience||!extra)return;
+ const categoryOld=discipline.closest('div');categoryOld.style.display='none';
+ audience.closest('div').style.display='none';
+ const defaultOptions={categories:[...discipline.options].map(x=>x.value),publics:[...audience.options].map(x=>x.value)};
+ const unique=a=>[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean))];
+ let options={categories:unique(defaultOptions.categories),publics:unique(defaultOptions.publics),categoryColors:{}};
+ const remembered=new Set();
+ function loadOptions(){
+  const saved=(typeof settings!=='undefined'&&settings.event_form_options)||{};
+  options.categories=unique([...defaultOptions.categories,...(saved.categories||[])]);
+  options.publics=unique([...defaultOptions.publics,...(saved.publics||[])]);
+  options.categoryColors={...(saved.categoryColors||{})};
+ }
+ async function saveOptions(){try{await setting('event_form_options',options)}catch(e){alert('Enregistrement impossible : '+e.message)}}
+ const root=document.createElement('div');root.className='wide zika-choices-root';
+ root.innerHTML='<h3>Catégorie</h3><p class="muted">Choisis une catégorie. Sa couleur se règle dans l’onglet Catégories & couleurs en haut.</p><div id="zikaCategoryChecks" class="zika-pill-grid"></div><div class="zika-pill-tools"><button type="button" class="btn secondary" id="zikaNewCategory">+ Ajouter une catégorie</button><button type="button" class="btn secondary" id="zikaManageCategories">Modifier les catégories</button></div><h3>Publics concernés</h3><p class="muted">Coche un ou plusieurs publics.</p><div id="zikaAudienceChecks" class="zika-pill-grid"></div><div class="zika-pill-tools"><button type="button" class="btn secondary" id="zikaNewPublic">+ Ajouter un public</button><button type="button" class="btn secondary" id="zikaManagePublics">Modifier les publics</button></div>';
+ categoryOld.after(root);
+ const cats=root.querySelector('#zikaCategoryChecks'),pubs=root.querySelector('#zikaAudienceChecks');
+ const colorGood=x=>/^#[0-9a-fA-F]{6}$/.test(x||'');
+ function buildCat(){
+  cats.replaceChildren();const chosen=discipline.value;
+  for(const name of unique([...options.categories,chosen])){
+   const line=document.createElement('label');line.className='zika-category-choice';
+   const rb=document.createElement('input');rb.type='radio';rb.name='zikaCategoryChoice';rb.value=name;rb.checked=name===chosen;rb.addEventListener('change',()=>{discipline.value=name;discipline.dispatchEvent(new Event('change',{bubbles:true}))});
+   const label=document.createElement('span');label.textContent=name;
+   const tint=colorGood(options.categoryColors[name])?options.categoryColors[name]:'#168fdf';
+   line.style.borderLeftColor=tint;line.append(rb,label);cats.append(line);
+  }
+ }
+ const colorSettings=document.getElementById('zikaCategoryColorSettings');
+ function buildColorSettings(){
+   if(!colorSettings)return;
+   colorSettings.replaceChildren();
+   for(const name of options.categories){
+     const line=document.createElement('label');line.className='zika-category-choice';
+     const color=document.createElement('input');color.type='color';color.className='zika-category-color';
+     color.title='Couleur de '+name;
+     color.value=colorGood(options.categoryColors[name])?options.categoryColors[name]:'#168fdf';
+     line.style.borderLeftColor=color.value;
+     const label=document.createElement('span');label.textContent=name;
+     color.addEventListener('input',()=>line.style.borderLeftColor=color.value);
+     color.addEventListener('change',async()=>{
+       options.categoryColors[name]=color.value;
+       await saveOptions();buildCat();
+     });
+     line.append(color,label);colorSettings.append(line);
+   }
+ }
+ function getPublics(){return [...pubs.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value)}
+ function currentPublics(){return unique([audience.value,...(extra.value||'').split(',')])}
+ function buildPubs(selected){pubs.replaceChildren();for(const name of unique([...options.publics,...selected])){
+  const label=document.createElement('label');label.className='zika-category-choice';
+  const cb=document.createElement('input');cb.type='checkbox';cb.value=name;cb.checked=selected.includes(name);
+  const txt=document.createElement('span');txt.textContent=name;label.append(cb,txt);pubs.append(label);
+ }}
+ async function add(kind){const name=prompt(kind==='categories'?'Nouvelle catégorie :':'Nouveau public :');if(!name)return;
+  const clean=name.trim().replace(/\s+/g,' ').slice(0,80);if(!clean)return;
+  options[kind]=unique([...options[kind],clean]);
+  if(kind==='categories'){discipline.add(new Option(clean,clean));discipline.value=clean;buildCat();buildColorSettings()}
+  else buildPubs(unique([...getPublics(),clean]));await saveOptions();
+ }
+ async function manage(kind){const next=prompt('Une valeur par ligne :',options[kind].join('\n'));if(next===null)return;
+  const arr=unique(next.split(/\r?\n/));if(!arr.length){alert('Au moins un choix nécessaire.');return;}
+  options[kind]=arr;if(kind==='categories'){buildCat();buildColorSettings()}else buildPubs(getPublics());await saveOptions();
+ }
+ document.getElementById('zikaSettingsNewCategory').onclick=()=>add('categories');
+ document.getElementById('zikaSettingsManageCategories').onclick=()=>manage('categories');
+ root.querySelector('#zikaNewCategory').onclick=()=>add('categories');
+ root.querySelector('#zikaNewPublic').onclick=()=>add('publics');
+ root.querySelector('#zikaManageCategories').onclick=()=>manage('categories');
+ root.querySelector('#zikaManagePublics').onclick=()=>manage('publics');
+ function refresh(){loadOptions();
+  const selected=discipline.value;
+  for(const name of unique([...options.categories,selected]))if(![...discipline.options].some(x=>x.value===name))discipline.add(new Option(name,name));
+  discipline.value=selected;buildCat();buildColorSettings();buildPubs(currentPublics());
+ }
+ form.addEventListener('submit',()=>{const selected=getPublics();audience.value=selected[0]||'Tous publics';extra.value=selected.slice(1).join(', ')},true);
+ document.getElementById('list')?.addEventListener('click',()=>setTimeout(refresh,40));
+ document.getElementById('add')?.addEventListener('click',()=>setTimeout(refresh,40));
+ const title=document.getElementById('editTitle');if(title)new MutationObserver(()=>setTimeout(refresh,40)).observe(title,{childList:true});
+ refresh();
+})();
+</script><script>
+(function(){
   const form=document.getElementById('eventForm');
-  if(!form)return;
-  const discipline=form.elements.discipline;
-  const audience=form.elements.audience;
-  const extra=form.elements.audiences_extra;
-  const hideAudience=audience.closest('div');
-  hideAudience.hidden=true;
-  const typeBlock=discipline.closest('div');
-  const cWrap=document.createElement('div');
-  cWrap.className='wide';
-  cWrap.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:0 0 12px';
-  const cAdd=document.createElement('button');
-  cAdd.type='button';cAdd.className='btn secondary';cAdd.textContent='+ Nouvelle catégorie';
-  const cRemove=document.createElement('button');
-  cRemove.type='button';cRemove.className='btn secondary';cRemove.textContent='Gérer les catégories';
-  cWrap.append(cAdd,cRemove);
-  typeBlock.after(cWrap);
-  const pBlock=document.createElement('div');pBlock.className='wide';
-  const pLabel=document.createElement('label');pLabel.textContent='Publics concernés (plusieurs choix possibles)';
-  const pChecks=document.createElement('div');pChecks.id='zikaAudienceChoices';pChecks.style.cssText='display:flex;flex-wrap:wrap;gap:10px;margin:10px 0';
-  const pAdd=document.createElement('button');pAdd.type='button';pAdd.className='btn secondary';pAdd.textContent='+ Ajouter un public';
-  const pRemove=document.createElement('button');pRemove.type='button';pRemove.className='btn secondary';pRemove.textContent='Gérer les publics';
-  const pActions=document.createElement('div');pActions.style.cssText='display:flex;flex-wrap:wrap;gap:8px';pActions.append(pAdd,pRemove);
-  pBlock.append(pLabel,pChecks,pActions);hideAudience.after(pBlock);
-  const defaults={categories:[...discipline.options].map(o=>o.value),publics:[...audience.options].map(o=>o.value)};
-  let options={categories:defaults.categories.slice(),publics:defaults.publics.slice()};
-  function unique(items){return [...new Set(items.map(x=>String(x).trim()).filter(Boolean))];}
-  function fromSettings(){
-    try{
-      const saved=typeof settings!=='undefined' && settings.event_form_options;
-      if(saved){options.categories=unique([...defaults.categories,...(saved.categories||[])]);options.publics=unique([...defaults.publics,...(saved.publics||[])]);}
-    }catch(err){console.warn('Options personnalisées indisponibles',err)}
+  const access=document.getElementById('zikaAccessMode');
+  const linkWrap=document.getElementById('zikaAccessLink');
+  const link=document.getElementById('zikaAccessLinkInput');
+  const linkLabel=document.getElementById('zikaAccessLinkLabel');
+  if(!form||!access)return;
+  const check=form.elements['is_free'];
+  const ticket=form.elements['ticket_url'];
+  function display(){
+    const mode=access.value;
+    linkWrap.hidden=mode==='free';
+    linkLabel.textContent=mode==='paid'?'Lien de billetterie':'Lien de réservation';
+    link.placeholder=mode==='paid'?'https://www.helloasso.com/...':'https://...';
+    check.checked=mode!=='paid';
+    if(mode==='free'){ticket.value='';link.value='';}
+    else ticket.value=link.value.trim();
   }
-  async function persist(){
-    try{if(typeof setting==='function') await setting('event_form_options',options);
-    else throw Error('Connexion paramètres indisponible');}
-    catch(e){alert('Impossible d’enregistrer les options dans Supabase : '+e.message);}
+  function refresh(){
+    const record=typeof events!=='undefined'&&typeof selected!=='undefined'
+      ? events.find(e=>e.id===selected):null;
+    if(!record||form.classList.contains('hidden'))return;
+    const stored=record.extra?.access_mode;
+    const isValid=['free','reservation','paid'].includes(stored);
+    access.value=isValid?stored:(record.is_free?(record.extra?.ticket_url?'reservation':'free'):'paid');
+    link.value=record.extra?.ticket_url||'';
+    linkWrap.hidden=access.value==='free';
+    linkLabel.textContent=access.value==='paid'?'Lien de billetterie':'Lien de réservation';
   }
-  function checkSelected(){return [...pChecks.querySelectorAll('input:checked')].map(el=>el.value);}
-  function currentPublics(){return unique([audience.value,...(extra.value||'').split(',')]);}
-  function renderCategories(){
-    const val=discipline.value;
-    discipline.replaceChildren();
-    unique([...options.categories,val]).forEach(name=>{
-      const o=document.createElement('option');o.value=name;o.textContent=name;discipline.append(o);
-    });
-    discipline.value=val||options.categories[0]||'';
-  }
-  function renderPublics(selected=currentPublics()){
-    pChecks.replaceChildren();
-    unique([...options.publics,...selected]).forEach(name=>{
-      const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:6px;border:1px solid #d3e1eb;border-radius:9px;padding:8px 10px;cursor:pointer';
-      const box=document.createElement('input');box.type='checkbox';box.value=name;box.checked=selected.includes(name);box.style.width='auto';
-      label.append(box,document.createTextNode(name));pChecks.append(label);
-    });
-  }
-  async function add(kind){
-    const name=prompt(kind==='categories'?'Nom de la nouvelle catégorie :':'Nom du nouveau public :');
-    if(!name)return;
-    const clean=name.trim().replace(/\s+/g,' ').slice(0,80);
-    if(!clean)return;
-    options[kind]=unique([...options[kind],clean]);
-    if(kind==='categories'){renderCategories();discipline.value=clean;discipline.dispatchEvent(new Event('change',{bubbles:true}));}
-    else renderPublics(unique([...checkSelected(),clean]));
-    await persist();
-  }
-  async function manage(kind){
-    const current=options[kind];
-    const txt=prompt('Modifie la liste (une entrée par ligne). Les anciennes valeurs des fiches restent conservées.',current.join('\n'));
-    if(txt===null)return;
-    const next=unique(txt.split(/\r?\n/));
-    if(!next.length){alert('Il faut conserver au moins une option.');return;}
-    const selected=checkSelected();
-    options[kind]=next;
-    if(kind==='categories')renderCategories();else renderPublics(selected);
-    await persist();
-  }
-  cAdd.addEventListener('click',()=>add('categories'));
-  pAdd.addEventListener('click',()=>add('publics'));
-  cRemove.addEventListener('click',()=>manage('categories'));
-  pRemove.addEventListener('click',()=>manage('publics'));
-  function refresh(){fromSettings();renderCategories();renderPublics(currentPublics());}
-  // Keep the original Supabase save handler intact: sync multiple selections into existing fields.
+  access.addEventListener('change',display);
+  link.addEventListener('input',()=>ticket.value=link.value.trim());
   form.addEventListener('submit',()=>{
-    const chosen=checkSelected();
-    audience.value=chosen[0]||'Tous publics';
-    extra.value=chosen.slice(1).join(', ');
+    display();
+    const record=typeof events!=='undefined'&&typeof selected!=='undefined'
+      ? events.find(e=>e.id===selected):null;
+    if(record){record.extra=record.extra||{};record.extra.access_mode=access.value;}
   },true);
-  document.getElementById('list').addEventListener('click',()=>setTimeout(refresh,20));
-  document.getElementById('add').addEventListener('click',()=>setTimeout(refresh,20));
-  const title=document.getElementById('editTitle');
-  new MutationObserver(()=>setTimeout(refresh,20)).observe(title,{childList:true});
+  document.getElementById('list')?.addEventListener('click',()=>setTimeout(refresh,40));
+  document.getElementById('add')?.addEventListener('click',()=>setTimeout(refresh,40));
+  new MutationObserver(()=>setTimeout(refresh,30)).observe(document.getElementById('editTitle'),{childList:true});
   refresh();
 })();
 </script></body></html>
