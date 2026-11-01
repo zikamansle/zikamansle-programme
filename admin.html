@@ -924,7 +924,7 @@ const targets=[['Bannière','.zika-banner'],['Image de bannière','.zika-banner_
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeCss=(s)=>String(s||'').replace(/[{};<>]/g,'');
 const customKey=k=>/^\[data-zv-block=\"zv-[a-z0-9-]+\"\]$/.test(k);
-const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');add('font-weight',v.fontWeight);add('color',v.color);add('background-color',v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');add('opacity',v.opacity!==undefined?Math.max(0,Math.min(100,Number(v.opacity)))/100:'');add('width',v.widthPx!==undefined?Number(v.widthPx)+'px':(v.width?Number(v.width)+'%':''));add('height',v.height?Number(v.height)+'px':'');add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);if(v.borderStyle&&v.borderStyle!=='none'&&v.borderWidth===undefined)add('border-width','2px');add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
+const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');add('font-weight',v.fontWeight);add('color',v.color);add('background-color',v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');add('opacity',v.opacity!==undefined?Math.max(0,Math.min(100,Number(v.opacity)))/100:'');add('width',v.widthPx!==undefined?Number(v.widthPx)+'px':(v.width?Number(v.width)+'%':''));add('height',v.height?Number(v.height)+'px':'');if(v.widthPx!==undefined){add('max-width','none');add('min-width','0')}if(v.height!==undefined){add('min-height','0')}add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);if(v.borderStyle&&v.borderStyle!=='none'&&v.borderWidth===undefined)add('border-width','2px');add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
 const buildCss=data=>{
 const rules=[];
 for(const [key,v] of Object.entries(data)){
@@ -1008,7 +1008,7 @@ function getTarget(node){
  const doc=frameDoc();if(!doc||!node)return 'body';
  let el=node.nodeType===3?node.parentElement:node;
  if(!el||el.nodeType!==1)return 'body';
- if(el.closest('#zvResizeHandle,#zvContextMenu'))return selectedKey||'body';
+ if(el.closest('[data-zv-direction],#zvContextMenu'))return selectedKey||'body';
  const eventTarget=eventKey(el);if(eventTarget)return eventTarget;
  if(el.closest('.zv-hero-photo'))return '.hero';
  const custom=el.closest('[data-zv-block]');
@@ -1061,16 +1061,36 @@ function updateResizeHandle(){
 // Reserve the original footprint before editing; the selected visual box is free to grow
 // without pushing its siblings, stretching its contents, or expanding the header.
 function zvReserveFrame(doc,el){
+ // Preserve the original layout box. Only the selected element becomes absolute
+ // inside a fixed-footprint holder; its siblings keep their original positions.
  if(!el||el===doc.body||el.dataset.zvFrameReady)return;
- const r=el.getBoundingClientRect(),parent=el.parentElement;if(!parent||r.width<1||r.height<1)return;
- const holder=doc.createElement('div');holder.dataset.zvReserved='1';
- const cs=doc.defaultView.getComputedStyle(el);
- holder.style.cssText='position:relative;box-sizing:border-box;flex:0 0 auto;min-width:0;min-height:0;width:'+r.width+'px;height:'+r.height+'px;margin:'+cs.margin+';';
- // Keep the natural position in parent flow (including flex/grid placement).
- el.before(holder);holder.append(el);
- el.dataset.zvFrameReady='1';el.style.setProperty('position','absolute','important');el.style.setProperty('left','0','important');el.style.setProperty('top','0','important');el.style.setProperty('margin','0','important');el.style.setProperty('width',r.width+'px','important');el.style.setProperty('height',r.height+'px','important');
- el.style.setProperty('max-width','none','important');el.style.setProperty('z-index','30','important');
+ const rect=el.getBoundingClientRect(), parent=el.parentElement;
+ if(!parent||rect.width<2||rect.height<2)return;
+ const computed=doc.defaultView.getComputedStyle(el);
+ const holder=doc.createElement('div'); holder.dataset.zvReserved='1';
+ holder.style.position='relative';holder.style.boxSizing='border-box';
+ holder.style.width=rect.width+'px';holder.style.height=rect.height+'px';
+ holder.style.minWidth='0';holder.style.minHeight='0';holder.style.flexShrink='0';
+ holder.style.flexGrow='0';holder.style.flexBasis=rect.width+'px';
+ holder.style.alignSelf=computed.alignSelf;
+ holder.style.margin=computed.margin;
+ holder.style.display=computed.display==='inline'?'inline-block':'block';
+ el.before(holder);holder.appendChild(el);
+ el.dataset.zvFrameReady='1';
+ el.style.setProperty('position','absolute','important');
+ el.style.setProperty('left','0px','important');el.style.setProperty('top','0px','important');
+ el.style.setProperty('margin','0px','important');
+ el.style.setProperty('width',rect.width+'px','important');
+ el.style.setProperty('height',rect.height+'px','important');
+ el.style.setProperty('max-width','none','important');
+ el.style.setProperty('min-width','0','important');
+ el.style.setProperty('min-height','0','important');
+ el.style.setProperty('box-sizing','border-box','important');
+ el.style.setProperty('z-index','30','important');
+ // Images keep their natural proportions inside their independently sized frames.
+ if(el.matches('img,video'))el.style.setProperty('object-fit','cover','important');
 }
+
 function handleClick(e){
  if(mode!=='edit'||e.target?.isContentEditable||e.target.closest('#zvContextMenu,[data-zv-direction]'))return;
  if(skipClick){skipClick=false;return}
@@ -1089,9 +1109,9 @@ function handlePointerDown(e){
  /* Selection deferred until click: preserves the native dblclick target. */
  const doc=frameDoc(),el=doc?.querySelector(key);if(!el)return;
  const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
- if(handle)zvReserveFrame(doc,el);
- const oldW=Number(draft[key]?.widthPx)||rect.width;
- const oldH=Number(draft[key]?.height)||rect.height;
+ if(handle){zvReserveFrame(doc,el);}
+ const oldW=rect.width;
+ const oldH=rect.height;
  const isHeroPhoto=!handle&&!!e.target.closest('.zv-hero-photo');
  const isHeroCrop=!handle&&(isHeroPhoto||(imageAdjustMode&&!!e.target.closest('.hero')&&!(e.target.closest('h1,h2,h3,h4,p,span,a,button'))));
  const cropImage= !handle && (isHeroCrop || (imageAdjustMode && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')) || !!e.target.closest('.zika-banner__image,.zika-banner__video'));
