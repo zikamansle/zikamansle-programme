@@ -771,5 +771,14 @@ fetch(config.url+'/rest/v1/zika_settings?key=eq.public_layout&select=value',{hea
  if(x.ButtonOn){const a=document.createElement('a');a.className='zika-banner__button';a.textContent=x.ButtonLabel||'Découvrir';a.href=/^(https:\/\/|#[a-z][a-z0-9_-]*)/i.test(x.ButtonHref||'')?x.ButtonHref:'#programme';if(a.href.startsWith('https:'))a.rel='noopener';body.append(a)}banner.append(body);
  }).catch(()=>{});
 })();
-</script></body>
+</script><script>
+(()=>{'use strict';
+const cssMap={fontFamily:'font-family',fontSize:'font-size',fontWeight:'font-weight',color:'color',backgroundColor:'background-color',opacity:'opacity',width:'width',height:'height',padding:'padding',borderRadius:'border-radius',textAlign:'text-align',bgX:'background-position',bgZoom:'background-size'};
+const allowed=new Set(['.zika-banner__image','.zika-banner__video','.zika-banner__veil','.event-card img','.zika-banner','.zika-banner h1','.zika-banner p','.zika-banner__button','.topbar','.hero-panel','h2','h1','.control-panel','.tool-btn','.event-card','.event-card h3','.primary','#zikaMapHost','#zikaTimelineHost','.results','footer','body']);
+function generate(data){if(!data||typeof data!=='object'||Array.isArray(data))return '';let css='';for(const [selector,v] of Object.entries(data)){if(!allowed.has(selector)||!v||typeof v!=='object')continue;const declarations=[];for(const [key,prop] of Object.entries(cssMap)){if(v[key]===undefined||v[key]===null||v[key]==='')continue;let value=String(v[key]);if(['fontSize','height','padding','borderRadius'].includes(key))value=Number(value)+'px';if(key==='width')value=Number(value)+'%';if(key==='opacity')value=String(Math.max(0,Math.min(100,Number(value)))/100);if(key==='bgX')value=`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`;if(key==='bgZoom')value=Number(value)+'% auto';if(!/^[\w\s#(),.%-]+$/.test(value))continue;declarations.push(prop+':'+value+' !important');if(key==='bgX')declarations.push('object-position:'+value+' !important');if(key==='bgZoom'&&(selector==='.zika-banner__image'||selector==='.event-card img'))declarations.push('transform:scale('+(Number(v.bgZoom)/100)+') !important')}if(v.x||v.y)declarations.push('translate:'+(Number(v.x)||0)+'px '+(Number(v.y)||0)+'px !important');css+=selector+'{'+declarations.join(';')+'}\n'}return css}
+const cfg=window.ZIKA_CONFIG||window.zikaConfig||window.CONFIG;
+const load=async()=>{let url='',key='';if(cfg){url=cfg.url||cfg.supabaseUrl||'';key=cfg.publishableKey||cfg.anonKey||cfg.supabaseAnonKey||''}if(!url||!key)return;try{const res=await fetch(url+'/rest/v1/zika_settings?key=eq.visual_editor&select=value',{headers:{apikey:key,Authorization:'Bearer '+key}});if(!res.ok)return;const rows=await res.json();const css=generate(rows[0]?.value);let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.appendChild(style)}style.textContent=css}catch(e){console.warn('Personnalisation indisponible',e)}};load();
+})();
+</script>
+</body>
 </html>
