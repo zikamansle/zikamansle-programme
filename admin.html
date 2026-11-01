@@ -912,7 +912,7 @@ function zvUniqueNodeKey(node){
 }
 const zvNodeKey=k=>/^\[data-zv-node="n-[a-z0-9-]+"\]$/.test(k);
 function zvMarkNodes(doc){
- const selector='h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,header img,.topbar img,.logo-mark,.brand,.top-actions,.hero-copy,.kicker,.hero-badges,.panel-big,.panel-title,.panel-chip';
+ const selector='h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,header img,.topbar img,.logo-mark,.brand,.top-actions,.hero-copy,.kicker,.hero-badges,.hero-panel,.hero-panel-top,.fact-grid,.fact,.panel-big,.panel-title,.panel-chip';
  doc.querySelectorAll(selector).forEach(el=>{
   if(el.closest('script,style,svg,[contenteditable],#zvCustomHost'))return;
   if(el.matches('span,strong,small')&&el.children.length>0)return;
@@ -989,7 +989,7 @@ function getTarget(node){
  if(custom)return '[data-zv-block="'+custom.dataset.zvBlock+'"]';
  const textSelector='h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,.panel-big,.panel-title,.panel-chip';
  if(el.closest('.logo-mark'))return zvUniqueNodeKey(el.closest('.logo-mark'));
- const blockSelector='.zika-banner,.hero,.hero-copy,.topbar,.brand,.top-actions,.filters,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,header,nav,section,article,footer';
+ const blockSelector='.fact,.hero-panel,.hero-copy,.zika-banner,.hero,.topbar,.brand,.top-actions,.filters,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,header,nav,section,article,footer';
  if(pickMode==='text'){
    const text=el.closest(textSelector);
    if(text && !text.closest('script,style,svg'))return zvUniqueNodeKey(text);
