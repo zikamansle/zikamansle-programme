@@ -43,7 +43,7 @@ function choose(id){selected=id;const r=events.find(x=>x.id===id);if(!r)return;c
 function photo(){const u=$('eventForm').elements.image_url.value;const el=$('photoPreview');el.classList.toggle('hidden',!/^https:\/\//.test(u));if(u.startsWith('https://'))el.src=u}
 $('eventForm').elements.image_url.onchange=photo;
 $('add').onclick=()=>{const r={id:crypto.randomUUID(),title:'Nouvelle activité',category:'Animations',time_label:'',display_order:1400,start_time:null,end_time:null,location:'',description:'',image_url:'',logo_url:'',video_url:'',video_poster_url:'',video_autoplay:false,video_loop:false,video_muted:true,link_url:'',is_free:true,published:false,extra:{day:'samedi',short:'',both:false}};events.unshift(r);choose(r.id);msg('Nouvelle fiche non enregistrée : clique sur « Enregistrer ».')};
-$('eventForm').onsubmit=async e=>{e.preventDefault();try{let f=e.target;let r=events.find(x=>x.id===selected);const v=k=>f.elements[k].value.trim();const schedule=v('schedule_text').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map((line,i)=>{const p=line.split('|').map(x=>x.trim());if(!/^\d{4}-\d{2}-\d{2}$/.test(p[0])|| (p[1]&&!/^\d{2}:\d{2}$/.test(p[1]))||(p[2]&&!/^\d{2}:\d{2}$/.test(p[2])))throw Error('Créneau '+(i+1)+' : utilise AAAA-MM-JJ | HH:MM | HH:MM | description');return {date:p[0],start:p[1]||'',end:p[2]||'',label:p.slice(3).join(' | ')||''}});if(!!v('starts_at')!==!!v('ends_at'))throw Error('Renseigne les deux dates/heures de début et de fin.');if(v('starts_at')&&new Date(v('ends_at'))<=new Date(v('starts_at')))throw Error('La fin doit être après le début.');const fields={id:r.id,title:v('title'),category:v('category'),time_label:v('time_label'),display_order:Number(v('display_order'))||1400,start_time:v('start_time')||null,end_time:v('end_time')||null,location:v('location'),description:v('description'),image_url:v('image_url')||null,logo_url:v('logo_url')||null,video_url:v('video_url')||null,video_poster_url:v('video_poster_url')||null,video_autoplay:f.elements.video_autoplay.checked,video_loop:f.elements.video_loop.checked,video_muted:f.elements.video_muted.checked,link_url:v('link_url')||null,is_free:f.elements.is_free.checked,published:f.elements.published.checked,extra:{...r.extra,day:v('day'),both:f.elements.both.checked,short:v('short'),custom_date:v('event_date_custom'),schedule,map_url:v('map_url'),discipline:v('discipline'),disciplines_extra:v('disciplines_extra').split(',').map(x=>x.trim()).filter(Boolean),audience:v('audience'),audiences_extra:v('audiences_extra').split(',').map(x=>x.trim()).filter(Boolean),price_min:v('price_min')===''?null:Number(v('price_min')),price_max:v('price_max')===''?null:Number(v('price_max')),starts_at:v('starts_at'),ends_at:v('ends_at'),gallery:v('gallery_urls').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^https:\/\//.test(x)),attachments:v('attachment_urls').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^https:\/\//.test(x)),map_marker:v('map_marker'),accessibility:v('accessibility'),directions_url:v('directions_url'),share_slug:v('share_slug').toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-'),ticket_url:v('ticket_url')}};if(!fields.title)throw Error('Le titre est obligatoire');await api('/rest/v1/zika_events?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(fields)});msg('Fiche enregistrée dans Supabase.');await load();choose(fields.id)}catch(err){msg('Erreur : '+err.message)}};
+$('eventForm').onsubmit=async e=>{e.preventDefault();try{let f=e.target;let r=events.find(x=>x.id===selected);const v=k=>f.elements[k].value.trim();const schedule=v('schedule_text').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map((line,i)=>{const p=line.split('|').map(x=>x.trim());if(!/^\d{4}-\d{2}-\d{2}$/.test(p[0])|| (p[1]&&!/^\d{2}:\d{2}$/.test(p[1]))||(p[2]&&!/^\d{2}:\d{2}$/.test(p[2])))throw Error('Créneau '+(i+1)+' : utilise AAAA-MM-JJ | HH:MM | HH:MM | description');return {date:p[0],start:p[1]||'',end:p[2]||'',label:p.slice(3).join(' | ')||''}});if(!!v('starts_at')!==!!v('ends_at'))throw Error('Renseigne les deux dates/heures de début et de fin.');if(v('starts_at')&&new Date(v('ends_at'))<=new Date(v('starts_at')))throw Error('La fin doit être après le début.');const fields={id:r.id,title:v('title'),category:v('discipline'),time_label:v('time_label'),display_order:Number(v('display_order'))||1400,start_time:v('start_time')||null,end_time:v('end_time')||null,location:v('location'),description:v('description'),image_url:v('image_url')||null,logo_url:v('logo_url')||null,video_url:v('video_url')||null,video_poster_url:v('video_poster_url')||null,video_autoplay:f.elements.video_autoplay.checked,video_loop:f.elements.video_loop.checked,video_muted:f.elements.video_muted.checked,link_url:v('link_url')||null,is_free:f.elements.is_free.checked,published:f.elements.published.checked,extra:{...r.extra,day:v('day'),both:f.elements.both.checked,short:v('short'),custom_date:v('event_date_custom'),schedule,map_url:v('map_url'),discipline:v('discipline'),disciplines_extra:v('disciplines_extra').split(',').map(x=>x.trim()).filter(Boolean),audience:v('audience'),audiences_extra:v('audiences_extra').split(',').map(x=>x.trim()).filter(Boolean),price_min:v('price_min')===''?null:Number(v('price_min')),price_max:v('price_max')===''?null:Number(v('price_max')),starts_at:v('starts_at'),ends_at:v('ends_at'),gallery:v('gallery_urls').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^https:\/\//.test(x)),attachments:v('attachment_urls').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^https:\/\//.test(x)),map_marker:v('map_marker'),accessibility:v('accessibility'),directions_url:v('directions_url'),share_slug:v('share_slug').toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-'),ticket_url:v('ticket_url')}};if(!fields.title)throw Error('Le titre est obligatoire');await api('/rest/v1/zika_events?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(fields)});msg('Fiche enregistrée dans Supabase.');await load();choose(fields.id)}catch(err){msg('Erreur : '+err.message)}};
 $('remove').onclick=async()=>{if(!selected||!confirm('Supprimer définitivement cette fiche ?'))return;try{await api('/rest/v1/zika_events?id=eq.'+encodeURIComponent(selected),{method:'DELETE'});selected=null;$('eventForm').classList.add('hidden');await load();msg('Fiche supprimée.')}catch(err){msg(err.message)}};
 const FONT_AREAS={hero:'Grand titre de bannière',section:'Titres de section',card:'Titres des fiches',body:'Descriptions et textes',time:'Dates et horaires',menu:'Menus et filtres',button:'Boutons'};
 const FONT_LIST=["Arial", "Verdana", "Georgia", "Tahoma", "Trebuchet MS", "Impact", "system-ui", "Inter", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito", "Raleway", "Rubik", "Work Sans", "DM Sans", "Manrope", "Outfit", "Plus Jakarta Sans", "Urbanist", "Mulish", "Quicksand", "Josefin Sans", "Barlow", "Barlow Condensed", "Oswald", "Anton", "Alfabet", "Bebas Neue", "Archivo Black", "Teko", "Rajdhani", "Saira Condensed", "Roboto Condensed", "Fjalla One", "Playfair Display", "Merriweather", "Libre Baskerville", "Cormorant Garamond", "Lora", "DM Serif Display", "Abril Fatface", "Cinzel", "Bodoni Moda", "Pacifico", "Dancing Script", "Caveat", "Great Vibes", "Satisfy", "Lobster", "Permanent Marker", "Kalam", "Amatic SC", "Fredoka", "Comfortaa", "Baloo 2", "Righteous", "Bangers", "Alfa Slab One", "Space Grotesk", "Space Mono", "Orbitron", "Audiowide", "Exo 2"];
@@ -196,10 +196,27 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wixModal.hidden)wi
 let wixDebounce;wixSearch.addEventListener('input',()=>{clearTimeout(wixDebounce);wixDebounce=setTimeout(()=>wixFetch(),450)});
 document.getElementById('wixMediaType').addEventListener('change',()=>wixFetch());document.getElementById('wixRefresh').onclick=()=>wixFetch();wixMore.onclick=()=>wixFetch(true);
 wixFolder.onchange=()=>{const id=wixFolder.value; if(!id){wixRender();return} const filtered=wixFiles.filter(f=>(f.fileInfo||f).parentFolderId===id);const old=wixFiles;wixFiles=filtered;wixRender();wixFiles=old;wixStatus.textContent=filtered.length+' média(s) dans le dossier sélectionné (parmi les pages chargées).'};
-wixApply.onclick=()=>{if(!wixTarget)return;const chosen=[...wixSelected];const multiple=['gallery_urls','attachment_urls'].includes(wixTarget.name);const urls=multiple?chosen:chosen.slice(0,1);if(!urls.length)return;
- if(!multiple && ['image_url','logo_url','video_poster_url'].includes(wixTarget.name) && chosen.length){const item=wixFiles.find(f=>wixDirect(f)===chosen[0]);if(item && wixType(item)!=='IMAGE'){wixStatus.textContent='Ce champ attend une image. Choisis une image ou utilise le champ lien de la fiche.';return;}}
- wixTarget.value=multiple?[...new Set([...wixTarget.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),...urls])].join('\n'):urls[0];
- wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));wixClose()};
+wixApply.onclick=()=>{
+ const selectedFiles=wixFiles.filter(f=>wixSelected.has(wixDirect(f)));
+ const form=document.getElementById('eventForm');
+ const isEvent=selected && !form.classList.contains('hidden') && wixTarget && form.contains(wixTarget);
+ if(!selectedFiles.length){wixStatus.textContent='Sélectionne au moins un fichier.';return;}
+ if(isEvent){
+  const append=(field,urls)=>{const previous=field.value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);field.value=[...new Set([...previous,...urls])].join('\n');field.dispatchEvent(new Event('input',{bubbles:true}));};
+  const images=selectedFiles.filter(f=>wixType(f)==='IMAGE').map(wixDirect);
+  const others=selectedFiles.filter(f=>wixType(f)!=='IMAGE').map(wixDirect);
+  append(form.elements.gallery_urls,images);
+  append(form.elements.attachment_urls,others);
+  if(images.length && !form.elements.image_url.value.trim()){form.elements.image_url.value=images[0];form.elements.image_url.dispatchEvent(new Event('change',{bubbles:true}));}
+  if(!form.elements.video_url.value.trim()){const video=selectedFiles.find(f=>wixType(f)==='VIDEO');if(video)form.elements.video_url.value=wixDirect(video);}
+  zikaRefreshMediaList();wixClose();msg(selectedFiles.length+' média(s) ajoutés à la fiche. Clique sur Enregistrer cette fiche pour sauvegarder.');return;
+ }
+ if(!wixTarget){wixStatus.textContent='Ouvre une fiche pour y associer ces médias.';return;}
+ const chosen=selectedFiles.map(wixDirect);
+ const multiple=['gallery_urls','attachment_urls'].includes(wixTarget.name);
+ wixTarget.value=multiple?[...new Set([...wixTarget.value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean),...chosen])].join('\n'):chosen[0];
+ wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));wixClose();
+};
 wixUploadBtn.onclick=()=>wixUpload.click();
 // Téléversement direct Wix : flux standard ou TUS pour les grands fichiers.
 // Aucune limite arbitraire côté interface, limites réelles du compte Wix applicables.
@@ -299,6 +316,7 @@ wixUpload.onchange=async()=>{
       form.elements.image_url.value=photoUrls[0];
       form.elements.image_url.dispatchEvent(new Event('input',{bubbles:true}));
      }
+     if(typeof zikaRefreshMediaList==='function')zikaRefreshMediaList();
      const count=photoUrls.length+otherUrls.length;
      wixStatus.textContent=importReport+' '+count+' fichier(s) ajoutés aux champs de la fiche. '+
        (missing.length?'Non associés : '+missing.join(', ')+'. Ouvre la bibliothèque après traitement. ':'')+
@@ -310,5 +328,39 @@ wixUpload.onchange=async()=>{
 };
 function wixAttachButtons(){const fields=[...document.querySelectorAll('#eventForm [name="image_url"],#eventForm [name="logo_url"],#eventForm [name="video_url"],#eventForm [name="video_poster_url"],#eventForm [name="gallery_urls"],#eventForm [name="attachment_urls"],#eventForm [name="link_url"],#eventForm [name="ticket_url"],#logoUrl,#heroImage,#heroVideo')];for(const field of fields){if(field.dataset.wixPickerAttached)continue;field.dataset.wixPickerAttached='1';const btn=document.createElement('button');btn.type='button';btn.className='wix-pick-button';btn.textContent='▣ Bibliothèque Wix';btn.onclick=()=>wixOpen(field);field.insertAdjacentElement('afterend',btn)}}
 wixAttachButtons();
+// Interface de fiche simplifiée : un choix de discipline et une médiathèque unique.
+(function zikaSimplifyEventEditor(){
+ const f=document.getElementById('eventForm');
+ const category=f.elements.category;
+ if(category){category.closest('div').style.display='none';}
+ const discipline=f.elements.discipline;
+ if(discipline){discipline.closest('div').querySelector('label').textContent='Type d’activité';discipline.addEventListener('change',()=>{category.value=discipline.value;});}
+ const mediaFields=['image_url','logo_url','video_url','video_poster_url','gallery_urls','attachment_urls'];
+ const mediaGroup=document.createElement('section');mediaGroup.className='wide';mediaGroup.id='zikaMediaPanel';mediaGroup.style.cssText='padding:18px;border-radius:16px;background:#f0f6fc;border:1px solid #cfdfec;margin:18px 0';
+ const title=document.createElement('h3');title.textContent='Médias de cette fiche';title.style.margin='0 0 6px';mediaGroup.append(title);
+ const intro=document.createElement('p');intro.textContent='Photos, vidéos, musique, PDF : choisis plusieurs fichiers dans Wix. Ils seront associés à cette fiche.';intro.className='muted';mediaGroup.append(intro);
+ const button=document.createElement('button');button.type='button';button.className='btn';button.textContent='＋ Choisir ou importer des médias Wix';button.onclick=()=>{if(!selected)return msg('Sélectionne d’abord une fiche.');wixOpen(f.elements.gallery_urls);document.getElementById('wixMediaType').value='all';wixFetch();};mediaGroup.append(button);
+ const counter=document.createElement('div');counter.id='zikaMediaCount';counter.style.cssText='margin:10px 0;font-weight:600';mediaGroup.append(counter);
+ const list=document.createElement('div');list.id='zikaMediaList';list.style.cssText='display:flex;flex-wrap:wrap;gap:8px';mediaGroup.append(list);
+ const details=document.createElement('details');details.style.marginTop='14px';const summary=document.createElement('summary');summary.textContent='Réglages avancés des médias (liens et options)';summary.style.cursor='pointer';details.append(summary);
+ for(const name of mediaFields){const input=f.elements[name];if(!input)continue;const parent=input.closest('div.wide')||input.parentElement;if(name==='gallery_urls'||name==='attachment_urls')continue; if(parent && parent!==f){details.append(parent);}}
+ const gallery=f.elements.gallery_urls;const galleryBlock=gallery?.closest('div.wide');
+ if(galleryBlock){details.append(galleryBlock);}
+ mediaGroup.append(details);
+ const desc=f.elements.description?.closest('div.wide');
+ if(desc)desc.after(mediaGroup);else f.prepend(mediaGroup);
+ f.addEventListener('input',e=>{if(mediaFields.includes(e.target?.name))zikaRefreshMediaList();});
+ window.zikaRefreshMediaList=function(){
+  const vals=name=>String(f.elements[name]?.value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const urls=[...new Set([...vals('image_url'),...vals('logo_url'),...vals('video_url'),...vals('gallery_urls'),...vals('attachment_urls')])];
+  counter.textContent=urls.length ? urls.length+' fichier(s) associé(s)' : 'Aucun fichier associé';list.replaceChildren();
+  for(const url of urls){const chip=document.createElement('span');chip.style.cssText='background:white;border:1px solid #cfdfec;border-radius:8px;padding:6px 8px;font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';let filename='Média';try{filename=decodeURIComponent(new URL(url).pathname.split('/').pop()||'Fichier')}catch{}chip.title=url;chip.textContent=filename.slice(0,50);list.append(chip)}
+ };
+ const originalChoose=window.choose; // choose is a top-level function declaration
+ const buttons=document.querySelectorAll('#list button');
+ document.getElementById('list').addEventListener('click',()=>setTimeout(zikaRefreshMediaList,0));
+ document.getElementById('add').addEventListener('click',()=>setTimeout(zikaRefreshMediaList,0));
+ zikaRefreshMediaList();
+})();
 
 </script></body></html>
