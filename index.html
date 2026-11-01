@@ -514,7 +514,8 @@ function render(){
   $('count').textContent = `${rows.length} rendez-vous`;
   $('results').innerHTML = rows.length ? rows.map(e=>`
     <article class="event-card" data-cat="${escapeHtml(e.cat)}">
-      <div class="event-band"></div>${e.image ? `<img src="${escapeHtml(e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;display:block" onerror="this.style.display='none'">` : ``}
+      <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${e.image ? `<img src="${escapeHtml(e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;display:block" onerror="this.style.display='none'">` : ``}
+      ${e.video && /^https:\/\//.test(e.video) ? (/\.mp4(?:[?#]|$)/i.test(e.video) ? `<video controls playsinline preload="none" ${e.videoPoster&&/^https:\/\//.test(e.videoPoster)?`poster="${escapeHtml(e.videoPoster)}"`:''} ${e.videoLoop?'loop':''} ${e.videoMuted?'muted':''} style="display:block;width:100%;max-height:300px;background:#071426"><source src="${escapeHtml(e.video)}" type="video/mp4"></video>` : /^(https:\/\/)(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)/.test(e.video) ? `<a style="display:block;padding:10px 24px;color:var(--blue);font-weight:700" href="${escapeHtml(e.video)}" target="_blank" rel="noopener noreferrer">▶ Voir la vidéo</a>` : '') : ''}
       <div class="event-inner">
         <div class="event-time">
           <div class="time-big">${escapeHtml(e.time)}</div>
@@ -599,11 +600,13 @@ render();
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,url:r.link_url||'',image:r.image_url||''}));render();}
+    free:!!r.is_free,url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false}));render();}
   const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
   }
+  if(st.typography){const t=st.typography;const allowedHead=['Arial','Georgia','Impact','Barlow Condensed'],allowedBody=['Arial','Georgia','Inter','Verdana'];if(allowedHead.includes(t.heading_font))document.querySelectorAll('.hero h1,.event-main h3,.summary-top h2').forEach(el=>el.style.fontFamily='"'+t.heading_font+'",sans-serif');if(allowedBody.includes(t.body_font))document.body.style.fontFamily='"'+t.body_font+'",sans-serif';if(Number(t.body_size)>=12&&Number(t.body_size)<=24)document.body.style.fontSize=t.body_size+'px';if(Number(t.heading_size)>=20&&Number(t.heading_size)<=100)document.querySelectorAll('.event-main h3').forEach(el=>el.style.fontSize=t.heading_size+'px')}
+  if(st.hero){const hero=document.querySelector('.hero');if(st.hero.background_image&&/^https:\/\//.test(st.hero.background_image)){hero.style.backgroundImage='linear-gradient(#07142666,#07142666),url("'+st.hero.background_image.replace(/["'<>]/g,'')+'")';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}if(st.hero.background_video&&/^https:\/\//.test(st.hero.background_video)&&/\.mp4(?:[?#]|$)/i.test(st.hero.background_video)){const v=document.createElement('video');v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true;v.setAttribute('aria-hidden','true');v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:'+Math.max(0,Math.min(100,Number(st.hero.video_opacity)||0))/100+';';const src=document.createElement('source');src.src=st.hero.background_video;src.type='video/mp4';v.append(src);hero.prepend(v)}}
   if(st.branding?.title){document.querySelector('.brand strong').textContent=st.branding.title}
   if(st.branding?.logo_url){const mark=document.querySelector('.logo-mark');mark.style.background='url("'+st.branding.logo_url.replace(/"/g,'')+'") center/contain no-repeat';}
   if(st.links?.ticket_url){document.querySelectorAll('a[href="https://www.helloasso.com"]').forEach(a=>a.href=st.links.ticket_url)}
