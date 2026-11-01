@@ -121,7 +121,7 @@ async function wixCall(payload){
 }
 const wixMore=document.createElement('button');wixMore.type='button';wixMore.className='wix-pick-button';wixMore.textContent='Reprendre le chargement';wixMore.hidden=true;wixResults.after(wixMore);
 const wixUpload=document.createElement('input');wixUpload.type='file';wixUpload.removeAttribute('accept');wixUpload.multiple=true;wixUpload.hidden=true;
-const wixUploadBtn=document.createElement('button');wixUploadBtn.type='button';wixUploadBtn.className='wix-pick-button';wixUploadBtn.textContent='＋ Ajouter des médias à Wix';document.getElementById('wixRefresh').after(wixUploadBtn,wixUpload);
+const wixUploadBtn=document.createElement('button');wixUploadBtn.type='button';wixUploadBtn.className='wix-pick-button';wixUploadBtn.textContent='＋ Importer plusieurs fichiers dans Wix';document.getElementById('wixRefresh').after(wixUploadBtn,wixUpload);
 const wixApply=document.createElement('button');wixApply.type='button';wixApply.className='wix-pick-button';wixApply.textContent='Ajouter les fichiers sélectionnés';wixApply.hidden=true;wixMore.after(wixApply);
 const wixFolder=document.createElement('select');wixFolder.id='wixFolder';wixFolder.setAttribute('aria-label','Dossier Wix');wixFolder.innerHTML='<option value="">Tous les dossiers</option>';document.getElementById('wixMediaType').after(wixFolder);
 const wixSearch=document.getElementById('wixSearch');wixSearch.placeholder='Rechercher dans toute la bibliothèque Wix';
@@ -210,31 +210,56 @@ function wixLoadTus(){if(window.tus?.Upload)return Promise.resolve(window.tus);i
 function wixMimeFromName(name){const ext=name.split('.').pop().toLowerCase();return ({pdf:'application/pdf',mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',flac:'audio/flac',mp4:'video/mp4',mov:'video/quicktime',webm:'video/webm',svg:'image/svg+xml',zip:'application/zip',txt:'text/plain',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation'})[ext]||'application/octet-stream'}
 function wixPutWithProgress(url,file){return new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('PUT',url+(url.includes('?')?'&':'?')+'filename='+encodeURIComponent(file.name));xhr.setRequestHeader('Content-Type',file.type||'application/octet-stream');xhr.upload.onprogress=e=>{if(e.lengthComputable){wixProgress.value=Math.round(100*e.loaded/e.total);wixStatus.textContent='Envoi '+file.name+' : '+wixProgress.value+' %'}};xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new Error('Wix a refusé le transfert (HTTP '+xhr.status+')'));xhr.onerror=()=>reject(new Error('Transfert direct impossible : vérifie notamment le CORS Wix'));xhr.send(file)});}
 async function wixTusUpload(signed,file){const tus=await wixLoadTus();return new Promise((resolve,reject)=>{const upload=new tus.Upload(file,{endpoint:signed.uploadUrl,retryDelays:[0,3000,5000,10000,20000],chunkSize:5*1024*1024,metadata:{filename:file.name,contentType:file.type||'application/octet-stream',token:signed.uploadToken},onError:reject,onProgress:(sent,total)=>{wixProgress.value=total?Math.round(100*sent/total):0;wixStatus.textContent='Envoi reprenable '+file.name+' : '+wixProgress.value+' %'},onSuccess:resolve});upload.start()});}
-wixUpload.onchange=async()=>{const files=[...wixUpload.files];if(!files.length)return;wixUploadBtn.disabled=true;wixProgress.style.display='block';
- try{for(const file of files){wixProgress.value=0;wixStatus.textContent='Préparation du transfert vers Wix : '+file.name;
- const signed=await wixCall({action:'prepare-upload',name:file.name,mimeType:file.type||wixMimeFromName(file.name),size:file.size,parentFolderId:wixFolder.value||undefined});
- if(signed.resumable){
-   await wixTusUpload(signed,file);
-   wixStatus.textContent='100 % transférés. Finalisation auprès de Wix : '+file.name;
-   const finalized=await wixCall({action:'finalize-upload',uploadUrl:signed.uploadUrl,uploadToken:signed.uploadToken,name:file.name});
-   if(!finalized.finalized||!finalized.fileId)throw Error('Wix n’a pas confirmé la création du fichier après finalisation.');
-   wixStatus.textContent='Fichier accepté par Wix. Vérification du traitement vidéo…';
-   let confirmed=false;
-   for(let attempt=0;attempt<12;attempt++){
-     await new Promise(done=>setTimeout(done,5000));
-     const check=await wixCall({action:'check-upload',fileId:finalized.fileId});
-     if(check.failed)throw Error('Wix a signalé un échec de traitement ('+check.state+').');
-     if(check.found&&check.ready){confirmed=true;break;}
-     wixStatus.textContent='Traitement Wix en cours… vérification '+(attempt+1)+'/12. Le transfert est déjà terminé.';
+wixUpload.onchange=async()=>{
+ const files=Array.from(wixUpload.files||[]);
+ if(!files.length)return;
+ wixUploadBtn.disabled=true;
+ wixProgress.style.display='block';
+ const successes=[];
+ const failures=[];
+ const total=files.length;
+ try{
+  for(let i=0;i<total;i++){
+   const file=files[i];
+   const prefix='Fichier '+(i+1)+'/'+total+' — ';
+   wixProgress.value=0;
+   wixStatus.textContent=prefix+'préparation : '+file.name;
+   try{
+    const signed=await wixCall({action:'prepare-upload',name:file.name,mimeType:file.type||wixMimeFromName(file.name),size:file.size,parentFolderId:wixFolder.value||undefined});
+    if(signed.resumable){
+     await wixTusUpload(signed,file);
+     wixStatus.textContent=prefix+'transfert terminé, finalisation : '+file.name;
+     const finalized=await wixCall({action:'finalize-upload',uploadUrl:signed.uploadUrl,uploadToken:signed.uploadToken,name:file.name});
+     if(!finalized.finalized||!finalized.fileId)throw Error('Wix n’a pas confirmé le fichier après finalisation.');
+     let confirmed=false;
+     for(let attempt=0;attempt<12;attempt++){
+      await new Promise(done=>setTimeout(done,5000));
+      const check=await wixCall({action:'check-upload',fileId:finalized.fileId});
+      if(check.failed)throw Error('Échec du traitement Wix ('+check.state+').');
+      if(check.found&&check.ready){confirmed=true;break;}
+      wixStatus.textContent=prefix+'Wix traite '+file.name+' ('+(attempt+1)+'/12)';
+     }
+     successes.push({name:file.name,pending:!confirmed});
+    }else{
+     await wixPutWithProgress(signed.uploadUrl,file);
+     successes.push({name:file.name,pending:true});
+    }
+    wixStatus.textContent=(i+1)+'/'+total+' traités — '+successes.length+' envoyé(s), '+failures.length+' erreur(s)';
+   }catch(error){
+    failures.push({name:file.name,error:error instanceof Error?error.message:String(error)});
+    wixStatus.textContent=prefix+'échec : '+failures[failures.length-1].error+' — poursuite des autres fichiers…';
    }
-   wixStatus.textContent=confirmed?'Vidéo confirmée et prête dans Wix : '+file.name:'Vidéo enregistrée dans Wix, mais toujours en traitement après 60 s : '+file.name+'. Vérifie plus tard dans Wix.';
- } else {
-   await wixPutWithProgress(signed.uploadUrl,file);
-   wixStatus.textContent='Photo transférée : '+file.name+'. Wix peut encore la traiter.';
+  }
+ }finally{
+  wixUpload.value='';
+  wixUploadBtn.disabled=false;
+  wixProgress.style.display='none';
+  const pending=successes.filter(x=>x.pending).length;
+  wixStatus.textContent='Import multiple : '+successes.length+'/'+total+' fichier(s) envoyé(s) vers Wix'+(pending?' ('+pending+' encore en traitement ou à confirmer)':'')+'.'+(failures.length?' Échecs : '+failures.map(x=>x.name+' — '+x.error).join(' ; '):'')+' Actualise la bibliothèque si Wix traite encore des fichiers.';
+  if(successes.length){
+   try{await wixFetch();}catch(error){wixStatus.textContent+=' Actualisation impossible : '+error.message;}
+  }
  }
- }
- }catch(e){wixStatus.textContent='Import non terminé : '+e.message+' — les fichiers déjà envoyés ne sont pas annulés.'}
- finally{wixUpload.value='';wixUploadBtn.disabled=false;wixProgress.style.display='none';}
 };
 function wixAttachButtons(){const fields=[...document.querySelectorAll('#eventForm [name="image_url"],#eventForm [name="logo_url"],#eventForm [name="video_url"],#eventForm [name="video_poster_url"],#eventForm [name="gallery_urls"],#eventForm [name="attachment_urls"],#eventForm [name="link_url"],#eventForm [name="ticket_url"],#logoUrl,#heroImage,#heroVideo')];for(const field of fields){if(field.dataset.wixPickerAttached)continue;field.dataset.wixPickerAttached='1';const btn=document.createElement('button');btn.type='button';btn.className='wix-pick-button';btn.textContent='▣ Bibliothèque Wix';btn.onclick=()=>wixOpen(field);field.insertAdjacentElement('afterend',btn)}}
 wixAttachButtons();
