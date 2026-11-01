@@ -21,7 +21,7 @@
 <div id="wixPicker" hidden role="dialog" aria-modal="true" aria-labelledby="wixPickerTitle">
  <div class="wix-dialog">
   <button type="button" id="wixClose" class="wix-close wix-pick-button">Fermer ×</button>
-  <h2 id="wixPickerTitle">Bibliothèque médias Wix</h2>
+  <h2 id="wixPickerTitle">Bibliothèque médias Wix — tous formats</h2>
   <p>Parcours tous les fichiers disponibles sur Wix (photos, vidéos, PDF, MP3, documents et autres formats). L'accès utilise ta connexion administrateur Supabase.</p>
   <div class="wix-toolbar"><input type="search" id="wixSearch" placeholder="Filtrer les fichiers affichés"><select id="wixMediaType"><option value="all">Tous les fichiers</option><option value="image">Images</option><option value="video">Vidéos</option><option value="audio">Audio / MP3</option><option value="document">Documents / PDF</option><option value="vector">Vectoriels</option><option value="archive">Archives</option><option value="model3d">3D</option></select><button type="button" class="wix-pick-button" id="wixRefresh">Recharger</button></div>
   <div id="wixStatus" role="status" aria-live="polite"></div><div id="wixResults"></div>
@@ -81,6 +81,23 @@ $('backupStatus').textContent='Restauration en cours…';for(let i=0;i<data.even
 
 // Gestionnaire Wix V12 — utilise la session admin Supabase et la fonction wix-media.
 let wixTarget=null, wixFiles=[], wixCursor=null, wixFolders=[], wixSelected=new Set();
+// Filtres complets de la bibliothèque : version 2026-11-01.
+const wixMediaTypeSelect=document.getElementById('wixMediaType');
+if(wixMediaTypeSelect){
+  const selected=wixMediaTypeSelect.value;
+  const mediaOptions=[
+    ['all','Tous les fichiers'],
+    ['image','Images / photos'],
+    ['video','Vidéos'],
+    ['audio','Musique / audio (MP3, WAV…)'],
+    ['document','Documents / fichiers (PDF, Word…)'],
+    ['vector','Vectoriels (SVG…)'],
+    ['archive','Archives (ZIP…)'],
+    ['model3d','Modèles 3D']
+  ];
+  wixMediaTypeSelect.replaceChildren(...mediaOptions.map(([value,label])=>new Option(label,value)));
+  if(mediaOptions.some(([value])=>value===selected))wixMediaTypeSelect.value=selected;
+}
 const wixModal=document.getElementById('wixPicker');
 const wixStatus=document.getElementById('wixStatus');
 const wixResults=document.getElementById('wixResults');
