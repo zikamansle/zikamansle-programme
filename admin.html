@@ -79,52 +79,81 @@ $('backupRestore').onclick=async()=>{const file=$('backupFile').files?.[0];if(!f
 if(!confirm('Restaurer '+data.events.length+' fiches et '+data.settings.length+' réglages dans Supabase ? Les données en ligne portant les mêmes identifiants seront remplacées.'))return;
 $('backupStatus').textContent='Restauration en cours…';for(let i=0;i<data.events.length;i+=40){await api('/rest/v1/zika_events?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(data.events.slice(i,i+40))})}for(let i=0;i<data.settings.length;i+=40){await api('/rest/v1/zika_settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(data.settings.slice(i,i+40))})}await load();$('backupStatus').textContent='Restauration terminée. Vérifie les fiches et le programme public.'}catch(err){$('backupStatus').textContent='Erreur : '+err.message}};
 
-// Bibliothèque Wix (lecture via la fonction Supabase wix-media, jamais de clé Wix côté client)
-let wixTarget=null,wixFiles=[];
+// Gestionnaire Wix V12 — utilise la session admin Supabase et la fonction wix-media.
+let wixTarget=null, wixFiles=[], wixCursor=null, wixFolders=[], wixSelected=new Set();
 const wixModal=document.getElementById('wixPicker');
 const wixStatus=document.getElementById('wixStatus');
 const wixResults=document.getElementById('wixResults');
-const wixDirect=(f)=>{
-  const i=f.fileInfo||f;
-  const values=[i.url,i.fileUrl,i.originalFileUrl,i.mediaUrl,i.image?.url,i.video?.url,i.image?.imageUrl,i.video?.videoUrl,f.url];
-  return values.find(v=>typeof v==='string'&&/^https:\/\//.test(v))||'';
-};
-const wixThumb=(f)=>{const i=f.fileInfo||f;return [i.thumbnailUrl,i.thumbnail?.url,i.image?.url,f.thumbnailUrl,wixDirect(f)].find(v=>typeof v==='string'&&/^https:\/\//.test(v))||''};
-const wixType=(f)=>String((f.fileInfo||f).mediaType||f.mediaType||'').toLowerCase();
+const wixDirect=(f)=>{const i=f.fileInfo||f;return [i.url,i.fileUrl,i.originalFileUrl,i.mediaUrl,i.media?.image?.image?.url,i.media?.video?.resolutions?.[0]?.url,f.url].find(v=>typeof v==='string'&&/^https:\/\//.test(v))||''};
+const wixThumb=f=>{const i=f.fileInfo||f;return [i.thumbnailUrl,i.thumbnail?.url,f.thumbnailUrl,wixDirect(f)].find(v=>typeof v==='string'&&/^https:\/\//.test(v))||''};
+const wixType=f=>String((f.fileInfo||f).mediaType||f.mediaType||'').toUpperCase();
+const wixName=f=>String((f.fileInfo||f).displayName||(f.fileInfo||f).fileName||'Fichier Wix');
+async function wixCall(payload){
+ if(!token) throw Error('Session admin expirée : reconnecte-toi');
+ const response=await fetch(c.url+'/functions/v1/wix-media',{method:'POST',headers:{'Authorization':'Bearer '+token,'apikey':c.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const result=await response.json().catch(()=>({error:'Réponse non JSON'}));
+ if(!response.ok)throw Error(result.error||'Erreur HTTP '+response.status);
+ return result;
+}
+const wixMore=document.createElement('button');wixMore.type='button';wixMore.className='wix-pick-button';wixMore.textContent='Charger les médias suivants';wixMore.hidden=true;wixResults.after(wixMore);
+const wixUpload=document.createElement('input');wixUpload.type='file';wixUpload.accept='image/*,video/mp4,video/webm,video/quicktime';wixUpload.multiple=true;wixUpload.hidden=true;
+const wixUploadBtn=document.createElement('button');wixUploadBtn.type='button';wixUploadBtn.className='wix-pick-button';wixUploadBtn.textContent='＋ Ajouter des médias à Wix';document.getElementById('wixRefresh').after(wixUploadBtn,wixUpload);
+const wixApply=document.createElement('button');wixApply.type='button';wixApply.className='wix-pick-button';wixApply.textContent='Utiliser la sélection';wixApply.hidden=true;wixMore.after(wixApply);
+const wixFolder=document.createElement('select');wixFolder.id='wixFolder';wixFolder.setAttribute('aria-label','Dossier Wix');wixFolder.innerHTML='<option value="">Tous les dossiers</option>';document.getElementById('wixMediaType').after(wixFolder);
+const wixSearch=document.getElementById('wixSearch');wixSearch.placeholder='Rechercher dans toute la bibliothèque Wix';
 function wixRender(){
- wixResults.replaceChildren();const q=document.getElementById('wixSearch').value.trim().toLocaleLowerCase();const type=document.getElementById('wixMediaType').value;
- const matches=wixFiles.filter(f=>{const i=f.fileInfo||f;return (type==='all'||wixType(f).includes(type))&&(!q||String(i.displayName||i.fileName||i.name||'').toLocaleLowerCase().includes(q))});
- wixStatus.textContent=matches.length+' média(s) affiché(s) sur '+wixFiles.length+' reçu(s) de Wix.';
- if(!matches.length){wixStatus.textContent+=' Aucun fichier correspondant.';return}
- for(const f of matches){const i=f.fileInfo||f, name=i.displayName||i.fileName||i.name||'Fichier Wix'; const btn=document.createElement('button');btn.type='button';btn.title='Sélectionner : '+name;
- const thumb=wixThumb(f);if(thumb){const img=document.createElement('img');img.src=thumb;img.alt='';img.loading='lazy';img.onerror=()=>{img.remove()};btn.appendChild(img)}else {const p=document.createElement('div');p.style.padding='28px 10px';p.textContent=wixType(f).includes('video')?'▶ Vidéo':'▣ Média';btn.appendChild(p)}
- const txt=document.createElement('span');txt.className='wix-filename';txt.textContent=name;btn.appendChild(txt);
- btn.onclick=()=>{const u=wixDirect(f);if(!u){wixStatus.textContent='Ce fichier ne contient pas une URL HTTPS directement utilisable. Il faudra adapter le format renvoyé par Wix.';return}
- if(wixTarget){if(wixTarget.name==='gallery_urls'){wixTarget.value=(wixTarget.value.trim()?wixTarget.value.trim()+'\n':'')+u}else{wixTarget.value=u}wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));}
- wixModal.hidden=true;wixTarget=null;};wixResults.appendChild(btn)
+ wixResults.replaceChildren();
+ wixStatus.textContent=wixFiles.length+' média(s) chargés'+(wixCursor?' · D’autres disponibles':'')+'. Sélectionne un ou plusieurs fichiers.';
+ for(const f of wixFiles){const name=wixName(f),url=wixDirect(f);if(!url)continue;
+ const btn=document.createElement('button');btn.type='button';btn.title='Sélectionner : '+name;btn.setAttribute('aria-pressed',String(wixSelected.has(url)));
+ if(wixSelected.has(url))btn.style.outline='3px solid #f88722';
+ const thumb=wixThumb(f);if(thumb){const img=document.createElement('img');img.src=thumb;img.alt='';img.loading='lazy';btn.append(img)}
+ else{const p=document.createElement('div');p.style.padding='24px';p.textContent=wixType(f)==='VIDEO'?'▶ Vidéo':'Média';btn.append(p)}
+ const title=document.createElement('span');title.className='wix-filename';title.textContent=name;btn.append(title);
+ btn.onclick=()=>{if(wixSelected.has(url))wixSelected.delete(url);else wixSelected.add(url);wixApply.hidden=!wixSelected.size;wixApply.textContent='Utiliser '+wixSelected.size+' média(s)';wixRender()};wixResults.append(btn)
  }
+ wixMore.hidden=!wixCursor;
 }
-async function wixFetch(){
- wixStatus.textContent='Chargement des médias Wix…';wixResults.replaceChildren();
- if(!token){wixStatus.textContent='Connexion administrateur nécessaire.';return}
- try{
- const response=await fetch(c.url+'/functions/v1/wix-media',{method:'POST',headers:{'Authorization':'Bearer '+token,'apikey':c.publishableKey,'Content-Type':'application/json'},body:'{}'});
- let data;try{data=await response.json()}catch{throw Error('Réponse du serveur non JSON (HTTP '+response.status+').')}
- if(!response.ok){throw Error((data.error||data.message||'Erreur serveur')+' (HTTP '+response.status+(data.status?', Wix '+data.status:'')+').')}
- wixFiles=Array.isArray(data.files)?data.files:[];wixRender();
- }catch(err){wixStatus.textContent='Impossible de charger la bibliothèque : '+err.message+' — vérifier les journaux Edge Functions → wix-media → Logs.'}
+async function wixFetch(append=false){
+ wixStatus.textContent='Chargement depuis Wix…';
+ try{const data=await wixCall({action:'search',search:wixSearch.value.trim(),mediaType:document.getElementById('wixMediaType').value==='all'?undefined:document.getElementById('wixMediaType').value.toUpperCase(),cursor:append?wixCursor:undefined,limit:50});
+ if(!append)wixFiles=[];const ids=new Set(wixFiles.map(f=>f.id));for(const f of data.files||[]){if(!ids.has(f.id)){wixFiles.push(f);ids.add(f.id)}}
+ wixCursor=typeof data.nextCursor==='string'?data.nextCursor:(data.nextCursor?.cursor||null);
+ wixRender();
+ }catch(err){wixStatus.textContent='Impossible de charger les médias Wix : '+err.message}
 }
-function wixOpen(target){wixTarget=target;document.getElementById('wixSearch').value='';document.getElementById('wixMediaType').value=target.name==='video_url'||target.id==='heroVideo'?'video':'all';wixModal.hidden=false;wixFetch()}
-document.getElementById('wixClose').onclick=()=>{wixModal.hidden=true;wixTarget=null};
-wixModal.addEventListener('click',e=>{if(e.target===wixModal){wixModal.hidden=true;wixTarget=null}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wixModal.hidden){wixModal.hidden=true;wixTarget=null}});
-document.getElementById('wixSearch').addEventListener('input',wixRender);
-document.getElementById('wixMediaType').addEventListener('change',wixRender);
-document.getElementById('wixRefresh').onclick=wixFetch;
-function wixAttachButtons(){
- const fields=[...document.querySelectorAll('#eventForm [name="image_url"],#eventForm [name="logo_url"],#eventForm [name="video_url"],#eventForm [name="video_poster_url"],#eventForm [name="gallery_urls"],#logoUrl,#heroImage,#heroVideo')];
- for(const field of fields){if(field.dataset.wixPickerAttached)continue;field.dataset.wixPickerAttached='1';const btn=document.createElement('button');btn.type='button';btn.className='wix-pick-button';btn.textContent='▣ Choisir dans la bibliothèque Wix';btn.addEventListener('click',()=>wixOpen(field));field.insertAdjacentElement('afterend',btn)}
-}
+async function wixLoadFolders(){try{const data=await wixCall({action:'folders'});wixFolders=Array.isArray(data.folders)?data.folders:[];wixFolder.innerHTML='<option value="">Tous les dossiers</option>';for(const f of wixFolders){const o=document.createElement('option');o.value=f.id;o.textContent=f.displayName||f.name||f.id;wixFolder.append(o)}}catch(e){console.warn('Dossiers Wix non disponibles',e.message)}}
+function wixOpen(target){wixTarget=target;wixSelected.clear();wixApply.hidden=true;wixSearch.value='';document.getElementById('wixMediaType').value=target.name==='video_url'||target.id==='heroVideo'?'video':'all';wixModal.hidden=false;wixFetch();wixLoadFolders()}
+function wixClose(){wixModal.hidden=true;wixTarget=null;wixSelected.clear()}
+document.getElementById('wixClose').onclick=wixClose;
+wixModal.addEventListener('click',e=>{if(e.target===wixModal)wixClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wixModal.hidden)wixClose()});
+let wixDebounce;wixSearch.addEventListener('input',()=>{clearTimeout(wixDebounce);wixDebounce=setTimeout(()=>wixFetch(),450)});
+document.getElementById('wixMediaType').addEventListener('change',()=>wixFetch());document.getElementById('wixRefresh').onclick=()=>wixFetch();wixMore.onclick=()=>wixFetch(true);
+wixFolder.onchange=()=>{const id=wixFolder.value; if(!id){wixRender();return} const filtered=wixFiles.filter(f=>(f.fileInfo||f).parentFolderId===id);const old=wixFiles;wixFiles=filtered;wixRender();wixFiles=old;wixStatus.textContent=filtered.length+' média(s) dans le dossier sélectionné (parmi les pages chargées).'};
+wixApply.onclick=()=>{if(!wixTarget)return;const chosen=[...wixSelected];const multiple=wixTarget.name==='gallery_urls';const urls=multiple?chosen:chosen.slice(0,1);if(!urls.length)return;
+ wixTarget.value=multiple?[wixTarget.value.trim(),...urls].filter(Boolean).join('\n'):urls[0];
+ wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));wixClose()};
+wixUploadBtn.onclick=()=>wixUpload.click();
+// Téléversement direct Wix : flux standard ou TUS pour les grands fichiers.
+// Aucune limite arbitraire côté interface, limites réelles du compte Wix applicables.
+const wixProgress=document.createElement('progress');wixProgress.max=100;wixProgress.value=0;wixProgress.style.cssText='width:100%;display:none;margin:10px 0';wixUploadBtn.after(wixProgress);
+let wixTusPromise=null;
+function wixLoadTus(){if(window.tus?.Upload)return Promise.resolve(window.tus);if(wixTusPromise)return wixTusPromise;
+ wixTusPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js';s.onload=()=>window.tus?.Upload?resolve(window.tus):reject(new Error('Bibliothèque TUS indisponible'));s.onerror=()=>reject(new Error('Chargement TUS impossible'));document.head.appendChild(s)});return wixTusPromise;}
+function wixPutWithProgress(url,file){return new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('PUT',url+(url.includes('?')?'&':'?')+'filename='+encodeURIComponent(file.name));xhr.setRequestHeader('Content-Type',file.type||'application/octet-stream');xhr.upload.onprogress=e=>{if(e.lengthComputable){wixProgress.value=Math.round(100*e.loaded/e.total);wixStatus.textContent='Envoi '+file.name+' : '+wixProgress.value+' %'}};xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new Error('Wix a refusé le transfert (HTTP '+xhr.status+')'));xhr.onerror=()=>reject(new Error('Transfert direct impossible : vérifie notamment le CORS Wix'));xhr.send(file)});}
+async function wixTusUpload(signed,file){const tus=await wixLoadTus();return new Promise((resolve,reject)=>{const upload=new tus.Upload(file,{endpoint:signed.uploadUrl,retryDelays:[0,3000,5000,10000,20000],chunkSize:5*1024*1024,metadata:{filename:file.name,contentType:file.type||'application/octet-stream',token:signed.uploadToken},onError:reject,onProgress:(sent,total)=>{wixProgress.value=total?Math.round(100*sent/total):0;wixStatus.textContent='Envoi reprenable '+file.name+' : '+wixProgress.value+' %'},onSuccess:resolve});upload.start()});}
+wixUpload.onchange=async()=>{const files=[...wixUpload.files];if(!files.length)return;wixUploadBtn.disabled=true;wixProgress.style.display='block';
+ try{for(const file of files){wixProgress.value=0;wixStatus.textContent='Préparation du transfert vers Wix : '+file.name;
+ const signed=await wixCall({action:'prepare-upload',name:file.name,mimeType:file.type||'application/octet-stream',size:file.size,parentFolderId:wixFolder.value||undefined});
+ if(signed.resumable){await wixTusUpload(signed,file);wixStatus.textContent='Finalisation Wix : '+file.name;await wixCall({action:'finalize-upload',uploadUrl:signed.uploadUrl,uploadToken:signed.uploadToken,name:file.name})}
+ else await wixPutWithProgress(signed.uploadUrl,file);
+ wixStatus.textContent='Transfert terminé : '+file.name+'. Wix peut encore traiter le média avant son affichage.';
+ }
+ }catch(e){wixStatus.textContent='Import non terminé : '+e.message+' — les fichiers déjà envoyés ne sont pas annulés.'}
+ finally{wixUpload.value='';wixUploadBtn.disabled=false;wixProgress.style.display='none';setTimeout(()=>wixFetch(),2000)}
+};
+function wixAttachButtons(){const fields=[...document.querySelectorAll('#eventForm [name="image_url"],#eventForm [name="logo_url"],#eventForm [name="video_url"],#eventForm [name="video_poster_url"],#eventForm [name="gallery_urls"],#logoUrl,#heroImage,#heroVideo')];for(const field of fields){if(field.dataset.wixPickerAttached)continue;field.dataset.wixPickerAttached='1';const btn=document.createElement('button');btn.type='button';btn.className='wix-pick-button';btn.textContent='▣ Bibliothèque Wix';btn.onclick=()=>wixOpen(field);field.insertAdjacentElement('afterend',btn)}}
 wixAttachButtons();
 
 </script></body></html>
