@@ -291,7 +291,8 @@ body{background:#f7f9fb;color:var(--text)}
 .close{background:#e4eef5;color:#2d5973}
 .dialog-actions .primary{background:#f28b36;color:#fff}
 
-</style>
+.zika-gallery{display:flex;overflow-x:auto;gap:10px;padding:12px 20px;background:#f7fafc;scroll-snap-type:x mandatory}.zika-gallery img{height:125px;width:200px;object-fit:cover;border-radius:12px;scroll-snap-align:start}.zika-extra{padding:0 24px 16px;font-size:13px;color:#526b80}.zika-alert{background:#fff2e6;color:#462605;border-left:5px solid #f88722;padding:16px 20px;border-radius:14px;margin:20px auto;line-height:1.6}.zika-timeline{background:#fff;border-radius:22px;padding:20px;margin:12px 0 25px;box-shadow:0 8px 28px #19324c11}.zika-timeline table{width:100%;border-collapse:collapse;font-size:14px}.zika-timeline td,.zika-timeline th{padding:12px;border-bottom:1px solid #e4edf3;text-align:left;vertical-align:top}.zika-timeline a{color:#1769ab}.zika-share{border:1px solid #dce6ee;border-radius:14px;padding:10px;background:white;color:#24435e;font-weight:700;cursor:pointer}.zika-maplink{display:inline-block;padding:12px 16px;background:#e8f3ff;border-radius:12px;margin:8px 0;color:#145a93;text-decoration:none;font-weight:700}.zika-compact .event-inner{padding:14px}.zika-compact .event-main h3{font-size:27px}@media(max-width:640px){.zika-timeline{overflow-x:auto}.zika-timeline table{min-width:540px}}
+.zika-facets label{font-size:12px;font-weight:700;color:#486079}.zika-facets select,.zika-facets input{display:block;margin-top:5px;width:100%;min-height:42px;border-radius:12px;border:1px solid #d9e4ee;padding:9px;background:#fff;color:#18324a}</style>
 <style>
 /* Palette lumineuse ZikaMansle */
 :root{--bg:#f8fbff;--bg2:#edf5fc;--panel:#ffffff;--soft:#f7fafc;--blue:#168fdf;--orange:#f88722;--gold:#ff982f;--shadow:0 10px 30px rgba(24,67,100,.09)}
@@ -310,6 +311,10 @@ body{background:#f7fafe}
 .content{background:#f7fafe}
 .bottom-cta{background:linear-gradient(120deg,#177ec4,#278ed7)}
 </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&family=Lato:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800;900&family=Raleway:wght@400;500;600;700;800;900&family=Rubik:wght@400;500;600;700;800;900&family=Work+Sans:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Urbanist:wght@400;500;600;700;800;900&family=Mulish:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700;800;900&family=Anton&family=Bebas+Neue&family=Archivo+Black:wght@400;500;600;700;800;900&family=Teko:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700;800;900&family=Saira+Condensed:wght@400;500;600;700;800;900&family=Roboto+Condensed:wght@400;500;600;700;800;900&family=Fjalla+One&family=Playfair+Display:wght@400;500;600;700;800;900&family=Merriweather:wght@400;500;600;700;800;900&family=Libre+Baskerville:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700;800;900&family=Lora:wght@400;500;600;700;800;900&family=DM+Serif+Display&family=Abril+Fatface&family=Cinzel:wght@400;500;600;700;800;900&family=Bodoni+Moda:wght@400;500;600;700;800;900&family=Pacifico&family=Dancing+Script&family=Caveat:wght@400;500;600;700;800;900&family=Great+Vibes&family=Satisfy:wght@400;500;600;700;800;900&family=Lobster&family=Permanent+Marker&family=Kalam:wght@400;500;600;700;800;900&family=Amatic+SC&family=Fredoka:wght@400;500;600;700;800;900&family=Comfortaa:wght@400;500;600;700;800;900&family=Baloo+2:wght@400;500;600;700;800;900&family=Righteous&family=Bangers&family=Alfa+Slab+One&family=Space+Grotesk:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Audiowide&family=Exo+2:wght@400;500;600;700;800;900&display=swap">
 </head>
 <body>
 <header class="topbar">
@@ -380,11 +385,11 @@ body{background:#f7fafe}
             </div>
           </div>
         </div>
-        <div class="filters" id="filters"></div>
+        <div class="filters" id="filters"></div><div class="zika-facets" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-top:14px"><label>Discipline<select id="filterDiscipline"><option value="">Toutes les disciplines</option></select></label><label>Public<select id="filterAudience"><option value="">Tous les publics</option></select></label><label>Prix<select id="filterPrice"><option value="">Tous les tarifs</option><option value="free">Gratuit</option><option value="paid">Payant</option><option value="under10">Jusqu'à 10 €</option><option value="under25">Jusqu'à 25 €</option></select></label><label>Trier par<select id="filterSort"><option value="chrono">Date et heure</option><option value="priceAsc">Prix croissant</option><option value="priceDesc">Prix décroissant</option><option value="alpha">Nom A → Z</option><option value="discipline">Discipline</option></select></label><label>À partir du<input id="filterStartDate" type="date"></label><label>Jusqu'au<input id="filterEndDate" type="date"></label></div>
       </div>
     </div>
 
-    <div class="wrap summary">
+    <div class="wrap" id="zikaAlertHost"></div><div class="wrap" id="zikaMapHost"></div><div class="wrap" id="zikaTimelineHost"></div><div class="wrap summary">
       <section class="lead-card">
         <div class="summary-top">
           <div>
@@ -412,7 +417,7 @@ body{background:#f7fafe}
       </aside>
     </div>
 
-    <div class="wrap section">
+    <div class="wrap section"><div style="text-align:center;padding:16px"><a href="plan.html" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#0e2946;color:#fff;text-decoration:none;font-weight:800">Découvrir le plan interactif du festival ↗</a></div>
       <div class="results" id="results"></div>
 
       <div class="bottom-cta">
@@ -428,6 +433,9 @@ body{background:#f7fafe}
 
       <div class="footer-note">
         Programme établi à partir des informations confirmées du festival ZikaMansle 2027. Les horaires, lieux ou modalités non encore arrêtés restent indiqués comme tels. Aucune information “à déterminer” n’a été transformée artificiellement.
+        <div style="margin-top:18px;text-align:center">
+          <a href="admin.html" aria-label="Accéder à l’administration du programme" style="font-size:12px;opacity:.65;color:inherit;text-decoration:underline;text-underline-offset:3px">Accès administration</a>
+        </div>
       </div>
     </div>
   </div>
@@ -480,7 +488,7 @@ let EVENTS = [
 {id:'dimanche-ambiance',day:'dimanche',sort:1200,time:'Toute la journée',title:'Ambiance festival',cat:'Animations',place:'Mansle-les-Fontaines',short:'Une atmosphère conviviale dans différents lieux du festival.',description:'Le dimanche, l’ambiance du festival se prolonge à travers les différents sites, avec une circulation libre entre musique, jeux, cinéma et culture.',free:true}
 ];
 const categories=['Tout','Musique','Animations','Parade','Jeux','Culture','Prévention'];
-const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set()};
+const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:''};
 let currentId=null;
 try{state.favorites=new Set(JSON.parse(localStorage.getItem('zika_favorites_2027')||'[]'))}catch(e){}
 const $=id=>document.getElementById(id);
@@ -489,14 +497,27 @@ function saveFav(){try{localStorage.setItem('zika_favorites_2027',JSON.stringify
 function eventDay(e){return e.both?'Samedi 24 & dimanche 25 avril':e.day==='samedi'?'Samedi 24 avril':'Dimanche 25 avril'}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function toggleFav(id){state.favorites.has(id)?state.favorites.delete(id):state.favorites.add(id);saveFav();render();if(currentId===id)syncModalFav()}
-function filtered(){
-  const q=norm(state.q);
-  return EVENTS.filter(e=>(state.day==='all'||e.day===state.day||e.both) && (state.cat==='Tout'||e.cat===state.cat) && (!state.mine||state.favorites.has(e.id)) && (!q || norm([e.title,e.place,e.short,e.description].join(' ')).includes(q)))
-  .sort((a,b)=>{
-    const dayBias=x=>(x.day==='dimanche'&&!x.both?10000:0)+(x.both?500:0)+x.sort;
-    return dayBias(a)-dayBias(b);
-  });
+function eventStamp(e){
+ if(e.startsAt)return e.startsAt;
+ const s=(e.schedule||[]).find(s=>s.date);
+ if(s)return s.date+'T'+(s.start||'00:00');
+ if(e.customDate)return e.customDate+'T'+(e.start||'00:00');
+ return e.day==='dimanche'?'2027-04-25T00:00':'2027-04-24T00:00';
 }
+function minPrice(e){return Number(e.priceMin??(e.free?0:999999));}
+function filtered(){
+ const q=norm(state.q);
+ const matches=EVENTS.filter(e=>{
+  const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);
+  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat)&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+ });
+ return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
+}
+function setupFacets(){
+ for(const [id,values] of [['filterDiscipline',[...new Set(EVENTS.flatMap(e=>[e.discipline||e.cat,...(e.disciplinesExtra||[])]))]],['filterAudience',[...new Set(EVENTS.flatMap(e=>[e.audience||'Tous publics',...(e.audiencesExtra||[])]))]]]){const el=$(id);const previous=el.value;el.replaceChildren(new Option(id==='filterDiscipline'?'Toutes les disciplines':'Tous les publics',''));values.sort((a,b)=>a.localeCompare(b,'fr')).forEach(v=>el.add(new Option(v,v)));el.value=previous;}
+}
+function wireFacets(){for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']])$(id).onchange=e=>{state[key]=e.target.value;render()};setupFacets()}
+
 function renderFilters(){
   $('filters').innerHTML = categories.map(cat=>`<button class="chip ${state.cat===cat?'active':''}" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join('') + `
     <div class="filter-tools">
@@ -505,17 +526,22 @@ function renderFilters(){
     </div>`;
   $('filters').querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{state.cat=btn.dataset.cat;render()});
   $('mySelection').onclick=()=>{state.mine=!state.mine;render()};
-  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
+  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
 }
+function renderTimeline(rows){const h=$('zikaTimelineHost');if(!h)return;const slots=[];for(const e of rows){if(e.schedule?.length){for(const s of e.schedule)if(s.date&&s.start)slots.push({date:s.date,time:s.start,end:s.end||'',name:e.title,id:e.id,place:e.place})}else if(e.start){slots.push({date:e.customDate||('2027-04-'+(e.day==='dimanche'?'25':'24')),time:e.start,end:e.end||'',name:e.title,id:e.id,place:e.place})}}slots.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));h.innerHTML=slots.length?'<div class="zika-timeline"><h2 style="margin-top:0">Planning chronologique</h2><table><thead><tr><th>Date</th><th>Horaire</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>'+slots.map(s=>`<tr><td>${escapeHtml(s.date)}</td><td>${escapeHtml(s.time)}${s.end?' – '+escapeHtml(s.end):''}</td><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.place)}</td></tr>`).join('')+'</tbody></table></div>':''}
+function openDeepLink(){const slug=decodeURIComponent((location.hash.match(/fiche=([^&]+)/)||[])[1]||'');if(!slug)return;const e=EVENTS.find(x=>x.id===slug||x.shareSlug===slug);if(e)openModal(e.id)}
+window.addEventListener('hashchange',openDeepLink);
 function render(){
   renderFilters();
   const rows = filtered();
   $('sectionTitle').textContent = state.mine?'Ma sélection':state.day==='samedi'?'Samedi 24 avril':state.day==='dimanche'?'Dimanche 25 avril':'Tous les rendez-vous';
   $('count').textContent = `${rows.length} rendez-vous`;
+  renderTimeline(rows);
   $('results').innerHTML = rows.length ? rows.map(e=>`
     <article class="event-card" data-cat="${escapeHtml(e.cat)}">
       <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${e.image ? `<img src="${escapeHtml(e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;display:block" onerror="this.style.display='none'">` : ``}
       ${e.video && /^https:\/\//.test(e.video) ? (/\.mp4(?:[?#]|$)/i.test(e.video) ? `<video controls playsinline preload="none" ${e.videoPoster&&/^https:\/\//.test(e.videoPoster)?`poster="${escapeHtml(e.videoPoster)}"`:''} ${e.videoLoop?'loop':''} ${e.videoMuted?'muted':''} style="display:block;width:100%;max-height:300px;background:#071426"><source src="${escapeHtml(e.video)}" type="video/mp4"></video>` : /^(https:\/\/)(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)/.test(e.video) ? `<a style="display:block;padding:10px 24px;color:var(--blue);font-weight:700" href="${escapeHtml(e.video)}" target="_blank" rel="noopener noreferrer">▶ Voir la vidéo</a>` : '') : ''}
+      ${e.gallery?.length?`<div class="zika-gallery">${e.gallery.filter(x=>/^https:\/\//.test(x)).map(x=>`<img src="${escapeHtml(x)}" alt="Galerie ${escapeHtml(e.title)}" loading="lazy">`).join('')}</div>`:''}
       <div class="event-inner">
         <div class="event-time">
           <div class="time-big">${escapeHtml(e.time)}</div>
@@ -524,20 +550,22 @@ function render(){
         </div>
         <div class="event-main">
           <h3>${escapeHtml(e.title)}</h3>
-          <p>${escapeHtml(e.short)}</p>
+          <p>${escapeHtml(e.short)}</p>${e.accessibility?`<p style="margin-top:10px;font-size:12px">♿ ${escapeHtml(e.accessibility)}</p>`:''}
           <div class="meta-row">
-            <span class="meta">📍 ${escapeHtml(e.place)}</span>${/^https:\/\//.test(e.mapUrl||'')?`<a class="meta" target="_blank" rel="noopener noreferrer" href="${escapeHtml(e.mapUrl)}">Voir sur le plan ↗</a>`:''}
-            <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':'Concerts payants'}</span>
+            <span class="meta">📍 ${escapeHtml(e.place)}</span>${(/^(?:https:\/\/|plan\.html\?lieu=)/.test(e.mapUrl||''))?`<a class="meta" target="_blank" rel="noopener noreferrer" href="${escapeHtml(e.mapUrl)}">Voir sur le plan ↗</a>`:''}
+            <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':(e.priceMin!=null?'À partir de '+Number(e.priceMin).toLocaleString('fr-FR')+' €':'Accès payant')}</span><span class="cat-badge">${escapeHtml(e.discipline||e.cat)}</span><span class="cat-badge">${escapeHtml(e.audience||'Tous publics')}</span>
           </div>
         </div>
         <div class="event-actions">
           <button class="action-btn" data-open="${e.id}">Voir le détail</button>
-          <button class="ghost-btn ${state.favorites.has(e.id)?'active':''}" data-fav="${e.id}">${state.favorites.has(e.id)?'♥ Dans ma sélection':'♡ Ajouter à ma sélection'}</button>
+          <button class="ghost-btn ${state.favorites.has(e.id)?'active':''}" data-fav="${e.id}">${state.favorites.has(e.id)?'♥ Dans ma sélection':'♡ Ajouter à ma sélection'}</button><button class="zika-share" data-share="${e.id}">Partager ↗</button><button class="zika-share" data-qr="${e.id}">QR code</button>${!e.free&&/^https:\/\//.test(e.ticketUrl||e.url||'')?`<a class="action-btn" style="text-align:center;text-decoration:none" href="${escapeHtml(e.ticketUrl||e.url)}" target="_blank" rel="noopener noreferrer">Billetterie</a>`:''}
         </div>
       </div>
     </article>`).join('') : `<div class="empty"><strong>Aucun résultat</strong><br><br>Essaie une autre catégorie, une autre journée ou retire certains filtres.</div>`;
   $('results').querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>openModal(btn.dataset.open));
   $('results').querySelectorAll('[data-fav]').forEach(btn=>btn.onclick=()=>toggleFav(btn.dataset.fav));
+  $('results').querySelectorAll('[data-qr]').forEach(btn=>btn.onclick=()=>zikaShowQR(btn.dataset.qr));
+  $('results').querySelectorAll('[data-share]').forEach(btn=>btn.onclick=()=>{const e=EVENTS.find(x=>x.id===btn.dataset.share);const u=location.origin+location.pathname+'#fiche='+encodeURIComponent(e.shareSlug||e.id);if(navigator.share)navigator.share({title:e.title,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>{btn.textContent='Lien copié ✓'});else prompt('Copier le lien',u)});
 }
 function syncModalFav(){
   const active=state.favorites.has(currentId);
@@ -558,7 +586,7 @@ function openModal(id){
    const panel=document.createElement('div');panel.id='modalExtras';panel.style.cssText='margin-top:20px;display:grid;gap:9px';
    if(e.customDate){const d=document.createElement('div');d.textContent='Date : '+e.customDate;panel.append(d)}
    for(const x of (e.schedule||[])){const d=document.createElement('div');d.style.cssText='padding:11px 14px;background:#f3f7fa;border-radius:12px';d.textContent=[x.date,[x.start,x.end].filter(Boolean).join(' – '),x.label].filter(Boolean).join(' · ');panel.append(d)}
-   if(/^https:\/\//i.test(e.mapUrl||'')){const link=document.createElement('a');link.href=e.mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Situer sur le plan interactif';link.style.cssText='display:inline-block;font-weight:800;color:#1874b9;padding:12px 0';panel.append(link)}
+   if((/^(?:https:\/\/|plan\.html\?lieu=)/i.test(e.mapUrl||''))){const link=document.createElement('a');link.href=e.mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Situer sur le plan interactif';link.style.cssText='display:inline-block;font-weight:800;color:#1874b9;padding:12px 0';panel.append(link)}
    $('modalText').after(panel);
   }
   $('modalCalendar').style.display=e.start?'inline-block':'none';
@@ -608,15 +636,17 @@ render();
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:r.extra?.map_url||'',url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false}));render();}
+    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:r.extra?.disciplines_extra||[],audiencesExtra:r.extra?.audiences_extra||[],priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
   const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
   }
-  if(st.typography){const t=st.typography;const allowedHead=['Arial','Georgia','Impact','Barlow Condensed'],allowedBody=['Arial','Georgia','Inter','Verdana'];if(allowedHead.includes(t.heading_font))document.querySelectorAll('.hero h1,.event-main h3,.summary-top h2').forEach(el=>el.style.fontFamily='"'+t.heading_font+'",sans-serif');if(allowedBody.includes(t.body_font))document.body.style.fontFamily='"'+t.body_font+'",sans-serif';if(Number(t.body_size)>=12&&Number(t.body_size)<=24)document.body.style.fontSize=t.body_size+'px';if(Number(t.heading_size)>=20&&Number(t.heading_size)<=100)document.querySelectorAll('.event-main h3').forEach(el=>el.style.fontSize=t.heading_size+'px')}
+  if(st.typography){const t=st.typography;const allowedHead=["Arial", "Verdana", "Georgia", "Tahoma", "Trebuchet MS", "Impact", "system-ui", "Inter", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito", "Raleway", "Rubik", "Work Sans", "DM Sans", "Manrope", "Outfit", "Plus Jakarta Sans", "Urbanist", "Mulish", "Quicksand", "Josefin Sans", "Barlow", "Barlow Condensed", "Oswald", "Anton", "Alfabet", "Bebas Neue", "Archivo Black", "Teko", "Rajdhani", "Saira Condensed", "Roboto Condensed", "Fjalla One", "Playfair Display", "Merriweather", "Libre Baskerville", "Cormorant Garamond", "Lora", "DM Serif Display", "Abril Fatface", "Cinzel", "Bodoni Moda", "Pacifico", "Dancing Script", "Caveat", "Great Vibes", "Satisfy", "Lobster", "Permanent Marker", "Kalam", "Amatic SC", "Fredoka", "Comfortaa", "Baloo 2", "Righteous", "Bangers", "Alfa Slab One", "Space Grotesk", "Space Mono", "Orbitron", "Audiowide", "Exo 2"],allowedBody=allowedHead;if(allowedHead.includes(t.heading_font))document.querySelectorAll('.hero h1,.event-main h3,.summary-top h2').forEach(el=>el.style.fontFamily='"'+t.heading_font+'",sans-serif');if(allowedBody.includes(t.body_font))document.body.style.fontFamily='"'+t.body_font+'",sans-serif';if(Number(t.body_size)>=12&&Number(t.body_size)<=24)document.body.style.fontSize=t.body_size+'px';if(Number(t.heading_size)>=20&&Number(t.heading_size)<=100)document.querySelectorAll('.event-main h3').forEach(el=>el.style.fontSize=t.heading_size+'px')}
   if(st.design){
     const d=st.design;
-    const accepted=['Arial','Verdana','Georgia','Tahoma','Trebuchet MS','Inter','Barlow Condensed','Impact','system-ui'];
+    if(/^https:\/\/use\.typekit\.net\/[a-z0-9]+\.css$/i.test(d.adobe_kit_url||'')){const fontLink=document.createElement('link');fontLink.rel='stylesheet';fontLink.href=d.adobe_kit_url;document.head.append(fontLink);}
+
+    const accepted=["Arial", "Verdana", "Georgia", "Tahoma", "Trebuchet MS", "Impact", "system-ui", "Inter", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito", "Raleway", "Rubik", "Work Sans", "DM Sans", "Manrope", "Outfit", "Plus Jakarta Sans", "Urbanist", "Mulish", "Quicksand", "Josefin Sans", "Barlow", "Barlow Condensed", "Oswald", "Anton", "Alfabet", "Bebas Neue", "Archivo Black", "Teko", "Rajdhani", "Saira Condensed", "Roboto Condensed", "Fjalla One", "Playfair Display", "Merriweather", "Libre Baskerville", "Cormorant Garamond", "Lora", "DM Serif Display", "Abril Fatface", "Cinzel", "Bodoni Moda", "Pacifico", "Dancing Script", "Caveat", "Great Vibes", "Satisfy", "Lobster", "Permanent Marker", "Kalam", "Amatic SC", "Fredoka", "Comfortaa", "Baloo 2", "Righteous", "Bangers", "Alfa Slab One", "Space Grotesk", "Space Mono", "Orbitron", "Audiowide", "Exo 2"];
     const groups={hero:'.hero h1',section:'.summary-top h2,.aside-card h3',card:'.event-main h3,.dialog-head h2',body:'.hero p,.event-main p,.dialog-body article,.bottom-cta p',time:'.time-big',menu:'.topbar,.day-switch button,.filters .chip',button:'.action-btn,.ghost-btn,.ticket-btn,.cta-buttons a,.cta-buttons button'};
     const rules=[];
     for(const [area,selectors] of Object.entries(groups)){
@@ -637,6 +667,7 @@ render();
     const style=document.createElement('style');style.id='zika-custom-design';style.textContent=rules.join('\n');document.head.append(style);
   }
   if(st.hero){const hero=document.querySelector('.hero');if(st.hero.background_image&&/^https:\/\//.test(st.hero.background_image)){hero.style.backgroundImage='linear-gradient(#07142666,#07142666),url("'+st.hero.background_image.replace(/["'<>]/g,'')+'")';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}if(st.hero.background_video&&/^https:\/\//.test(st.hero.background_video)&&/\.mp4(?:[?#]|$)/i.test(st.hero.background_video)){const v=document.createElement('video');v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true;v.setAttribute('aria-hidden','true');v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:'+Math.max(0,Math.min(100,Number(st.hero.video_opacity)||0))/100+';';const src=document.createElement('source');src.src=st.hero.background_video;src.type='video/mp4';v.append(src);hero.prepend(v)}}
+  if(st.experience){const x=st.experience;if(x.alert_enabled&&x.alert_text){const host=document.getElementById('zikaAlertHost');const box=document.createElement('div');box.className='zika-alert';const b=document.createElement('strong');b.textContent=x.alert_title||'Information aux festivaliers';const t=document.createElement('div');t.textContent=x.alert_text;box.append(b,t);host.append(box)}if(/^https:\/\//.test(x.map_url||'')){const link=document.createElement('a');link.className='zika-maplink';link.href=x.map_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Ouvrir le plan interactif du festival';document.getElementById('zikaMapHost').append(link)}if(x.layout==='compact')document.getElementById('results').classList.add('zika-compact')}
   if(st.branding?.title){document.querySelector('.brand strong').textContent=st.branding.title}
   if(st.branding?.logo_url){const mark=document.querySelector('.logo-mark');mark.style.background='url("'+st.branding.logo_url.replace(/"/g,'')+'") center/contain no-repeat';}
   if(st.links?.ticket_url){document.querySelectorAll('a[href="https://www.helloasso.com"]').forEach(a=>a.href=st.links.ticket_url)}
