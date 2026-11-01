@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Programme interactif — ZikaMansle 2027</title>
+<meta name="description" content="Programme interactif du festival ZikaMansle des 24 et 25 avril 2027 à Mansle-les-Fontaines.">
+<style>
+700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg:#071426;
+  --bg2:#0d2038;
+  --panel:#0f2540cc;
+  --card:#ffffff;
+  --soft:#f4f7fa;
+  --line:#d6e0ea;
+  --text:#10263d;
+  --muted:#61758a;
+  --blue:#1c8fe8;
+  --orange:#ff8b26;
+  --gold:#ffc061;
+  --success:#52a973;
+  --shadow:0 18px 60px rgba(9,25,45,.14);
+  --shadow-soft:0 10px 32px rgba(8,24,42,.10);
+  --radius-xl:28px;
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:12px;
+  --max:1260px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 8% 10%, rgba(28,143,232,.16), transparent 26%),
+    radial-gradient(circle at 92% 0%, rgba(255,139,38,.18), transparent 26%),
+    linear-gradient(180deg,#081628 0,#0a1830 420px,#edf3f8 420px,#f6f9fc 100%);
+}
+button,input{font:inherit}
+a{color:inherit}
+button{cursor:pointer}
+button,input{outline:none}
+button:focus-visible,input:focus-visible{box-shadow:0 0 0 4px rgba(28,143,232,.25)}
+img{max-width:100%}
+.wrap{width:min(var(--max),calc(100% - 32px));margin:0 auto}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(16px);
+  background:rgba(7,20,38,.72);
+  border-bottom:1px solid rgba(255,255,255,.08)
+}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0}
+.brand{display:flex;align-items:center;gap:12px;color:#fff}
+.logo-mark{
+  width:44px;height:44px;border-radius:14px;
+  background:linear-gradient(145deg,var(--orange),#ffb35c 48%,#fff2d9 49%,var(--blue) 51%,#0d5dc4);
+  box-shadow:0 10px 20px rgba(0,0,0,.2)
+}
+.brand strong{display:block;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+.brand span{display:block;font-size:11px;color:#c9d8e7}
+.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mini-btn,.ticket-btn{
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;background:rgba(255,255,255,.06);
+  border-radius:999px;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none
+}
+.ticket-btn{background:linear-gradient(90deg,var(--orange),#ffa54f);color:#14253a;border-color:transparent}
+.hero{position:relative;color:#fff;padding:54px 0 44px;overflow:hidden}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;filter:blur(10px)}
+.hero:before{width:420px;height:420px;right:-120px;top:-100px;background:radial-gradient(circle, rgba(255,139,38,.30), transparent 62%)}
+.hero:after{width:420px;height:420px;left:-160px;bottom:-160px;background:radial-gradient(circle, rgba(28,143,232,.28), transparent 62%)}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:26px;align-items:stretch}
+.hero-copy{padding:28px 0 6px}
+.kicker{display:inline-flex;align-items:center;gap:10px;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#dce8f4}
+.kicker i{width:8px;height:8px;border-radius:50%;background:var(--orange);display:inline-block;box-shadow:0 0 0 5px rgba(255,139,38,.15)}
+.hero h1{font-family:"Barlow Condensed",Impact,sans-serif;font-size:clamp(62px,10vw,108px);line-height:.88;letter-spacing:-.03em;text-transform:uppercase;margin:18px 0 18px}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero p{max-width:780px;font-size:18px;line-height:1.72;color:#d7e3ef;margin:0 0 26px}
+.hero-badges{display:flex;gap:12px;flex-wrap:wrap}
+.hero-badges span{padding:10px 14px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.08);font-size:13px;font-weight:700;color:#eef5fb}
+.hero-panel{
+  align-self:end;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--radius-xl);
+  box-shadow:0 16px 40px rgba(0,0,0,.22);
+  padding:24px;
+  backdrop-filter:blur(16px)
+}
+.hero-panel-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px}
+.panel-title{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#d8e4ef}
+.panel-big{font-family:"Barlow Condensed",Impact,sans-serif;font-size:56px;line-height:.92;margin-top:8px;text-transform:uppercase}
+.panel-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:16px;font-size:12px;font-weight:700;color:#eff6fc}
+.fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fact{padding:15px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.09)}
+.fact strong{display:block;font-size:14px;color:#fff;margin-bottom:5px}
+.fact span{display:block;font-size:12px;color:#d4e2ef;line-height:1.55}
+.shell{position:relative;margin-top:8px;padding-bottom:56px}
+.content{
+  position:relative;z-index:2;margin-top:-18px;
+  background:#f7fbfe;border-radius:32px 32px 0 0;
+  box-shadow:0 -8px 26px rgba(0,0,0,.04)
+}
+.control-panel{padding:26px 0 18px}
+.control-card{
+  background:#fff;border:1px solid rgba(16,38,61,.08);border-radius:26px;
+  padding:18px;box-shadow:var(--shadow-soft)
+}
+.control-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.52fr);gap:18px;align-items:end}
+.control-block label{display:block;font-size:11px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.day-switch{display:flex;gap:10px;flex-wrap:wrap}
+.day-switch button{
+  border:none;border-radius:999px;padding:14px 18px;font-weight:800;font-size:14px;
+  background:#edf4fa;color:#325170;transition:.2s
+}
+.day-switch button.active{background:linear-gradient(135deg,var(--blue),#125fc8);color:#fff;box-shadow:0 10px 20px rgba(28,143,232,.26)}
+.searchbox{position:relative}
+.searchbox input{
+  width:100%;height:52px;border:1px solid var(--line);background:#f7fafc;
+  border-radius:16px;padding:0 16px 0 48px;color:var(--text)
+}
+.searchbox svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);fill:#7c90a4}
+.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid #edf2f6}
+.filters .chip{
+  border:1px solid #d9e4ee;background:#fff;color:#45617d;
+  padding:10px 14px;border-radius:999px;font-size:13px;font-weight:800;transition:.2s
+}
+.filters .chip.active{background:#0e2946;color:#fff;border-color:#0e2946}
+.filter-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.tool-btn{
+  border:1px solid #d9e4ee;background:#f7fafc;color:#22415f;padding:10px 14px;
+  border-radius:999px;font-size:13px;font-weight:800
+}
+.tool-btn.active{background:#fff2e5;border-color:#ffd3a6;color:#b15b00}
+.summary{display:grid;grid-template-columns:1.25fr .75fr;gap:22px;padding:8px 0 34px}
+.lead-card,.aside-card{
+  background:#fff;border:1px solid rgba(16,38,61,.08);border-radius:26px;box-shadow:var(--shadow-soft)
+}
+.lead-card{padding:24px 24px 22px}
+.summary-top{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.summary-top h2{margin:0;font-family:"Barlow Condensed",Impact,sans-serif;font-size:46px;line-height:.9;text-transform:uppercase;color:#0f2741}
+.summary-top p{margin:6px 0 0;color:#607387;font-size:15px}
+.count-pill{padding:12px 16px;border-radius:999px;background:#eff5fa;color:#183756;font-size:13px;font-weight:800;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.legend span{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;background:#f7fafc;font-size:12px;font-weight:700;color:#557089}
+.legend i{width:10px;height:10px;border-radius:999px;display:inline-block}
+.legend .m{background:var(--orange)} .legend .a{background:var(--blue)} .legend .p{background:#f6c057} .legend .j{background:#4eaba9} .legend .c{background:#8e7bc3} .legend .pr{background:#6ca162}
+.aside-card{padding:22px}
+.aside-card h3{margin:0 0 14px;font-family:"Barlow Condensed",Impact,sans-serif;font-size:30px;text-transform:uppercase;color:#0f2741}
+.info-list{display:grid;gap:12px}
+.info-list article{padding:14px 15px;background:#f7fafc;border-radius:18px;border:1px solid #ebf1f5}
+.info-list strong{display:block;font-size:14px;color:#183756;margin-bottom:6px}
+.info-list span{font-size:13px;line-height:1.55;color:#607387}
+.section{padding-bottom:42px}
+.results{display:grid;gap:18px}
+.event-card{
+  background:#fff;border:1px solid rgba(16,38,61,.08);border-radius:26px;box-shadow:var(--shadow-soft);
+  overflow:hidden;transition:transform .22s ease, box-shadow .22s ease,border-color .22s ease
+}
+.event-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.event-band{height:6px;background:linear-gradient(90deg,var(--blue),#72c8ff)}
+.event-card[data-cat="Musique"] .event-band{background:linear-gradient(90deg,var(--orange),#ffbc6a)}
+.event-card[data-cat="Parade"] .event-band{background:linear-gradient(90deg,#ffcc66,#ffe7a5)}
+.event-card[data-cat="Jeux"] .event-band{background:linear-gradient(90deg,#42a8b1,#74d8ca)}
+.event-card[data-cat="Culture"] .event-band{background:linear-gradient(90deg,#8f78c7,#bcaae8)}
+.event-card[data-cat="Prévention"] .event-band{background:linear-gradient(90deg,#6aa361,#9dcc88)}
+.event-inner{padding:24px;display:grid;grid-template-columns:120px minmax(0,1fr) 150px;gap:20px;align-items:start}
+.event-time{
+  display:flex;flex-direction:column;gap:8px;align-items:flex-start
+}
+.time-big{font-family:"Barlow Condensed",Impact,sans-serif;font-size:34px;line-height:.9;color:#0f2741}
+.day-badge,.mode-badge,.cat-badge{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.day-badge{background:#edf4fa;color:#30506d}
+.mode-badge{background:#fff4ea;color:#b76a0c}
+.mode-badge.free{background:#eaf8ef;color:#2c7b4a}
+.cat-badge{background:#f5f8fb;color:#5a738d}
+.event-main h3{margin:0 0 10px;font-family:"Barlow Condensed",Impact,sans-serif;font-size:38px;line-height:.9;text-transform:uppercase;color:#112941}
+.event-main p{margin:0;color:#5d7185;font-size:15px;line-height:1.7}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
+.meta{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:#f7fafc;border:1px solid #ecf1f5;font-size:13px;font-weight:700;color:#41607d}
+.event-actions{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.action-btn,.ghost-btn{
+  border:none;border-radius:16px;padding:13px 14px;font-size:14px;font-weight:800;text-align:center
+}
+.action-btn{background:linear-gradient(135deg,#0f2844,#163b63);color:#fff}
+.ghost-btn{background:#f7fafc;border:1px solid #dce6ee;color:#274663}
+.ghost-btn.active{background:#fff4ea;border-color:#ffd7b1;color:#be6806}
+.empty{
+  background:#fff;border:1px dashed #d7e2ec;border-radius:26px;padding:40px 24px;text-align:center;color:#667a8d;box-shadow:var(--shadow-soft)
+}
+.bottom-cta{
+  background:linear-gradient(135deg,#0c2038,#133a5f);color:#fff;border-radius:30px;
+  padding:24px 24px;margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;box-shadow:0 18px 50px rgba(9,25,45,.18)
+}
+.bottom-cta h3{margin:0 0 8px;font-family:"Barlow Condensed",Impact,sans-serif;font-size:40px;line-height:.9;text-transform:uppercase}
+.bottom-cta p{margin:0;color:#d0deec;line-height:1.7;font-size:15px}
+.cta-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.cta-buttons a,.cta-buttons button{text-decoration:none;border:none;border-radius:999px;padding:14px 18px;font-size:14px;font-weight:800}
+.cta-buttons a{background:linear-gradient(90deg,var(--orange),#ffb561);color:#12253a}
+.cta-buttons button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff}
+.footer-note{padding:20px 2px 0;color:#64788c;font-size:12px;line-height:1.65}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(6,16,29,.7);backdrop-filter:blur(10px);z-index:100}
+.modal.show{display:flex}
+.dialog{
+  width:min(880px,100%);background:#fff;border-radius:30px;overflow:hidden;box-shadow:0 40px 90px rgba(0,0,0,.28)
+}
+.dialog-head{padding:0 28px;background:linear-gradient(135deg,#0d2038,#163860);color:#fff;position:relative}
+.close{position:absolute;right:20px;top:18px;width:42px;height:42px;border:none;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font-size:24px}
+.dialog-head-inner{padding:34px 46px 28px 0}
+.dialog-head .cat-badge{background:rgba(255,255,255,.1);color:#e7f0fa}
+.dialog-head h2{margin:16px 0 10px;font-family:"Barlow Condensed",Impact,sans-serif;font-size:54px;line-height:.9;text-transform:uppercase}
+.dialog-head p{margin:0;color:#d8e3ef;font-size:16px;line-height:1.7}
+.dialog-body{padding:28px}
+.detail-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.detail-grid span{padding:10px 12px;background:#f6f9fc;border:1px solid #e6edf4;border-radius:14px;font-size:13px;font-weight:800;color:#3e5e7b}
+.dialog-body article{font-size:16px;line-height:1.8;color:#4f6478}
+.dialog-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.dialog-actions button{border:none;border-radius:16px;padding:14px 16px;font-size:14px;font-weight:800}
+.dialog-actions .primary{background:linear-gradient(90deg,var(--orange),#ffb35e);color:#10253a}
+.dialog-actions .secondary{background:#f7fafc;border:1px solid #dce6ee;color:#2b4a66}
+.dialog-actions .secondary.active{background:#fff4ea;border-color:#ffd4ab;color:#b86200}
+.sr-only{position:absolute;left:-9999px}
+@media (max-width:1080px){
+  .hero-grid,.summary,.control-grid,.bottom-cta{grid-template-columns:1fr}
+  .hero-panel{max-width:700px}
+}
+@media (max-width:860px){
+  .event-inner{grid-template-columns:1fr;gap:16px}
+  .event-actions{flex-direction:row;flex-wrap:wrap}
+  .event-actions button{flex:1 1 180px}
+}
+@media (max-width:720px){
+  .topbar .wrap{padding:12px 0}
+  .top-actions{display:none}
+  .hero{padding:28px 0 34px}
+  .hero h1{font-size:64px}
+  .hero p{font-size:16px}
+  .wrap{width:min(var(--max),calc(100% - 20px))}
+  .content{border-radius:24px 24px 0 0}
+  .summary-top{flex-direction:column;align-items:flex-start}
+  .summary-top h2{font-size:38px}
+  .lead-card,.aside-card,.control-card,.event-card,.empty,.bottom-cta,.dialog{border-radius:22px}
+  .day-switch{display:grid;grid-template-columns:1fr}
+  .fact-grid{grid-template-columns:1fr}
+  .dialog-head h2{font-size:42px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Identité chromatique épurée — bleu / orange ZikaMansle, fond clair */
+:root{--bg:#ffffff;--bg2:#f5f8fb;--panel:#fff;--soft:#f7f9fc;--blue:#168bd4;--orange:#f28b36;--gold:#f28b36;--text:#172b3c;--muted:#637584;--shadow:0 16px 44px rgba(28,58,80,.09);--shadow-soft:0 6px 24px rgba(28,58,80,.055)}
+body{background:#f7f9fb;color:var(--text)}
+.topbar{background:rgba(255,255,255,.95);border-bottom:1px solid #e4e9ee;backdrop-filter:blur(16px)}
+.brand{color:#24394b}.brand span{color:#6f7f8d}
+.logo-mark{background:linear-gradient(135deg,#168bd4 0 53%,#f28b36 53% 100%);box-shadow:none;border-radius:12px}
+.mini-btn{background:#f2f6f9;color:#2b4a61;border:1px solid #e1e9ef}
+.ticket-btn{background:#f28b36;color:#fff;border:none}
+.hero{color:#1a3042;background:#fff;padding:54px 0 57px}
+.hero:before{background:radial-gradient(circle,rgba(22,139,212,.09),transparent 65%)}
+.hero:after{background:radial-gradient(circle,rgba(242,139,54,.09),transparent 65%)}
+.kicker{background:#edf6fc;color:#166ea7;border:1px solid #dbeaf5}
+.kicker i{background:#f28b36;box-shadow:0 0 0 5px rgba(242,139,54,.12)}
+.hero h1{color:#1b354b}.hero h1 em{color:#f28b36}
+.hero p{color:#5b6e7c}
+.hero-badges span{background:#f5f8fa;color:#385468;border:1px solid #e6edf1}
+.hero-panel{background:#f7fafc;border:1px solid #e7edf2;box-shadow:0 12px 34px rgba(21,50,72,.06);backdrop-filter:none}
+.panel-title{color:#5e7485}.panel-big{color:#1e3d53}.panel-chip{background:#fff;border:1px solid #e4ebf0;color:#386078}
+.fact{background:#fff;border:1px solid #e9eef2}.fact strong{color:#1d425b}.fact span{color:#6a7d8d}
+.shell{margin-top:0}.content{margin-top:0;border-radius:0;background:#f7f9fb;box-shadow:none}
+.control-card,.lead-card,.aside-card,.event-card{box-shadow:var(--shadow-soft);border:1px solid #e8edf1}
+.day-switch button{background:#f1f5f8;color:#38576e}
+.day-switch button.active{background:#168bd4;color:#fff;box-shadow:0 5px 16px rgba(22,139,212,.17)}
+.filters .chip.active{background:#168bd4;border-color:#168bd4}
+.count-pill{background:#eaf4fb;color:#15679b}
+.event-band{height:4px;background:#168bd4}
+.event-card[data-cat="Musique"] .event-band{background:#f28b36}
+.event-card[data-cat="Parade"] .event-band{background:#e9a753}
+.event-card[data-cat="Jeux"] .event-band{background:#4d9d9e}
+.event-card[data-cat="Culture"] .event-band{background:#8b89ab}
+.event-card[data-cat="Prévention"] .event-band{background:#78a075}
+.action-btn{background:#168bd4;color:#fff}
+.bottom-cta{background:#fff;color:#1b354a;border:1px solid #e8edf1;box-shadow:var(--shadow-soft)}
+.bottom-cta h3{color:#1b354a}.bottom-cta p{color:#63798a}
+.cta-buttons a{background:#f28b36;color:#fff}
+.cta-buttons button{background:#eff5f9;color:#27516b;border:1px solid #e0eaf0}
+.dialog-head{background:#f3f8fc;color:#20394e;border-bottom:1px solid #e4edf3}
+.dialog-head .cat-badge{background:#e3f1f9;color:#1678b6}
+.dialog-head p{color:#607787}
+.close{background:#e4eef5;color:#2d5973}
+.dialog-actions .primary{background:#f28b36;color:#fff}
+
+</style>
+<style>
+/* Palette lumineuse ZikaMansle */
+:root{--bg:#f8fbff;--bg2:#edf5fc;--panel:#ffffff;--soft:#f7fafc;--blue:#168fdf;--orange:#f88722;--gold:#ff982f;--shadow:0 10px 30px rgba(24,67,100,.09)}
+body{background:#f7fafe}
+.topbar{background:#fff;border-bottom:1px solid #e3edf5;backdrop-filter:none}
+.brand{color:#14314b}.brand span{color:#5f7890}
+.mini-btn{background:#eef6fd;color:#1f537c;border-color:#d7e9f7}
+.hero{color:#17334e;background:linear-gradient(125deg,#e9f5fd,#fff 58%,#fff3e8)}
+.hero:before{background:radial-gradient(circle,rgba(255,139,38,.13),transparent 70%)}
+.hero:after{background:radial-gradient(circle,rgba(28,143,232,.13),transparent 70%)}
+.hero h1 em{color:#f1801c}.hero p{color:#4d657a}
+.kicker,.hero-badges span{background:#fff;color:#325c7d;border-color:#d8e9f6}
+.hero-panel{background:#fff;border-color:#dfeaf4;box-shadow:0 14px 36px rgba(22,75,111,.09)}
+.panel-title{color:#678198}.panel-big{color:#173b5a}.panel-chip{color:#3275a8;background:#eaf6fe;border-color:#d7ecfb}
+.fact{background:#f5faff;border-color:#e3f0fa}.fact strong{color:#214c6e}.fact span{color:#5d7b92}
+.content{background:#f7fafe}
+.bottom-cta{background:linear-gradient(120deg,#177ec4,#278ed7)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo-mark" aria-hidden="true"></div>
+      <div>
+        <strong>ZikaMansle Festival</strong>
+        <span>Programme interactif · 24 & 25 avril 2027</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a href="#programme" class="mini-btn">Voir le programme</a>
+      <a href="#infos" class="mini-btn">Infos pratiques</a>
+      <a href="https://www.zikamansle.fr" class="ticket-btn" target="_blank" rel="noopener">Billetterie</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="kicker"><i></i> Mansle-les-Fontaines · Charente</span>
+      <h1>Le programme <em>interactif</em><br>du festival</h1>
+      <p>Deux jours. Une ville. Une fête. Explore les concerts, les animations, la parade, les jeux, les rencontres littéraires, le cinéma et les expositions de la première édition de ZikaMansle, dans une interface claire, vivante et pensée pour le site.</p>
+      <div class="hero-badges">
+        <span>Samedi 24 avril 2027</span>
+        <span>Dimanche 25 avril 2027</span>
+        <span>Gratuit en journée · concerts payants le samedi soir</span>
+      </div>
+    </div>
+    <aside class="hero-panel" id="infos">
+      <div class="hero-panel-top">
+        <div>
+          <div class="panel-title">En un coup d’œil</div>
+          <div class="panel-big">Les temps forts</div>
+        </div>
+        <div class="panel-chip">Festival 2027</div>
+      </div>
+      <div class="fact-grid">
+        <div class="fact"><strong>ZikaVillage</strong><span>Samedi de 14h à 17h sur la place de l’Hôtel de Ville.</span></div>
+        <div class="fact"><strong>ZikaParade</strong><span>Samedi de 17h à 18h30 au cœur de Mansle-les-Fontaines.</span></div>
+        <div class="fact"><strong>Concerts</strong><span>Kamini, Timéo Sparking, Dub Silence et d’autres artistes à venir.</span></div>
+        <div class="fact"><strong>Dimanche</strong><span>JB Solo Orchestra, Pa’ la Calle Charente, cinéma, jeux et culture.</span></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<div class="shell">
+  <div class="content">
+    <div class="wrap control-panel" id="programme">
+      <div class="control-card">
+        <div class="control-grid">
+          <div class="control-block">
+            <label>Choisir une journée</label>
+            <div class="day-switch" role="group" aria-label="Choisir une journée">
+              <button class="active" data-day="all">Tout le festival</button>
+              <button data-day="samedi">Samedi 24 avril</button>
+              <button data-day="dimanche">Dimanche 25 avril</button>
+            </div>
+          </div>
+          <div class="control-block">
+            <label for="search">Rechercher</label>
+            <div class="searchbox">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm9.21 13.79 1.5 1.5-2 2-1.5-1.5z"/></svg>
+              <input id="search" type="search" placeholder="Artiste, lieu, animation, univers…" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="filters" id="filters"></div>
+      </div>
+    </div>
+
+    <div class="wrap summary">
+      <section class="lead-card">
+        <div class="summary-top">
+          <div>
+            <h2 id="sectionTitle">Tous les rendez-vous</h2>
+            <p>Un programme filtrable, clair et agréable à parcourir sur ordinateur comme sur mobile.</p>
+          </div>
+          <div class="count-pill" id="count">0 rendez-vous</div>
+        </div>
+        <div class="legend">
+          <span><i class="m"></i> Musique</span>
+          <span><i class="a"></i> Animations</span>
+          <span><i class="p"></i> Parade</span>
+          <span><i class="j"></i> Jeux</span>
+          <span><i class="c"></i> Culture</span>
+          <span><i class="pr"></i> Prévention</span>
+        </div>
+      </section>
+      <aside class="aside-card">
+        <h3>Infos pratiques</h3>
+        <div class="info-list">
+          <article><strong>Concerts du samedi soir</strong><span>Les concerts se déroulent à la Salle Gautier Capuçon. La journée du village et la parade sont gratuites.</span></article>
+          <article><strong>Activités sans horaire détaillé</strong><span>Quand les créneaux précis ne sont pas encore arrêtés, ils restent visibles sans inventer de fausses heures.</span></article>
+          <article><strong>Programme personnel</strong><span>Tu peux mettre des rendez-vous en favoris et télécharger un fichier calendrier pour certains créneaux.</span></article>
+        </div>
+      </aside>
+    </div>
+
+    <div class="wrap section">
+      <div class="results" id="results"></div>
+
+      <div class="bottom-cta">
+        <div>
+          <h3>Prépare ta visite</h3>
+          <p>Crée ta sélection, repère les temps forts du week-end et retrouve les principaux rendez-vous du festival dans un seul espace. Le programme pourra ensuite être intégré tel quel dans une page Wix via un bloc HTML.</p>
+        </div>
+        <div class="cta-buttons">
+          <a href="https://www.zikamansle.fr" target="_blank" rel="noopener">Accéder à la billetterie</a>
+          <button type="button" id="scrollTop">Revenir en haut</button>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Programme établi à partir des informations confirmées du festival ZikaMansle 2027. Les horaires, lieux ou modalités non encore arrêtés restent indiqués comme tels. Aucune information “à déterminer” n’a été transformée artificiellement.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="dialog-head">
+      <button class="close" id="close" aria-label="Fermer">×</button>
+      <div class="dialog-head-inner">
+        <span class="cat-badge" id="modalCategory">Catégorie</span>
+        <h2 id="modalTitle">Titre</h2>
+        <p id="modalShort">Résumé</p>
+      </div>
+    </div>
+    <div class="dialog-body">
+      <div class="detail-grid" id="modalDetails"></div>
+      <article id="modalText"></article>
+      <div class="dialog-actions">
+        <button class="primary" id="modalCalendar">Ajouter à mon calendrier</button>
+        <button class="secondary" id="modalFavorite">Ajouter à ma sélection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const EVENTS = [
+{id:'village',day:'samedi',sort:1400,time:'14h–17h',start:'14:00',end:'17:00',title:'ZikaVillage',cat:'Animations',place:'Place de l’Hôtel de Ville',short:'Village festif avec démonstrations, stands associatifs et direct radio.',description:'Le ZikaVillage anime la place de l’Hôtel de Ville le samedi après-midi. Au programme : Radio Attitude en direct, Hopla Circus, l’APE pour le maquillage, Les Sangs Mêlés, Pa’ la Calle Charente, Arabesk, l’aïkido et le Do-In, ainsi que plusieurs stands associatifs et de prévention. Pas de buvette ni de restauration sur le village.',free:true},
+{id:'parade',day:'samedi',sort:1700,time:'17h–18h30',start:'17:00',end:'18:30',title:'ZikaParade',cat:'Parade',place:'Départ Hôtel de Ville → rue Grande → av. Paul-Mairat → arrivée Salle Gautier Capuçon',short:'Grande parade gratuite au cœur de Mansle-les-Fontaines.',description:'La ZikaParade traverse le centre-ville avec Banda Festa 17, le Bagad Kevrenn Balzac, les Majorettes de Segonzac, la compagnie Le Passage avec ses échassiers, Les Sangs Mêlés, Astrid Boop et des animations bulles géantes.',free:true},
+{id:'concerts',day:'samedi',sort:1830,time:'18h30–02h',start:'18:30',end:'23:59',title:'Concerts du samedi soir',cat:'Musique',place:'Salle Gautier Capuçon',short:'La grande soirée concerts du festival.',description:'La soirée concerts se déroule le samedi soir à la Salle Gautier Capuçon, avec Kamini, Timéo Sparking, Dub Silence et deux autres artistes à annoncer. Billetterie dédiée pour la soirée.',free:false},
+{id:'kamini',day:'samedi',sort:1831,time:'Samedi soir',title:'Kamini',cat:'Musique',place:'Salle Gautier Capuçon',short:'Artiste confirmé de la première édition.',description:'Kamini fait partie des têtes d’affiche de la soirée du samedi. Son heure de passage précise sera annoncée dans le conducteur définitif de la soirée.',free:false},
+{id:'timeo',day:'samedi',sort:1832,time:'Samedi soir',title:'Timéo Sparking',cat:'Musique',place:'Salle Gautier Capuçon',short:'Performance attendue sur la scène du festival.',description:'Timéo Sparking rejoint l’affiche du samedi soir. Les horaires détaillés de passage seront précisés dans le programme pratique.',free:false},
+{id:'dubsilence',day:'samedi',sort:1833,time:'Samedi soir',title:'Dub Silence',cat:'Musique',place:'Salle Gautier Capuçon',short:'L’univers reggae-rock du groupe sur la scène du festival.',description:'Dub Silence complète l’affiche du samedi soir. Le groupe rejoint Kamini et Timéo Sparking pour une soirée à l’identité musicale affirmée.',free:false},
+{id:'litterature',day:'samedi',sort:900,time:'Samedi',title:'Rencontres littéraires',cat:'Culture',place:'Médiathèque et temps en ville',short:'Rencontres avec Oawicca et Liliane Laviron Moulin.',description:'Les rencontres littéraires auront lieu le samedi matin à la médiathèque puis le samedi après-midi en ville. Les auteurs invitées confirmées sont Oawicca et Liliane Laviron Moulin.',free:true},
+{id:'jeux',day:'samedi',sort:1405,time:'Pendant le festival',title:'ZikaLudik',cat:'Jeux',place:'Square de Verdun',short:'Jeux en bois et univers ludique pour tous les âges.',description:'Le Square de Verdun accueille ZikaLudik avec des jeux en bois, des propositions autour du jeu et la participation d’acteurs du territoire liés au monde ludique, notamment Brins de Jeu.',free:true},
+{id:'expo-femmes',day:'samedi',sort:1000,time:'Du 5 avril au 10 mai',title:'Femmes en Charente',cat:'Culture',place:'Médiathèque',short:'Exposition consacrée aux femmes en Charente.',description:'L’exposition “Femmes en Charente” est présentée à la médiathèque du 5 avril au 10 mai 2027, selon les horaires du lieu.',free:true,both:true},
+{id:'expo-roman',day:'samedi',sort:1001,time:'Pendant le festival',title:'L’art roman',cat:'Culture',place:'Église ou hall de mairie',short:'Exposition en 14 roll-ups autour de l’art roman.',description:'L’exposition “L’art roman” est proposée pendant le festival sous forme de 14 panneaux. Le positionnement précis sera confirmé dans les informations pratiques.',free:true,both:true},
+{id:'expo-paysage',day:'samedi',sort:1002,time:'Pendant le festival',title:'Le paysage au fil du fleuve',cat:'Culture',place:'Lieu communiqué prochainement',short:'Une exposition proposée avec le CAUE.',description:'Le CAUE présente l’exposition “Le paysage au fil du fleuve”, à découvrir pendant toute la durée du festival.',free:true,both:true},
+{id:'enigme',day:'samedi',sort:1406,time:'Pendant le festival',title:'L’énigme du Parc Floral',cat:'Jeux',place:'Parc Floral Jean-Pierre Lanson',short:'Une découverte du parc sous forme de jeu.',description:'Une énigme propose de découvrir autrement le Parc Floral Jean-Pierre Lanson au fil d’un parcours pensé pour le festival.',free:true,both:true},
+{id:'plume',day:'samedi',sort:1407,time:'Pendant le festival',title:'À la recherche de la plume de Zika',cat:'Jeux',place:'Centre-ville',short:'Jeu de piste à travers la ville.',description:'Un jeu de piste permet de parcourir Mansle-les-Fontaines en suivant les indices de “la plume de Zika”.',free:true,both:true},
+{id:'prevention',day:'samedi',sort:1408,time:'Pendant le village',title:'Prévention & sensibilisation',cat:'Prévention',place:'Place de l’Hôtel de Ville et Square de Verdun',short:'Des acteurs engagés au cœur du festival.',description:'Plusieurs structures de prévention et de sensibilisation participent au festival, parmi lesquelles la Ligue contre le cancer, France ADOT 16, la Prévention Routière, Ekinox et la MAIF prévention.',free:true},
+{id:'solo',day:'dimanche',sort:1300,time:'13h',start:'13:00',end:'14:00',title:'JB Solo Orchestra',cat:'Musique',place:'Lieu communiqué prochainement',short:'Concert dominical avec JB Solo Orchestra.',description:'JB Solo Orchestra est programmé le dimanche à 13h. Le lieu exact sera précisé dans les informations pratiques finales.',free:true},
+{id:'cinoche',day:'dimanche',sort:1450,time:'Dimanche',title:'ZikaCinoche',cat:'Culture',place:'Lieu communiqué prochainement',short:'Deux films : “Mathilde” et “À Terre Promise”.',description:'Le dimanche, ZikaCinoche propose les projections de “Mathilde” et “À Terre Promise”, avec la présence de Lionel Bernardin.',free:true},
+{id:'pacalle',day:'dimanche',sort:1700,time:'17h',start:'17:00',end:'18:00',title:'Pa’ la Calle Charente',cat:'Musique',place:'Lieu communiqué prochainement',short:'Concert festif pour clôturer l’après-midi.',description:'Pa’ la Calle Charente est programmé le dimanche à 17h, dans l’esprit convivial et festif du festival.',free:true},
+{id:'photo',day:'dimanche',sort:1800,time:'Après Pa’ la Calle',title:'Remise des prix du concours photo',cat:'Culture',place:'Lieu communiqué prochainement',short:'Le territoire et les photographes à l’honneur.',description:'La remise des prix du concours photo se tient le dimanche après la prestation de Pa’ la Calle Charente.',free:true},
+{id:'dimanche-jeux',day:'dimanche',sort:1410,time:'Pendant le festival',title:'Jeux & parcours en continu',cat:'Jeux',place:'Square de Verdun, Parc Floral et centre-ville',short:'Découvrez les jeux et les parcours imaginés pour le festival.',description:'Les propositions ludiques du festival, comme les jeux, l’énigme du Parc Floral et le jeu de piste, participent à l’expérience globale du week-end.',free:true},
+{id:'dimanche-expos',day:'dimanche',sort:1412,time:'Pendant le festival',title:'Expositions à découvrir',cat:'Culture',place:'Médiathèque et lieux d’exposition',short:'Les expositions restent visibles sur la durée du festival.',description:'Les expositions “Femmes en Charente”, “L’art roman” et “Le paysage au fil du fleuve” enrichissent aussi le dimanche du festival.',free:true},
+{id:'dimanche-ambiance',day:'dimanche',sort:1200,time:'Toute la journée',title:'Ambiance festival',cat:'Animations',place:'Mansle-les-Fontaines',short:'Une atmosphère conviviale dans différents lieux du festival.',description:'Le dimanche, l’ambiance du festival se prolonge à travers les différents sites, avec une circulation libre entre musique, jeux, cinéma et culture.',free:true}
+];
+const categories=['Tout','Musique','Animations','Parade','Jeux','Culture','Prévention'];
+const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set()};
+let currentId=null;
+try{state.favorites=new Set(JSON.parse(localStorage.getItem('zika_favorites_2027')||'[]'))}catch(e){}
+const $=id=>document.getElementById(id);
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function saveFav(){try{localStorage.setItem('zika_favorites_2027',JSON.stringify([...state.favorites]))}catch(e){}}
+function eventDay(e){return e.both?'Samedi 24 & dimanche 25 avril':e.day==='samedi'?'Samedi 24 avril':'Dimanche 25 avril'}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toggleFav(id){state.favorites.has(id)?state.favorites.delete(id):state.favorites.add(id);saveFav();render();if(currentId===id)syncModalFav()}
+function filtered(){
+  const q=norm(state.q);
+  return EVENTS.filter(e=>(state.day==='all'||e.day===state.day||e.both) && (state.cat==='Tout'||e.cat===state.cat) && (!state.mine||state.favorites.has(e.id)) && (!q || norm([e.title,e.place,e.short,e.description].join(' ')).includes(q)))
+  .sort((a,b)=>{
+    const dayBias=x=>(x.day==='dimanche'&&!x.both?10000:0)+(x.both?500:0)+x.sort;
+    return dayBias(a)-dayBias(b);
+  });
+}
+function renderFilters(){
+  $('filters').innerHTML = categories.map(cat=>`<button class="chip ${state.cat===cat?'active':''}" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join('') + `
+    <div class="filter-tools">
+      <button class="tool-btn ${state.mine?'active':''}" id="mySelection">${state.mine?'♥':'♡'} Ma sélection (${state.favorites.size})</button>
+      <button class="tool-btn" id="clearFilters">Réinitialiser</button>
+    </div>`;
+  $('filters').querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{state.cat=btn.dataset.cat;render()});
+  $('mySelection').onclick=()=>{state.mine=!state.mine;render()};
+  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
+}
+function render(){
+  renderFilters();
+  const rows = filtered();
+  $('sectionTitle').textContent = state.mine?'Ma sélection':state.day==='samedi'?'Samedi 24 avril':state.day==='dimanche'?'Dimanche 25 avril':'Tous les rendez-vous';
+  $('count').textContent = `${rows.length} rendez-vous`;
+  $('results').innerHTML = rows.length ? rows.map(e=>`
+    <article class="event-card" data-cat="${escapeHtml(e.cat)}">
+      <div class="event-band"></div>
+      <div class="event-inner">
+        <div class="event-time">
+          <div class="time-big">${escapeHtml(e.time)}</div>
+          <span class="day-badge">${escapeHtml(eventDay(e))}</span>
+          <span class="cat-badge">${escapeHtml(e.cat)}</span>
+        </div>
+        <div class="event-main">
+          <h3>${escapeHtml(e.title)}</h3>
+          <p>${escapeHtml(e.short)}</p>
+          <div class="meta-row">
+            <span class="meta">📍 ${escapeHtml(e.place)}</span>
+            <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':'Concerts payants'}</span>
+          </div>
+        </div>
+        <div class="event-actions">
+          <button class="action-btn" data-open="${e.id}">Voir le détail</button>
+          <button class="ghost-btn ${state.favorites.has(e.id)?'active':''}" data-fav="${e.id}">${state.favorites.has(e.id)?'♥ Dans ma sélection':'♡ Ajouter à ma sélection'}</button>
+        </div>
+      </div>
+    </article>`).join('') : `<div class="empty"><strong>Aucun résultat</strong><br><br>Essaie une autre catégorie, une autre journée ou retire certains filtres.</div>`;
+  $('results').querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>openModal(btn.dataset.open));
+  $('results').querySelectorAll('[data-fav]').forEach(btn=>btn.onclick=()=>toggleFav(btn.dataset.fav));
+}
+function syncModalFav(){
+  const active=state.favorites.has(currentId);
+  const btn=$('modalFavorite');
+  btn.textContent=active?'♥ Retirer de ma sélection':'♡ Ajouter à ma sélection';
+  btn.classList.toggle('active',active);
+}
+function openModal(id){
+  const e=EVENTS.find(x=>x.id===id); if(!e) return;
+  currentId=id;
+  $('modalCategory').textContent=e.cat;
+  $('modalTitle').textContent=e.title;
+  $('modalShort').textContent=e.short;
+  $('modalDetails').innerHTML=`<span>${escapeHtml(eventDay(e))}</span><span>${escapeHtml(e.time)}</span><span>${escapeHtml(e.place)}</span><span>${e.free?'Accès gratuit':'Concerts payants'}</span>`;
+  $('modalText').textContent=e.description;
+  $('modalCalendar').style.display=e.start?'inline-block':'none';
+  syncModalFav();
+  $('modal').classList.add('show');
+  $('modal').setAttribute('aria-hidden','false');
+}
+function closeModal(){ $('modal').classList.remove('show'); $('modal').setAttribute('aria-hidden','true'); currentId=null; }
+function makeCalendar(){
+  const e=EVENTS.find(x=>x.id===currentId); if(!e||!e.start) return;
+  const d = e.day==='samedi'?'20270424':'20270425';
+  const end = e.end || '23:59';
+  const dt=v=>v.replace(':','')+'00';
+  const clean=s=>String(s).replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;').replace(/\n/g,'\\n');
+  const data=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ZikaMansle//Programme 2027//FR','BEGIN:VEVENT',`UID:${e.id}-2027@zikamansle.fr`,'DTSTAMP:20261101T104000Z',`DTSTART:${d}T${dt(e.start)}`,`DTEND:${d}T${dt(end)}`,`SUMMARY:${clean(e.title)}`,`LOCATION:${clean(e.place)}`,`DESCRIPTION:${clean(e.description)}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([data],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`zikamansle-${e.id}.ics`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+document.querySelectorAll('[data-day]').forEach(btn=>btn.onclick=()=>{
+  state.day=btn.dataset.day;
+  document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b===btn));
+  render();
+});
+$('search').addEventListener('input',e=>{state.q=e.target.value;render()});
+$('close').onclick=closeModal;
+$('modal').onclick=e=>{if(e.target===$('modal'))closeModal()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('modalFavorite').onclick=()=>{if(currentId)toggleFav(currentId)};
+$('modalCalendar').onclick=makeCalendar;
+$('scrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+render();
+</script>
+</body>
+</html>
