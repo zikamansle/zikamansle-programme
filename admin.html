@@ -959,7 +959,7 @@ function applyHeroPhoto(doc){
  if(img.getAttribute('src')!==url)img.setAttribute('src',url);
  hero.style.setProperty('background-image','none','important');
  hero.style.setProperty('isolation','isolate');
- Object.assign(img.style,{position:'absolute',inset:'0',width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none',zIndex:'0'});
+ Object.assign(img.style,{position:'absolute',inset:'0',width:'100%',height:'100%',objectFit:'cover',pointerEvents:'auto',zIndex:'0',cursor:'grab',touchAction:'none'});
  const x=Number(value.bgX??50),y=Number(value.bgY??50),z=Math.max(100,Number(value.bgZoom??100));
  img.style.setProperty('object-position',x+'% '+y+'%','important');
  img.style.setProperty('transform','scale('+(z/100)+')','important');
@@ -983,6 +983,7 @@ function getTarget(node){
  if(!node || !doc)return 'body';
  let el=node.nodeType===3?node.parentElement:node;
  if(!el || el.nodeType!==1)return 'body';
+ if(el.closest('.zv-hero-photo'))return '.hero';
  if(el.closest('img,video,picture')){const media=el.closest('img,video,picture');return zvUniqueNodeKey(media.matches('picture')?(media.querySelector('img')||media):media)}
  const custom=el.closest('[data-zv-block]');
  if(custom)return '[data-zv-block="'+custom.dataset.zvBlock+'"]';
@@ -1043,10 +1044,11 @@ function handlePointerDown(e){
  const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
  const oldW=Number(draft[key]?.width)||rect.width/Math.max(1,parentW)*100;
  const oldH=Number(draft[key]?.height)||rect.height;
- const isHeroCrop=!handle&&imageAdjustMode&&selectedKey&&doc?.querySelector(selectedKey)?.matches('.hero');
+ const isHeroPhoto=!handle&&!!e.target.closest('.zv-hero-photo');
+ const isHeroCrop=!handle&&(isHeroPhoto||(imageAdjustMode&&!!e.target.closest('.hero')&&!(e.target.closest('h1,h2,h3,h4,p,span,a,button'))));
  const cropImage= !handle && (isHeroCrop || ((imageAdjustMode || !!e.target.closest('.zika-banner__image,.zika-banner__video')) && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')));
- if(cropImage)e.preventDefault();
- const targetKey=isHeroCrop?selectedKey:(cropImage?(e.target.closest('.zika-banner')?'.zika-banner':key):key);
+ if(cropImage){e.preventDefault();if(isHeroCrop&&selectedKey!=='.hero')setKey('.hero');}
+ const targetKey=isHeroCrop?'.hero':(cropImage?(e.target.closest('.zika-banner')?'.zika-banner':key):key);
  const baseCrop=draft[targetKey]||{};
  drag={key:targetKey,startX:e.clientX,startY:e.clientY,oldX:Number(draft[key]?.x)||0,oldY:Number(draft[key]?.y)||0,oldW,oldH,parentW,oldScaleX:Number(draft[key]?.scaleX)||1,oldScaleY:Number(draft[key]?.scaleY)||1,resize:!!handle,cropImage,oldCropX:Number(baseCrop.bgX??50),oldCropY:Number(baseCrop.bgY??50),cropW:Math.max(1,rect.width),cropH:Math.max(1,rect.height),moved:false};
  if(handle){e.preventDefault();e.stopPropagation()}
@@ -1057,7 +1059,7 @@ function handlePointerMove(e){
  const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
  if(Math.abs(dx)+Math.abs(dy)<3&&!drag.moved)return;
  if(!drag.moved)snapshot();drag.moved=true;const v=draft[drag.key]||{};
- if(drag.cropImage){v.bgX=Math.max(0,Math.min(100,Math.round(drag.oldCropX-dx/drag.cropW*100)));v.bgY=Math.max(0,Math.min(100,Math.round(drag.oldCropY-dy/drag.cropH*100)))}
+ if(drag.cropImage){const zoom=Math.max(1,Number(v.bgZoom??100)/100);v.bgX=Math.max(0,Math.min(100,Math.round(drag.oldCropX-dx/drag.cropW*100/zoom)));v.bgY=Math.max(0,Math.min(100,Math.round(drag.oldCropY-dy/drag.cropH*100/zoom)))}
  else if(drag.resize){if(v.baseHeight===undefined)v.baseHeight=drag.oldH;if(v.baseWidthPx===undefined)v.baseWidthPx=drag.oldW*drag.parentW/100;v.width=Math.round(Math.max(10,Math.min(100,(drag.oldW*drag.parentW/100+dx)/drag.parentW*100))*100)/100;v.height=Math.round(Math.max(24,Math.min(1400,drag.oldH+dy)));delete v.scaleX;delete v.scaleY}
  else{v.x=Math.round(Math.max(-1200,Math.min(1200,drag.oldX+dx)));v.y=Math.round(Math.max(-1200,Math.min(1200,drag.oldY+dy)))}
  draft[drag.key]=v;apply();
@@ -1090,7 +1092,7 @@ function studioContextMenu(e){
  setTimeout(()=>doc.addEventListener('pointerdown',hide,false),0);
 }
 
-function bindFrame(){const doc=frameDoc();if(!doc)return;zvMarkNodes(doc);const zvObserver=new MutationObserver(()=>zvMarkNodes(doc));zvObserver.observe(doc.body,{childList:true,subtree:true});doc.addEventListener('click',handleClick,true);doc.addEventListener('dblclick',beginInlineEdit,true);doc.addEventListener('contextmenu',studioContextMenu,true);const banner=doc.getElementById('zikaCustomBanner');if(banner){const observer=new MutationObserver(()=>{if(active)apply()});observer.observe(banner,{childList:true})}doc.addEventListener('pointerdown',handlePointerDown,true);doc.addEventListener('pointermove',handlePointerMove,true);doc.addEventListener('pointerup',handlePointerUp,true);doc.addEventListener('pointercancel',handlePointerUp,true);doc.addEventListener('keydown',handleEditorKeys,true);doc.defaultView.addEventListener('scroll',updateResizeHandle,{passive:true});doc.defaultView.addEventListener('resize',updateResizeHandle);const styl=doc.createElement('style');styl.textContent='.zv-editing .zika-banner__image{pointer-events:auto!important;cursor:grab!important}.zv-editing .zika-banner__veil{pointer-events:none!important}.zv-editing [data-zv-selected]{outline:3px dashed #f88722 !important;outline-offset:3px !important;cursor:move !important}.zv-editing [data-zv-selected]{cursor:move!important}';doc.head.append(styl);apply()}
+function bindFrame(){const doc=frameDoc();if(!doc)return;zvMarkNodes(doc);const zvObserver=new MutationObserver(()=>zvMarkNodes(doc));zvObserver.observe(doc.body,{childList:true,subtree:true});doc.addEventListener('click',handleClick,true);doc.addEventListener('dblclick',beginInlineEdit,true);doc.addEventListener('contextmenu',studioContextMenu,true);const banner=doc.getElementById('zikaCustomBanner');if(banner){const observer=new MutationObserver(()=>{if(active)apply()});observer.observe(banner,{childList:true})}doc.addEventListener('pointerdown',handlePointerDown,true);doc.addEventListener('pointermove',handlePointerMove,true);doc.addEventListener('pointerup',handlePointerUp,true);doc.addEventListener('pointercancel',handlePointerUp,true);doc.addEventListener('keydown',handleEditorKeys,true);doc.defaultView.addEventListener('scroll',updateResizeHandle,{passive:true});doc.defaultView.addEventListener('resize',updateResizeHandle);const styl=doc.createElement('style');styl.textContent='.zv-editing .zv-hero-photo,.zv-editing .zika-banner__image{pointer-events:auto!important;cursor:grab!important;touch-action:none!important}.zv-editing .zika-banner__veil{pointer-events:none!important}.zv-editing [data-zv-selected]{outline:3px dashed #f88722 !important;outline-offset:3px !important;cursor:move !important}.zv-editing [data-zv-selected]{cursor:move!important}';doc.head.append(styl);apply()}
 frame.addEventListener('load',()=>{bindFrame();if(active)status('Programme chargé — clique sur un élément')});
 function open(){wixStudioCallback=null;if(by('editorPanel').classList.contains('hidden'))return;active=true;imageAdjustMode=false;draft=structuredClone((settings&&settings.visual_editor)||{});if(!draft||typeof draft!=='object'||Array.isArray(draft))draft={};saved=structuredClone(draft);history=[];redo=[];mode='edit';pickMode='text';selectedKey='';setPickMode('text');by('zvFields').hidden=true;studio.classList.add('open');studio.classList.remove('zv-preview-mode');by('zvEdit').textContent='👁 Aperçu';frame.src='./index.html?studio=1&ts='+Date.now();status('Mode édition — sélectionne un élément')}
 by('zvClose').onclick=()=>{if(JSON.stringify(draft)!==JSON.stringify(saved)&&!confirm('Quitter sans enregistrer tes modifications ?'))return;studio.classList.remove('open');active=false;frame.src='about:blank'};
