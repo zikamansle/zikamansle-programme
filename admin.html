@@ -132,7 +132,7 @@ async function wixFetch(append=false){
     search:wixSearch.value.trim(),
     mediaType:document.getElementById('wixMediaType').value==='all'?undefined:document.getElementById('wixMediaType').value.toUpperCase(),
     cursor:next||undefined,
-    limit:200
+    limit:100
    });
    if(generation!==wixSearchGeneration) return;
    for(const f of data.files||[]){const key=f.id||f.fileInfo?.id||wixDirect(f);if(!ids.has(key)){wixFiles.push(f);ids.add(key)}}
