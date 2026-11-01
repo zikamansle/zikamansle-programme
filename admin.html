@@ -901,6 +901,7 @@ const by=id=>document.getElementById(id),studio=by('zvStudio'),frame=by('zvFrame
 function zvUniqueNodeKey(node){
  if(!node||node.nodeType!==1||node===node.ownerDocument.body)return '';
  if(node.dataset?.zvBlock)return '[data-zv-block="'+node.dataset.zvBlock+'"]';
+ if(node.dataset?.zvNode)return '[data-zv-node="'+node.dataset.zvNode+'"]';
  const route=[];let el=node;
  while(el&&el.nodeType===1&&el!==el.ownerDocument.body){
   let index=1;let sib=el.previousElementSibling;
@@ -1087,8 +1088,9 @@ function handlePointerDown(e){
  if(!key||key==='body')return;
  /* Selection deferred until click: preserves the native dblclick target. */
  const doc=frameDoc(),el=doc?.querySelector(key);if(!el)return;
- if(handle)zvReserveFrame(doc,el);const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
- const oldW=Number(draft[key]?.widthPx)?Number(draft[key].widthPx)/Math.max(1,parentW)*100:(Number(draft[key]?.width)||rect.width/Math.max(1,parentW)*100);
+ const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
+ if(handle)zvReserveFrame(doc,el);
+ const oldW=Number(draft[key]?.widthPx)||rect.width;
  const oldH=Number(draft[key]?.height)||rect.height;
  const isHeroPhoto=!handle&&!!e.target.closest('.zv-hero-photo');
  const isHeroCrop=!handle&&(isHeroPhoto||(imageAdjustMode&&!!e.target.closest('.hero')&&!(e.target.closest('h1,h2,h3,h4,p,span,a,button'))));
@@ -1111,7 +1113,7 @@ function handlePointerMove(e){
  if(drag.cropImage){const zoom=Math.max(1,Number(v.bgZoom??100)/100);v.bgX=Math.max(0,Math.min(100,Math.round(drag.oldCropX-dx/drag.cropW*100/zoom)));v.bgY=Math.max(0,Math.min(100,Math.round(drag.oldCropY-dy/drag.cropH*100/zoom)))}
  else if(drag.resize){const d=drag.direction;
  const dw=(d.includes('e')?dx:d.includes('w')?-dx:0),dh=(d.includes('s')?dy:d.includes('n')?-dy:0);
- const width=Math.max(35,drag.oldW*drag.parentW/100+dw),height=Math.max(20,drag.oldH+dh);
+ const width=Math.max(35,drag.oldW+dw),height=Math.max(20,drag.oldH+dh);
  v.widthPx=Math.round(width);v.height=Math.round(height);
  if(d.includes('w'))v.x=Math.round((drag.oldX||0)+dx);
  if(d.includes('n'))v.y=Math.round((drag.oldY||0)+dy);
