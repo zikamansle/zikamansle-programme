@@ -919,7 +919,7 @@ function zvMarkNodes(doc){
   zvUniqueNodeKey(el);
  });
 }
-const targets=[['Bannière','.zika-banner'],['Image de bannière','.zika-banner__image'],['Vidéo de bannière','.zika-banner__video'],['Voile de bannière','.zika-banner__veil'],['Titre de la bannière','.zika-banner h1'],['Sous-titre de la bannière','.zika-banner p'],['Bouton de bannière','.zika-banner__button'],['Logo de l’en-tête','.logo-mark'],['Groupe logo et texte','.brand'],['En-tête','.topbar'],['En-tête du programme','.hero-panel'],['Titres des sections','h2'],['Titre principal','h1'],['Filtres','.control-panel'],['Boutons de filtre','.tool-btn'],['Carte événement','.event-card'],['Photo de carte','.event-card img'],['Titre de carte','.event-card h3'],['Boutons principaux','.primary'],['Plan interactif','#zikaMapHost'],['Chronologie','#zikaTimelineHost'],['Contenu principal','.results'],['Pied de page','footer'],['Texte général','body']];
+const targets=[['Bannière','.zika-banner'],['Image de bannière','.zika-banner__image'],['Vidéo de bannière','.zika-banner__video'],['Voile de bannière','.zika-banner__veil'],['Titre de la bannière','.zika-banner h1'],['Sous-titre de la bannière','.zika-banner p'],['Bouton de bannière','.zika-banner__button'],['Logo de l’en-tête','.logo-mark'],['Groupe logo et texte','.brand'],['En-tête','.topbar'],['En-tête du programme','.hero-panel'],['Titres des sections','h2'],['Titre principal','h1'],['Carte blanche des filtres','.control-card'],['Zone extérieure des filtres','.control-panel'],['Boutons de filtre','.tool-btn'],['Carte événement','.event-card'],['Photo de carte','.event-card img'],['Titre de carte','.event-card h3'],['Boutons principaux','.primary'],['Plan interactif','#zikaMapHost'],['Chronologie','#zikaTimelineHost'],['Contenu principal','.results'],['Pied de page','footer'],['Texte général','body']];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeCss=(s)=>String(s||'').replace(/[{};<>]/g,'');
 const customKey=k=>/^\[data-zv-block=\"zv-[a-z0-9-]+\"\]$/.test(k);
@@ -997,8 +997,21 @@ function getTarget(node){
    return zvUniqueNodeKey(fact);
  }
  if(el.closest('.fact-grid') && pickMode==='block' && el.matches('.fact-grid'))return zvUniqueNodeKey(el);
+ // Filtres : ne jamais sélectionner automatiquement la zone rouge quand on clique la carte blanche.
+ const filterCard=el.closest('.control-card');
+ if(filterCard){
+   if(pickMode==='text'){
+     const text=el.closest('button,label,span,strong,p,a');
+     if(text&&filterCard.contains(text))return zvUniqueNodeKey(text);
+   }
+   // Un bouton peut être stylisé indépendamment, même en mode Bloc.
+   const btn=el.closest('button');
+   if(btn&&filterCard.contains(btn))return zvUniqueNodeKey(btn);
+   // Un clic dans le vide ou dans les champs sélectionne uniquement la carte blanche.
+   return '.control-card';
+ }
  if(el.closest('.logo-mark'))return zvUniqueNodeKey(el.closest('.logo-mark'));
- const blockSelector='.fact,.hero-panel,.hero-copy,.zika-banner,.hero,.topbar,.brand,.top-actions,.filters,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,header,nav,section,article,footer';
+ const blockSelector='.control-card,.control-grid,.control-block,.searchbox,.day-switch,.filters,.zika-facets,.fact,.hero-panel,.hero-copy,.zika-banner,.hero,.topbar,.brand,.top-actions,.filters,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,header,nav,section,article,footer';
  if(pickMode==='text'){
    const text=el.closest(textSelector);
    if(text && !text.closest('script,style,svg'))return zvUniqueNodeKey(text);
