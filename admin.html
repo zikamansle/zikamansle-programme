@@ -146,12 +146,28 @@ async function wixTusUpload(signed,file){const tus=await wixLoadTus();return new
 wixUpload.onchange=async()=>{const files=[...wixUpload.files];if(!files.length)return;wixUploadBtn.disabled=true;wixProgress.style.display='block';
  try{for(const file of files){wixProgress.value=0;wixStatus.textContent='Préparation du transfert vers Wix : '+file.name;
  const signed=await wixCall({action:'prepare-upload',name:file.name,mimeType:file.type||'application/octet-stream',size:file.size,parentFolderId:wixFolder.value||undefined});
- if(signed.resumable){await wixTusUpload(signed,file);wixStatus.textContent='Finalisation Wix : '+file.name;await wixCall({action:'finalize-upload',uploadUrl:signed.uploadUrl,uploadToken:signed.uploadToken,name:file.name})}
- else await wixPutWithProgress(signed.uploadUrl,file);
- wixStatus.textContent='Transfert terminé : '+file.name+'. Wix peut encore traiter le média avant son affichage.';
+ if(signed.resumable){
+   await wixTusUpload(signed,file);
+   wixStatus.textContent='100 % transférés. Finalisation auprès de Wix : '+file.name;
+   const finalized=await wixCall({action:'finalize-upload',uploadUrl:signed.uploadUrl,uploadToken:signed.uploadToken,name:file.name});
+   if(!finalized.finalized||!finalized.fileId)throw Error('Wix n’a pas confirmé la création du fichier après finalisation.');
+   wixStatus.textContent='Fichier accepté par Wix. Vérification du traitement vidéo…';
+   let confirmed=false;
+   for(let attempt=0;attempt<12;attempt++){
+     await new Promise(done=>setTimeout(done,5000));
+     const check=await wixCall({action:'check-upload',fileId:finalized.fileId});
+     if(check.failed)throw Error('Wix a signalé un échec de traitement ('+check.state+').');
+     if(check.found&&check.ready){confirmed=true;break;}
+     wixStatus.textContent='Traitement Wix en cours… vérification '+(attempt+1)+'/12. Le transfert est déjà terminé.';
+   }
+   wixStatus.textContent=confirmed?'Vidéo confirmée et prête dans Wix : '+file.name:'Vidéo enregistrée dans Wix, mais toujours en traitement après 60 s : '+file.name+'. Vérifie plus tard dans Wix.';
+ } else {
+   await wixPutWithProgress(signed.uploadUrl,file);
+   wixStatus.textContent='Photo transférée : '+file.name+'. Wix peut encore la traiter.';
+ }
  }
  }catch(e){wixStatus.textContent='Import non terminé : '+e.message+' — les fichiers déjà envoyés ne sont pas annulés.'}
- finally{wixUpload.value='';wixUploadBtn.disabled=false;wixProgress.style.display='none';setTimeout(()=>wixFetch(),2000)}
+ finally{wixUpload.value='';wixUploadBtn.disabled=false;wixProgress.style.display='none';}
 };
 function wixAttachButtons(){const fields=[...document.querySelectorAll('#eventForm [name="image_url"],#eventForm [name="logo_url"],#eventForm [name="video_url"],#eventForm [name="video_poster_url"],#eventForm [name="gallery_urls"],#logoUrl,#heroImage,#heroVideo')];for(const field of fields){if(field.dataset.wixPickerAttached)continue;field.dataset.wixPickerAttached='1';const btn=document.createElement('button');btn.type='button';btn.className='wix-pick-button';btn.textContent='▣ Bibliothèque Wix';btn.onclick=()=>wixOpen(field);field.insertAdjacentElement('afterend',btn)}}
 wixAttachButtons();
