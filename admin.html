@@ -21,7 +21,7 @@
 </style></head><body><div class="page">
 <div class="top"><div><h1>Administration ZikaMansle</h1><div class="muted">Éditeur privé du programme 2027</div></div><div><a href="./index.html">Voir le programme public</a> <button class="btn secondary hidden" id="logout">Déconnexion</button></div></div>
 <div class="card login" id="loginPanel"><h2>Connexion administrateur</h2><p class="muted">Utilise le compte créé dans Supabase. Aucun mot de passe n'est enregistré dans le code.</p><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Mot de passe</label><input id="password" type="password" autocomplete="current-password" required><div class="buttons"><button class="btn" type="submit">Se connecter</button></div></form><div id="loginMsg" class="msg"></div></div>
-<div id="editorPanel" class="hidden"><div class="card headstrip"><div class="tools"><button class="active" data-tab="events">Événements</button><button data-tab="categories">Catégories & couleurs</button><button data-tab="publics">Publics</button><button data-tab="theme">Design complet</button><button data-tab="links">Redirections</button><button data-tab="backup">Sauvegardes</button><button data-tab="experience">Plan & alertes</button><button data-tab="bootstrap">Initialisation</button></div><p class="notice">Les modifications sont enregistrées directement dans Supabase. Pour les photos et logos : colle le lien direct d'une image hébergée sur Wix. Le public ne voit que les fiches marquées « Publié ».</p><div class="msg" id="msg"></div></div>
+<div id="editorPanel" class="hidden"><div class="card headstrip"><div class="tools"><button class="active" data-tab="events">Événements</button><button data-tab="categories">Catégories & couleurs</button><button data-tab="publics">Publics</button><button data-tab="theme">Design complet</button><button data-tab="layout">Sections & affichage</button><button data-tab="links">Redirections</button><button data-tab="backup">Sauvegardes</button><button data-tab="experience">Plan & alertes</button><button data-tab="bootstrap">Initialisation</button></div><p class="notice">Les modifications sont enregistrées directement dans Supabase. Pour les photos et logos : colle le lien direct d'une image hébergée sur Wix. Le public ne voit que les fiches marquées « Publié ».</p><div class="msg" id="msg"></div></div>
 <section data-section="events" class="card"><div class="layout"><div><h2>Fiches <button class="btn" id="add">+ Ajouter</button></h2><div id="list"></div></div><div><h2 id="editTitle">Sélectionner une fiche</h2><form id="eventForm" class="hidden"><div class="grid"><div class="wide"><label>Titre</label><input name="title" required></div><div class="wide"><h3>Dates et heures</h3><label><input type="checkbox" id="zikaDatesLater"> Dates et horaires communiqués ultérieurement</label></div><div class="wide" id="zikaDateFields" style="display:contents">
 <div><label for="zikaDateStart">Date de début</label><input type="date" id="zikaDateStart" required></div>
 <div><label for="zikaTimeStart">Heure de début</label><input type="time" id="zikaTimeStart" required></div>
@@ -40,6 +40,46 @@
 <section data-section="categories" class="card hidden"><h2>Catégories et couleurs</h2><p class="muted">Personnalise ici les couleurs des catégories pour tout le festival. Ce réglage s'applique à toutes les fiches.</p><div id="zikaCategoryColorSettings" class="zika-pill-grid"></div><div class="buttons"><button type="button" class="btn secondary" id="zikaSettingsNewCategory">+ Nouvelle catégorie</button><button type="button" class="btn secondary" id="zikaSettingsManageCategories">Gérer les catégories</button></div><p class="muted">Les couleurs sont enregistrées dans les paramètres Supabase.</p></section>
 <section data-section="publics" class="card hidden"><h2>Gestion des publics</h2><p class="muted">Crée et organise ici les publics proposés pour toutes les fiches. Aucun choix de couleur : dans chaque fiche, tu pourras cocher plusieurs publics.</p><div id="zikaPublicSettings" class="zika-pill-grid"></div><div class="buttons"><button type="button" class="btn secondary" id="zikaSettingsNewPublic">+ Nouveau public</button><button type="button" class="btn secondary" id="zikaSettingsManagePublics">Modifier la liste des publics</button></div><p class="muted">Les modifications sont enregistrées dans les paramètres Supabase.</p></section>
 <section data-section="theme" class="card hidden"><h2>Identité visuelle</h2><div class="grid"><div><label>Bleu</label><input type="color" id="blue" value="#168fdf"></div><div><label>Orange</label><input type="color" id="orange" value="#f88722"></div><div><label>Fond</label><input type="color" id="background" value="#ffffff"></div><div><label>Texte</label><input type="color" id="textColor" value="#172b3c"></div><div class="wide"><label>Titre du festival</label><input id="brandTitle" value="ZikaMansle Festival 2027"></div><div><label>Police des titres</label><select id="headingFont"><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Impact">Impact</option><option value="system-ui">system-ui</option><option value="Inter">Inter</option><option value="Roboto">Roboto</option><option value="Open Sans">Open Sans</option><option value="Montserrat">Montserrat</option><option value="Poppins">Poppins</option><option value="Lato">Lato</option><option value="Nunito">Nunito</option><option value="Raleway">Raleway</option><option value="Rubik">Rubik</option><option value="Work Sans">Work Sans</option><option value="DM Sans">DM Sans</option><option value="Manrope">Manrope</option><option value="Outfit">Outfit</option><option value="Plus Jakarta Sans">Plus Jakarta Sans</option><option value="Urbanist">Urbanist</option><option value="Mulish">Mulish</option><option value="Quicksand">Quicksand</option><option value="Josefin Sans">Josefin Sans</option><option value="Barlow">Barlow</option><option value="Barlow Condensed">Barlow Condensed</option><option value="Oswald">Oswald</option><option value="Anton">Anton</option><option value="Alfabet">Alfabet (Adobe Fonts)</option><option value="Bebas Neue">Bebas Neue</option><option value="Archivo Black">Archivo Black</option><option value="Teko">Teko</option><option value="Rajdhani">Rajdhani</option><option value="Saira Condensed">Saira Condensed</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Fjalla One">Fjalla One</option><option value="Playfair Display">Playfair Display</option><option value="Merriweather">Merriweather</option><option value="Libre Baskerville">Libre Baskerville</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Lora">Lora</option><option value="DM Serif Display">DM Serif Display</option><option value="Abril Fatface">Abril Fatface</option><option value="Cinzel">Cinzel</option><option value="Bodoni Moda">Bodoni Moda</option><option value="Pacifico">Pacifico</option><option value="Dancing Script">Dancing Script</option><option value="Caveat">Caveat</option><option value="Great Vibes">Great Vibes</option><option value="Satisfy">Satisfy</option><option value="Lobster">Lobster</option><option value="Permanent Marker">Permanent Marker</option><option value="Kalam">Kalam</option><option value="Amatic SC">Amatic SC</option><option value="Fredoka">Fredoka</option><option value="Comfortaa">Comfortaa</option><option value="Baloo 2">Baloo 2</option><option value="Righteous">Righteous</option><option value="Bangers">Bangers</option><option value="Alfa Slab One">Alfa Slab One</option><option value="Space Grotesk">Space Grotesk</option><option value="Space Mono">Space Mono</option><option value="Orbitron">Orbitron</option><option value="Audiowide">Audiowide</option><option value="Exo 2">Exo 2</option></select></div><div><label>Police du texte</label><select id="bodyFont"><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Impact">Impact</option><option value="system-ui">system-ui</option><option value="Inter">Inter</option><option value="Roboto">Roboto</option><option value="Open Sans">Open Sans</option><option value="Montserrat">Montserrat</option><option value="Poppins">Poppins</option><option value="Lato">Lato</option><option value="Nunito">Nunito</option><option value="Raleway">Raleway</option><option value="Rubik">Rubik</option><option value="Work Sans">Work Sans</option><option value="DM Sans">DM Sans</option><option value="Manrope">Manrope</option><option value="Outfit">Outfit</option><option value="Plus Jakarta Sans">Plus Jakarta Sans</option><option value="Urbanist">Urbanist</option><option value="Mulish">Mulish</option><option value="Quicksand">Quicksand</option><option value="Josefin Sans">Josefin Sans</option><option value="Barlow">Barlow</option><option value="Barlow Condensed">Barlow Condensed</option><option value="Oswald">Oswald</option><option value="Anton">Anton</option><option value="Alfabet">Alfabet (Adobe Fonts)</option><option value="Bebas Neue">Bebas Neue</option><option value="Archivo Black">Archivo Black</option><option value="Teko">Teko</option><option value="Rajdhani">Rajdhani</option><option value="Saira Condensed">Saira Condensed</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Fjalla One">Fjalla One</option><option value="Playfair Display">Playfair Display</option><option value="Merriweather">Merriweather</option><option value="Libre Baskerville">Libre Baskerville</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Lora">Lora</option><option value="DM Serif Display">DM Serif Display</option><option value="Abril Fatface">Abril Fatface</option><option value="Cinzel">Cinzel</option><option value="Bodoni Moda">Bodoni Moda</option><option value="Pacifico">Pacifico</option><option value="Dancing Script">Dancing Script</option><option value="Caveat">Caveat</option><option value="Great Vibes">Great Vibes</option><option value="Satisfy">Satisfy</option><option value="Lobster">Lobster</option><option value="Permanent Marker">Permanent Marker</option><option value="Kalam">Kalam</option><option value="Amatic SC">Amatic SC</option><option value="Fredoka">Fredoka</option><option value="Comfortaa">Comfortaa</option><option value="Baloo 2">Baloo 2</option><option value="Righteous">Righteous</option><option value="Bangers">Bangers</option><option value="Alfa Slab One">Alfa Slab One</option><option value="Space Grotesk">Space Grotesk</option><option value="Space Mono">Space Mono</option><option value="Orbitron">Orbitron</option><option value="Audiowide">Audiowide</option><option value="Exo 2">Exo 2</option></select></div><div><label>Taille des titres (px)</label><input id="headingSize" type="number" min="20" max="100" value="48"></div><div><label>Taille du texte (px)</label><input id="bodySize" type="number" min="12" max="24" value="16"></div><div class="wide"><label>Vidéo de fond de la bannière (MP4 direct)</label><input id="heroVideo" type="url" placeholder="https://..."></div><div class="wide"><label>Image de fond de la bannière</label><input id="heroImage" type="url" placeholder="https://..."></div><div><label>Opacité de la vidéo (%)</label><input id="heroOpacity" type="range" min="0" max="100" value="60"></div><div class="wide"><label>Lien du logo Wix</label><input id="logoUrl" type="url" placeholder="https://static.wixstatic.com/media/..."></div></div><div class="card" style="background:#f8fbfe;border-color:#e0e9f2"><h2>Typographie détaillée</h2><div style="padding:12px;margin:10px 0;background:#fff6e9;border-radius:10px"><label>Adobe Fonts — URL de ton kit (nécessaire pour Alfabet)</label><input id="adobeKitUrl" type="url" placeholder="https://use.typekit.net/xxxxxxx.css"><p class="muted">Anton fonctionne déjà sans réglage. Pour Alfabet, ajoute un kit Adobe Fonts autorisé pour ce site. Une simple sélection du nom ne charge pas la police.</p></div><p class="muted">Réglage indépendant de chaque zone du programme public. Plus de 60 polices disponibles : classiques, modernes, condensées, élégantes, manuscrites et créatives. Réglage indépendant de chaque zone.</p><div id="fontControls" class="grid"></div><div id="designPreview" style="margin-top:18px;padding:24px;border:1px solid #dbe5ee;border-radius:16px;background:white"><div data-demo="hero" style="font-size:30px">LE PROGRAMME 2027</div><div data-demo="section" style="font-size:22px">Samedi 24 avril</div><div data-demo="card" style="font-size:26px">ZikaVillage</div><div data-demo="body">Animations et rencontres pour tous</div><div data-demo="time">14h – 17h</div><div data-demo="menu">TOUT LE FESTIVAL · SAMEDI · DIMANCHE</div><span data-demo="button" style="display:inline-block;padding:10px 15px;border-radius:9px;background:#168fdf;color:white">Découvrir</span></div></div><div class="card" style="background:#f8fbfe;border-color:#e0e9f2"><h2>Présentation et boutons</h2><div class="grid"><div><label>Couleur des cartes</label><input id="cardBackground" type="color" value="#ffffff"></div><div><label>Couleur des boutons</label><input id="buttonBackground" type="color" value="#168fdf"></div><div><label>Couleur du texte des boutons</label><input id="buttonText" type="color" value="#ffffff"></div><div><label>Arrondi des cartes (px)</label><input id="cardRadius" type="number" min="0" max="50" value="26"></div><div><label>Arrondi des boutons (px)</label><input id="buttonRadius" type="number" min="0" max="50" value="16"></div><div><label>Largeur maximale du contenu (px)</label><input id="contentWidth" type="number" min="850" max="1600" value="1260"></div></div></div><div class="buttons"><button class="btn" id="saveTheme">Enregistrer l'apparence</button></div></section>
+
+<section data-section="layout" class="card hidden">
+<h2>Sections du programme public</h2>
+<p class="muted">Ajoute, masque, supprime ou déplace les sections. Le plan apparaît directement sur le programme. Les fiches restent classées chronologiquement.</p>
+<div id="zikaLayoutRows"></div>
+<div class="buttons"><button class="btn secondary" type="button" id="zikaAddSection">+ Ajouter une section de texte</button></div>
+<h3>Charte graphique commune</h3><p class="muted">Une police pour les titres et une pour les textes. Les couleurs s'appliquent à toutes les sections du programme.</p>
+<div class="grid">
+<div><label>Police des titres</label><select id="zikaLayoutHeading"><option>Anton</option><option>Inter</option><option>Montserrat</option><option>Barlow Condensed</option><option>Arial</option><option>Poppins</option><option>Georgia</option></select></div>
+<div><label>Police des textes</label><select id="zikaLayoutBody"><option>Inter</option><option>Arial</option><option>Montserrat</option><option>Poppins</option><option>Roboto</option><option>Georgia</option></select></div>
+<div><label>Couleur des titres</label><input id="zikaLayoutHeadingColor" type="color" value="#10263d"></div>
+<div><label>Couleur du texte</label><input id="zikaLayoutTextColor" type="color" value="#172b3c"></div>
+<div><label>Fond des sections</label><input id="zikaLayoutBackground" type="color" value="#ffffff"></div>
+<div><label>Couleur des bordures</label><input id="zikaLayoutBorder" type="color" value="#d8e4ee"></div>
+<div><label>Fond des boutons</label><input id="zikaLayoutButton" type="color" value="#168fdf"></div>
+<div><label>Texte des boutons</label><input id="zikaLayoutButtonText" type="color" value="#ffffff"></div>
+</div>
+<div class="buttons"><button class="btn" type="button" id="zikaSaveLayout">Enregistrer les sections et les couleurs</button></div>
+<div id="zikaSavedColors" class="zika-palette" aria-label="Palette de couleurs mémorisées">
+  <h3>Mes couleurs enregistrées</h3>
+  <p class="muted">Clique d’abord sur une couleur à modifier, puis sur une nuance ci-dessous pour la réutiliser. Toute nouvelle couleur choisie est mémorisée automatiquement.</p>
+  <div id="zikaPaletteTarget" class="muted" aria-live="polite">Sélectionne un champ de couleur.</div>
+  <div id="zikaPaletteSwatches" class="zika-palette-swatches"></div>
+  <div class="zika-palette-add"><input id="zikaPaletteCustom" type="color" value="#168fdf" aria-label="Nouvelle couleur"><button type="button" class="btn secondary" id="zikaPaletteAdd">+ Mémoriser cette couleur</button></div>
+  <p id="zikaPaletteStatus" class="muted" role="status"></p>
+</div>
+<p class="muted" id="zikaLayoutMessage" aria-live="polite"></p>
+</section>
+<style>
+#zikaLayoutRows{display:grid;gap:10px;margin:16px 0} .zika-layout-row{border:1px solid #d8e4ee;border-radius:13px;padding:12px;display:grid;gap:9px;background:#fff}.zika-layout-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.zika-layout-head strong{flex:1;min-width:130px}.zika-layout-head button{padding:6px 9px;border:1px solid #cad8e4;background:#f4f9fd;border-radius:8px;cursor:pointer}.zika-layout-row input[type=text],.zika-layout-row textarea{width:100%;box-sizing:border-box}.zika-layout-row textarea{min-height:70px}
+</style>
+<style>
+.zika-palette{border:1px solid #d8e4ee;border-radius:14px;background:#f8fbfe;margin-top:18px;padding:16px}
+.zika-palette-swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.zika-palette-item{display:flex;align-items:center;gap:3px;border:1px solid #cbd9e5;padding:4px;background:white;border-radius:9px}
+.zika-palette-swatch{width:37px;height:37px;border-radius:7px;border:1px solid #abb8c5;cursor:pointer}
+.zika-palette-remove{border:0;background:transparent;cursor:pointer;font-size:17px;padding:6px;color:#42586b}
+.zika-palette-add{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.zika-palette-add input{width:56px;height:40px;padding:1px}
+</style>
 <section data-section="links" class="card hidden"><h2>Redirections générales</h2><label>Billetterie HelloAsso (adresse exacte)</label><input type="url" id="ticketUrl" placeholder="https://www.helloasso.com/..."><div class="buttons"><button class="btn" id="saveLinks">Enregistrer la redirection</button></div></section>
 <section data-section="experience" class="card hidden"><h2>Affichage, plan et alertes</h2><p class="muted">Pour le plan Wix, indique l’URL de la page existante. Le ciblage direct d’un marqueur dépend des ancres ou paramètres pris en charge par cette page.</p><label>URL du plan interactif existant</label><input id="globalMapUrl" type="url" placeholder="https://www.zikamansle.fr/..."><label>Titre du bandeau d'information</label><input id="alertTitle" placeholder="Information aux festivaliers"><label>Texte du bandeau</label><textarea id="alertText" placeholder="Modification d'horaire, entrée, consigne pratique..."></textarea><label><input id="alertEnabled" class="check" type="checkbox"> Afficher le bandeau sur le programme public</label><label>Disposition publique</label><select id="publicLayout"><option value="cards">Cartes détaillées</option><option value="compact">Cartes compactes</option></select><div class="buttons"><button class="btn" id="saveExperience">Enregistrer ces réglages</button></div></section><section data-section="bootstrap" class="card hidden"><h2>Importer le programme initial</h2><p>Cette opération ajoute dans Supabase les fiches du programme existant. Elle est à faire <strong>une seule fois</strong>, après vérification : elle ne remplace pas les fiches déjà présentes.</p><button class="btn" id="importInitial">Importer les fiches initiales</button><p class="muted">Tu peux aussi laisser la base vide et créer tes fiches une par une. Le programme public conserve temporairement les fiches intégrées tant qu'aucune fiche publiée n'existe dans Supabase.</p></section>
 <section data-section="backup" class="card hidden"><h2>Sauvegardes du programme</h2><p class="muted">Télécharge une copie complète des fiches et réglages de Supabase avant chaque mise à jour importante. Pour réimporter, les éléments existants seront mis à jour ou ajoutés ; aucune fiche ne sera supprimée automatiquement.</p><div class="buttons"><button type="button" class="btn" id="backupDownload">Télécharger une sauvegarde JSON</button></div><label>Restaurer une sauvegarde JSON</label><input type="file" id="backupFile" accept=".json,application/json"><p class="notice">La restauration modifie les données en ligne. Conserve toujours une copie récente et vérifie le fichier avant importation.</p><button class="btn secondary" type="button" id="backupRestore">Restaurer les données</button><div id="backupStatus" class="msg" role="status"></div></section></div></div>
@@ -609,4 +649,96 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
   new MutationObserver(()=>setTimeout(refresh,30)).observe(document.getElementById('editTitle'),{childList:true});
   refresh();
 })();
-</script></body></html>
+</script>
+<script>
+(function(){
+ const FIXED=[{id:'hero',title:'Présentation du festival'},{id:'filters',title:'Filtres et recherche'},{id:'timeline',title:'Planning chronologique'},{id:'map',title:'Plan interactif'},{id:'events',title:'Fiches événements'},{id:'practical',title:'Informations pratiques'}];
+ const defaultParts=()=>FIXED.map(x=>({id:x.id,title:x.title,visible:true}));
+ let parts=defaultParts();
+ const $=id=>document.getElementById(id);
+ const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function draw(){const host=$('zikaLayoutRows');if(!host)return;host.innerHTML='';parts.forEach((p,i)=>{
+ const row=document.createElement('div');row.className='zika-layout-row';
+ row.innerHTML=`<div class="zika-layout-head"><label><input type="checkbox" data-action="visible" ${p.visible!==false?'checked':''}> Afficher</label><strong>${esc(p.title)}</strong><button type="button" data-action="up" aria-label="Monter">↑</button><button type="button" data-action="down" aria-label="Descendre">↓</button>${p.id.startsWith('custom-')?'<button type="button" data-action="delete">Supprimer</button>':''}</div>${p.id.startsWith('custom-')?`<label>Titre <input type="text" data-action="title" maxlength="100" value="${esc(p.title)}"></label><label>Texte de la section <textarea data-action="body" maxlength="5000">${esc(p.body||'')}</textarea></label>`:''}`;
+ row.addEventListener('click',e=>{const a=e.target?.dataset?.action;if(a==='up'&&i>0){[parts[i-1],parts[i]]=[parts[i],parts[i-1]];draw()}if(a==='down'&&i<parts.length-1){[parts[i+1],parts[i]]=[parts[i],parts[i+1]];draw()}if(a==='delete'&&confirm('Supprimer cette section personnalisée ?')){parts.splice(i,1);draw()}});
+ row.addEventListener('change',e=>{if(e.target.dataset.action==='visible')p.visible=e.target.checked});
+ row.addEventListener('input',e=>{if(e.target.dataset.action==='title'){p.title=e.target.value;row.querySelector('strong').textContent=p.title;}if(e.target.dataset.action==='body')p.body=e.target.value});host.append(row);
+ });}
+ function load(){const s=(typeof settings!=="undefined"?settings.public_layout:null)||{};if(Array.isArray(s.sections)){const ids=new Set();parts=s.sections.filter(p=>p&&typeof p.id==='string'&&!ids.has(p.id)&&(FIXED.some(x=>x.id===p.id)||p.id.startsWith('custom-'))&&(ids.add(p.id),true)).map(p=>({id:p.id,title:String(p.title||FIXED.find(x=>x.id===p.id)?.title||'Nouvelle section'),visible:p.visible!==false,body:String(p.body||'')}));for(const x of FIXED)if(!ids.has(x.id))parts.push({...x,visible:true});}else parts=defaultParts();
+ for(const [id,key,def] of [['zikaLayoutHeading','heading_font','Anton'],['zikaLayoutBody','body_font','Inter'],['zikaLayoutHeadingColor','heading_color','#10263d'],['zikaLayoutTextColor','text_color','#172b3c'],['zikaLayoutBackground','surface','#ffffff'],['zikaLayoutBorder','border','#d8e4ee'],['zikaLayoutButton','button','#168fdf'],['zikaLayoutButtonText','button_text','#ffffff']])$(id).value=s[key]||def;draw();}
+ $('zikaAddSection')?.addEventListener('click',()=>{parts.push({id:'custom-'+Date.now().toString(36),title:'Nouvelle section',body:'',visible:true});draw()});
+ $('zikaSaveLayout')?.addEventListener('click',async()=>{try{const payload={sections:parts.map(p=>({...p})),heading_font:$('zikaLayoutHeading').value,body_font:$('zikaLayoutBody').value,heading_color:$('zikaLayoutHeadingColor').value,text_color:$('zikaLayoutTextColor').value,surface:$('zikaLayoutBackground').value,border:$('zikaLayoutBorder').value,button:$('zikaLayoutButton').value,button_text:$('zikaLayoutButtonText').value};await setting("public_layout",payload);$('zikaLayoutMessage').textContent='Sections et apparence enregistrées.';}catch(e){$('zikaLayoutMessage').textContent='Erreur : '+e.message}});
+ const tab=document.querySelector('[data-tab="layout"]');tab?.addEventListener('click',load);
+ window.zikaLayoutLoad=load;
+})();
+</script>
+<script>
+(function(){
+ const $=id=>document.getElementById(id);
+ const isColor=x=>/^#[0-9a-f]{6}$/i.test(String(x||''));
+ const norm=x=>String(x).toLowerCase();
+ const allowed=()=>Array.from(document.querySelectorAll('input[type="color"]')).filter(el=>el.id!=='zikaPaletteCustom');
+ let saved=[];
+ let target=null;
+ let writer=Promise.resolve();
+ let ready=false;
+ const status=msg=>{const e=$('zikaPaletteStatus');if(e)e.textContent=msg;};
+ function seed(){
+  const vals=[];
+  const add=x=>{if(isColor(x)&&!vals.includes(norm(x)))vals.push(norm(x));};
+  const st=typeof settings!=='undefined'?settings:{};
+  const existing=st.saved_colors?.colors;
+  if(Array.isArray(existing))existing.forEach(add);
+  for(const v of Object.values(st.theme||{}))add(v);
+  for(const v of Object.values(st.public_layout||{}))add(v);
+  for(const v of Object.values(st.event_form_options?.categoryColors||{}))add(v);
+  const d=st.design||{};
+  for(const v of Object.values(d))if(typeof v==='string')add(v);
+  for(const f of Object.values(d.fonts||{}))if(f&&typeof f==='object')add(f.color);
+  allowed().forEach(el=>add(el.value));
+  saved=vals;
+ }
+ function persist(){
+  const values=[...saved];
+  writer=writer.catch(()=>{}).then(async()=>{
+   await setting('saved_colors',{colors:values});
+   status('Palette enregistrée dans Supabase.');
+  }).catch(e=>status('Enregistrement impossible : '+e.message));
+ }
+ function render(){
+  const host=$('zikaPaletteSwatches');if(!host)return;
+  host.replaceChildren();
+  saved.forEach(hex=>{
+   const wrap=document.createElement('div');wrap.className='zika-palette-item';
+   const b=document.createElement('button');b.type='button';b.className='zika-palette-swatch';b.style.backgroundColor=hex;b.title='Utiliser '+hex;b.setAttribute('aria-label','Utiliser '+hex);
+   b.onclick=()=>{
+    if(!target||!target.isConnected){status('Clique d’abord sur le champ de couleur à modifier.');return;}
+    target.value=hex;
+    target.dispatchEvent(new Event('input',{bubbles:true}));
+    target.dispatchEvent(new Event('change',{bubbles:true}));
+    status(hex+' appliquée au champ « '+(target.closest('div')?.querySelector('label')?.textContent?.trim()||target.id||'couleur')+' ».');
+   };
+   const rm=document.createElement('button');rm.type='button';rm.className='zika-palette-remove';rm.textContent='×';rm.title='Retirer '+hex+' des couleurs enregistrées';rm.setAttribute('aria-label',rm.title);
+   rm.onclick=()=>{saved=saved.filter(c=>c!==hex);render();persist()};
+   wrap.append(b,rm);host.append(wrap);
+  });
+ }
+ function add(hex){if(!isColor(hex))return;hex=norm(hex);if(!saved.includes(hex)){saved.push(hex);render();persist();}}
+ function init(){
+  if(!ready){seed();render();ready=true;}
+ }
+ document.addEventListener('focusin',e=>{
+  const el=e.target;if(!(el instanceof HTMLInputElement)||el.type!=='color'||el.id==='zikaPaletteCustom')return;
+  target=el;
+  const label=el.closest('div')?.querySelector('label')?.textContent?.trim()||el.title||el.id;
+  $('zikaPaletteTarget').textContent='Champ sélectionné : '+label;
+ });
+ document.addEventListener('change',e=>{
+  const el=e.target;if(el instanceof HTMLInputElement&&el.type==='color'&&el.id!=='zikaPaletteCustom'){init();add(el.value);}
+ },true);
+ $('zikaPaletteAdd')?.addEventListener('click',()=>{init();add($('zikaPaletteCustom').value);});
+ document.querySelector('[data-tab="layout"]')?.addEventListener('click',init);
+ // Les anciens réglages et les couleurs de catégorie sont récupérés au premier affichage.
+})();
+</script>
+</body></html>
