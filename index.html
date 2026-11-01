@@ -454,8 +454,9 @@ body{background:#f7fafe}
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
-const EVENTS = [
+let EVENTS = [
 {id:'village',day:'samedi',sort:1400,time:'14h–17h',start:'14:00',end:'17:00',title:'ZikaVillage',cat:'Animations',place:'Place de l’Hôtel de Ville',short:'Village festif avec démonstrations, stands associatifs et direct radio.',description:'Le ZikaVillage anime la place de l’Hôtel de Ville le samedi après-midi. Au programme : Radio Attitude en direct, Hopla Circus, l’APE pour le maquillage, Les Sangs Mêlés, Pa’ la Calle Charente, Arabesk, l’aïkido et le Do-In, ainsi que plusieurs stands associatifs et de prévention. Pas de buvette ni de restauration sur le village.',free:true},
 {id:'parade',day:'samedi',sort:1700,time:'17h–18h30',start:'17:00',end:'18:30',title:'ZikaParade',cat:'Parade',place:'Départ Hôtel de Ville → rue Grande → av. Paul-Mairat → arrivée Salle Gautier Capuçon',short:'Grande parade gratuite au cœur de Mansle-les-Fontaines.',description:'La ZikaParade traverse le centre-ville avec Banda Festa 17, le Bagad Kevrenn Balzac, les Majorettes de Segonzac, la compagnie Le Passage avec ses échassiers, Les Sangs Mêlés, Astrid Boop et des animations bulles géantes.',free:true},
 {id:'concerts',day:'samedi',sort:1830,time:'18h30–02h',start:'18:30',end:'23:59',title:'Concerts du samedi soir',cat:'Musique',place:'Salle Gautier Capuçon',short:'La grande soirée concerts du festival.',description:'La soirée concerts se déroule le samedi soir à la Salle Gautier Capuçon, avec Kamini, Timéo Sparking, Dub Silence et deux autres artistes à annoncer. Billetterie dédiée pour la soirée.',free:false},
@@ -513,7 +514,7 @@ function render(){
   $('count').textContent = `${rows.length} rendez-vous`;
   $('results').innerHTML = rows.length ? rows.map(e=>`
     <article class="event-card" data-cat="${escapeHtml(e.cat)}">
-      <div class="event-band"></div>
+      <div class="event-band"></div>${e.image ? `<img src="${escapeHtml(e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;display:block" onerror="this.style.display='none'">` : ``}
       <div class="event-inner">
         <div class="event-time">
           <div class="time-big">${escapeHtml(e.time)}</div>
@@ -583,5 +584,30 @@ $('modalCalendar').onclick=makeCalendar;
 $('scrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 render();
 </script>
-</body>
+<script>
+(async function(){
+ const c=window.ZIKA_CONFIG;if(!c?.url||!c?.publishableKey||c.publishableKey.includes('COLLER'))return;
+ const h={apikey:c.publishableKey,Authorization:'Bearer '+c.publishableKey};
+ try{
+  const [er,sr]=await Promise.all([
+   fetch(c.url+'/rest/v1/zika_events?select=*&published=eq.true&order=display_order.asc',{headers:h}),
+   fetch(c.url+'/rest/v1/zika_settings?select=key,value',{headers:h})
+  ]);
+  if(!er.ok||!sr.ok)throw Error('Lecture impossible');
+  const rows=await er.json(),settings=await sr.json();
+  // No initial disappearance: fallback built-in schedule until published data exists.
+  if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
+    sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
+    title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
+    free:!!r.is_free,url:r.link_url||'',image:r.image_url||''}));render();}
+  const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));
+  const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
+   if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
+  }
+  if(st.branding?.title){document.querySelector('.brand strong').textContent=st.branding.title}
+  if(st.branding?.logo_url){const mark=document.querySelector('.logo-mark');mark.style.background='url("'+st.branding.logo_url.replace(/"/g,'')+'") center/contain no-repeat';}
+  if(st.links?.ticket_url){document.querySelectorAll('a[href="https://www.helloasso.com"]').forEach(a=>a.href=st.links.ticket_url)}
+ }catch(e){console.warn('Programme local utilisé :',e.message)}
+})();
+</script></body>
 </html>
