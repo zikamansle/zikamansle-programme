@@ -888,8 +888,8 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
  <div class="twos"><div><label>Couleur du texte</label><input id="zvColor" type="color" value="#182e43"></div><div><label>Couleur du fond</label><input id="zvBg" type="color" value="#ffffff"></div></div>
  <label>Opacité (%)</label><input id="zvOpacity" type="range" min="0" max="100" value="100"><div class="twos"><div><label>Largeur (%)</label><input id="zvWidth" type="number" min="20" max="100" placeholder="Automatique"></div><div><label>Hauteur (px)</label><input id="zvHeight" type="number" min="0" max="900" placeholder="Automatique"></div></div>
  <div class="twos"><div><label>Décalage horizontal (px)</label><input id="zvX" type="number" min="-500" max="500" value="0"></div><div><label>Décalage vertical (px)</label><input id="zvY" type="number" min="-500" max="500" value="0"></div></div>
- <div class="twos"><div><label>Espacement intérieur (px)</label><input id="zvPad" type="number" min="0" max="120" placeholder="Défaut"></div><div><label>Angles arrondis (px)</label><input id="zvRadius" type="number" min="0" max="100" placeholder="Défaut"></div></div>
- <div class="twos"><div><label>Forme du contour</label><select id="zvBorderStyle"><option value="">Sans réglage</option><option value="none">Aucun</option><option value="solid">Trait plein</option><option value="dashed">Pointillés</option></select></div><div><label>Épaisseur du contour (px)</label><input id="zvBorderWidth" type="number" min="0" max="20" placeholder="0"></div></div><div class="twos"><div><label>Couleur du contour</label><input id="zvBorderColor" type="color" value="#ffffff"></div><div><label>Ombre</label><select id="zvShadow"><option value="">Par défaut</option><option value="none">Sans ombre</option><option value="0 5px 20px #00000055">Douce</option><option value="0 10px 35px #00000088">Marquée</option></select></div></div><label>Texte du bloc sélectionné</label><textarea id="zvTextContent" rows="3" style="width:100%;border:1px solid #cbd9e8;border-radius:8px;padding:9px"></textarea><label>Lien du bouton / élément sélectionné</label><input id="zvLink" placeholder="https://… ou #ancre"><div class="zv-wix-actions"><button type="button" class="smallbtn" id="zvAdjustImage">↔ Ajuster l’image dans son cadre</button><button type="button" class="smallbtn" id="zvReplaceImage">▣ Remplacer l’image · Wix</button><button type="button" class="smallbtn" id="zvChooseBackground">▣ Choisir un fond · Wix</button></div><p class="hint">Après le choix, règle le cadrage, le zoom et l’opacité. Le fichier Wix original est conservé.</p><label>Image (adresse HTTPS ou média Wix)</label><input id="zvImageSrc" placeholder="https://..."><label>Image de fond / logo (adresse du média Wix)</label><input id="zvBackgroundImage" placeholder="URL HTTPS d’une image de fond"><label>Alignement du texte</label><select id="zvAlign"><option value="">Défaut</option><option value="left">Gauche</option><option value="center">Centré</option><option value="right">Droite</option></select>
+ <label>Forme de l’encart</label><select id="zvShape"><option value="">Forme personnalisée</option><option value="0">Rectangulaire</option><option value="10">Coins légèrement arrondis</option><option value="22">Arrondi prononcé</option><option value="999">Pilule / capsule</option></select><div class="twos"><div><label>Espacement intérieur (px)</label><input id="zvPad" type="number" min="0" max="120" placeholder="Défaut"></div><div><label>Angles arrondis (px)</label><input id="zvRadius" type="number" min="0" max="100" placeholder="Défaut"></div></div>
+ <div class="twos"><div><label>Forme du contour</label><select id="zvBorderStyle"><option value="">Sans réglage</option><option value="none">Aucun</option><option value="solid">Trait plein</option><option value="dashed">Tirets</option><option value="dotted">Pointillé rond</option><option value="double">Double trait</option></select></div><div><label>Épaisseur du contour (px)</label><input id="zvBorderWidth" type="number" min="0" max="20" placeholder="0"></div></div><div class="twos"><div><label>Couleur du contour</label><input id="zvBorderColor" type="color" value="#ffffff"></div><div><label>Ombre</label><select id="zvShadow"><option value="">Par défaut</option><option value="none">Sans ombre</option><option value="0 5px 20px #00000055">Douce</option><option value="0 10px 35px #00000088">Marquée</option></select></div></div><label>Texte du bloc sélectionné</label><textarea id="zvTextContent" rows="3" style="width:100%;border:1px solid #cbd9e8;border-radius:8px;padding:9px"></textarea><label>Lien du bouton / élément sélectionné</label><input id="zvLink" placeholder="https://… ou #ancre"><div class="zv-wix-actions"><button type="button" class="smallbtn" id="zvAdjustImage">↔ Ajuster l’image dans son cadre</button><button type="button" class="smallbtn" id="zvReplaceImage">▣ Remplacer l’image · Wix</button><button type="button" class="smallbtn" id="zvChooseBackground">▣ Choisir un fond · Wix</button></div><p class="hint">Après le choix, règle le cadrage, le zoom et l’opacité. Le fichier Wix original est conservé.</p><label>Image (adresse HTTPS ou média Wix)</label><input id="zvImageSrc" placeholder="https://..."><label>Image de fond / logo (adresse du média Wix)</label><input id="zvBackgroundImage" placeholder="URL HTTPS d’une image de fond"><label>Alignement du texte</label><select id="zvAlign"><option value="">Défaut</option><option value="left">Gauche</option><option value="center">Centré</option><option value="right">Droite</option></select>
  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="smallbtn" id="zvAddText">+ Texte</button><button type="button" class="smallbtn" id="zvAddImage">+ Image Wix</button><button type="button" class="smallbtn" id="zvAddMedia">+ Média / vidéo</button><button type="button" class="smallbtn" id="zvAddBox">+ Bloc</button><button type="button" class="smallbtn" id="zvHide" style="background:#ffe8e8;color:#862c31">Masquer l’élément</button></div><p class="hint">Clique puis glisse pour déplacer. Utilise les poignées de sélection pour redimensionner. Touche Suppr pour masquer, Ctrl+Z pour annuler. Les fiches Supabase ne sont jamais supprimées.</p><button type="button" class="smallbtn" id="zvReset">Réinitialiser cet élément</button>
  <details><summary>Couverture et image de fond</summary><p class="hint">Le déplacement du fond et le zoom agissent sur l'image d'arrière-plan de l'élément sélectionné.</p><label>Position horizontale du fond (%)</label><input id="zvBgX" type="range" min="0" max="100" value="50"><label>Position verticale du fond (%)</label><input id="zvBgY" type="range" min="0" max="100" value="50"><label>Zoom du fond (%)</label><input id="zvBgZoom" type="range" min="100" max="250" value="100"></details>
  </div><details open style="margin-top:14px"><summary>Éléments masqués — restaurer</summary><div id="zvHiddenList" class="hint">Aucun élément masqué.</div></details><p class="hint" id="zvDirty">Aucune modification en cours.</p></aside></div>
@@ -912,10 +912,10 @@ function zvUniqueNodeKey(node){
 }
 const zvNodeKey=k=>/^\[data-zv-node="n-[a-z0-9-]+"\]$/.test(k);
 function zvMarkNodes(doc){
- const selector='h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,header img,.topbar img,.logo-mark,.brand,.top-actions,.hero-copy,.kicker,.hero-badges,.hero-panel,.hero-panel-top,.fact-grid,.fact,.panel-big,.panel-title,.panel-chip,.control-card,.control-panel,.control-grid,.control-block,.searchbox,.day-switch,.filters,.zika-facets,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,.results,.primary,.tool-btn';
+ const selector='body > main,body > section,body > header,body > footer,header,nav,main,section,article,aside,footer,div,figure,figcaption,h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,a,button,label,li,summary,blockquote,img,video,picture,input,select,textarea';
  doc.querySelectorAll(selector).forEach(el=>{
-  if(el.closest('script,style,svg,[contenteditable],#zvCustomHost'))return;
-  if(el.matches('span,strong,small')&&el.children.length>0)return;
+  if(el.closest('script,style,svg,[contenteditable],#zvCustomHost,#zvContextMenu,[data-zv-direction]'))return;
+  if(el.matches('span,strong,small,em,b,i')&&el.children.length>0)return;
   zvUniqueNodeKey(el);
  });
 }
@@ -923,7 +923,7 @@ const targets=[['Bannière','.zika-banner'],['Image de bannière','.zika-banner_
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeCss=(s)=>String(s||'').replace(/[{};<>]/g,'');
 const customKey=k=>/^\[data-zv-block=\"zv-[a-z0-9-]+\"\]$/.test(k);
-const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');add('font-weight',v.fontWeight);add('color',v.color);add('background-color',v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');add('opacity',v.opacity!==undefined?Math.max(0,Math.min(100,Number(v.opacity)))/100:'');add('width',v.width?Number(v.width)+'%':'');add('height',v.height?Number(v.height)+'px':'');add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
+const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');add('font-weight',v.fontWeight);add('color',v.color);add('background-color',v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');add('opacity',v.opacity!==undefined?Math.max(0,Math.min(100,Number(v.opacity)))/100:'');add('width',v.widthPx!==undefined?Number(v.widthPx)+'px':(v.width?Number(v.width)+'%':''));add('height',v.height?Number(v.height)+'px':'');add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
 const buildCss= data=>Object.entries(data).filter(([k,v])=>(targets.some(t=>t[1]===k)||customKey(k)||zvNodeKey(k))&&v&&typeof v==='object').map(([key,v])=>`${key}{${styleFor(key,v)}}`).join('\n');
 function frameDoc(){try{return frame.contentDocument}catch{return null}}
 function isolateGeometry(doc){
@@ -967,9 +967,9 @@ function applyHeroPhoto(doc){
  hero.style.setProperty('overflow','hidden','important');
 }
 function applyBannerCrop(doc){const cfg=draft['.zika-banner']||draft['.zika-banner__image'];if(!cfg)return;const banner=doc.querySelector('.zika-banner');if(!banner)return;const image=banner.querySelector('.zika-banner__image');if(!image)return;const x=Number(cfg.bgX??50),y=Number(cfg.bgY??50),z=Number(cfg.bgZoom??100);image.style.setProperty('object-position',x+'% '+y+'%','important');image.style.setProperty('transform',`scale(${Math.max(1,z/100)})`,'important');image.style.setProperty('transform-origin',x+'% '+y+'%','important');banner.style.setProperty('overflow','hidden','important')}
-function editableNode(el){return !!el&&el.nodeType===1&&!el.closest('input,textarea,select,script,style,svg')&&(['H1','H2','H3','H4','H5','H6','P','SPAN','STRONG','SMALL','A','BUTTON','LABEL','LI','SUMMARY','FIGCAPTION','BLOCKQUOTE'].includes(el.tagName)||el.matches('.panel-big,.panel-title,.panel-chip')||customKey(getTarget(el)))}
+function editableNode(el){return !!el&&el.nodeType===1&&!el.closest('input,textarea,select,script,style,svg')&&(['H1','H2','H3','H4','H5','H6','P','SPAN','STRONG','SMALL','EM','B','I','A','BUTTON','LABEL','LI','SUMMARY','FIGCAPTION','BLOCKQUOTE'].includes(el.tagName)||el.matches('.panel-big,.panel-title,.panel-chip')||(el.tagName==='DIV'&&!el.children.length&&!!el.textContent.trim())||customKey(getTarget(el)))}
 function applyContent(doc){for(const [key,v] of Object.entries(draft)){if(!v||typeof v!=='object'||customKey(key))continue;if(!('content' in v)&&!('href' in v))continue;try{doc.querySelectorAll(key).forEach(el=>{if(el.isContentEditable)return;if(typeof v.content==='string'&&el.textContent!==v.content&&(!el.children.length||el.matches('a,button'))&&!el.closest('.event-card'))el.textContent=v.content;if('href' in v&&el.tagName==='A'&&/^(https:\/\/[^\s]+|#[a-z][a-z0-9_-]*)$/i.test(v.href))el.setAttribute('href',v.href)})}catch(e){}}}
-function beginInlineEdit(e){if(mode!=='edit')return;let el=e.target.closest('h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,.panel-big,.panel-title,.panel-chip,[data-zv-block]');
+function beginInlineEdit(e){if(mode!=='edit')return;let el=e.target.closest('h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,a,button,label,li,summary,figcaption,blockquote,div:not(:has(*)),.panel-big,.panel-title,.panel-chip,[data-zv-block]');
  if(el&&!editableNode(el)){el=el.querySelector('h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,[data-zv-block]')}
  if(!editableNode(el))return;const key=customKey(getTarget(el))?getTarget(el):zvUniqueNodeKey(el);if(key==='body')return;if(el.closest('.event-card')){status('Le texte de cette carte est lié à la fiche événement : modifie sa fiche depuis Événements.');return}e.preventDefault();e.stopImmediatePropagation();drag=null;skipClick=false;selectedKey=key;by('zvSelectInfo').textContent='Texte en cours de modification';by('zvFields').hidden=false;const old=el.textContent;el.setAttribute('contenteditable','true');el.focus();const sel=el.ownerDocument.getSelection(),range=el.ownerDocument.createRange();range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);let finished=false;const finish=(commit)=>{if(finished)return;finished=true;el.removeAttribute('contenteditable');const value=el.textContent;if(commit&&value!==old){snapshot();draft[key]={...(draft[key]||{}),content:value};by('zvTextContent').value=value;status('Texte modifié — non publié')}else if(!commit)el.textContent=old;apply();el.removeEventListener('blur',blur,true);el.removeEventListener('keydown',keydown,true)};const blur=()=>finish(true);const keydown=ev=>{if(ev.key==='Escape'){ev.preventDefault();finish(false)}else if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();finish(true)}};el.addEventListener('blur',blur,true);el.addEventListener('keydown',keydown,true)}
 function renderCustom(doc){let host=doc.getElementById('zvCustomHost');if(!host){host=doc.createElement('div');host.id='zvCustomHost';host.style.cssText='position:relative;z-index:20;min-height:0';(doc.querySelector('.hero')||doc.querySelector('.zika-banner')||doc.body).after(host)}const ids=Object.entries(draft).filter(([key,v])=>customKey(key)&&v?.kind);const actual=new Set(ids.map(([key])=>key.match(/zv-[a-z0-9-]+/)[0]));host.querySelectorAll('[data-zv-block]').forEach(el=>{if(!actual.has(el.dataset.zvBlock))el.remove()});for(const [key,v] of ids){const id=key.match(/zv-[a-z0-9-]+/)[0];let el=host.querySelector('[data-zv-block="'+id+'"]');if(!el){el=doc.createElement(v.kind==='media'?'video':v.kind==='image'?'img':'div');el.dataset.zvBlock=id;el.style.cssText='display:block;box-sizing:border-box;position:relative;min-width:90px;min-height:30px;max-width:100%;margin:12px auto;';host.append(el)}if(v.kind==='image'||v.kind==='media'){if(/^https:\/\//i.test(v.src||''))el.src=v.src;if(v.kind==='media'){el.controls=true;el.playsInline=true}else el.alt=v.alt||'Illustration';el.style.objectFit='cover'}else{if(!el.isContentEditable)el.textContent=v.kind==='box'?(v.content??''):(v.content??'Nouveau texte')}}}
@@ -977,54 +977,33 @@ function isCustom(){return customKey(selectedKey)}
 function newBlock(kind){snapshot();const id='zv-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*999).toString(36),key='[data-zv-block="'+id+'"]';draft[key]=(kind==='image'||kind==='media')?{kind,src:'',width:70,height:220}:kind==='box'?{kind,content:'',width:80,height:180,backgroundColor:'#e9f2fb',borderRadius:15,padding:16}:{kind,content:'Nouveau texte',fontSize:26,color:'#183653',padding:12};apply();setKey(key);status('Bloc créé — personnalise-le dans le panneau')}
 function renderHidden(){const el=by('zvHiddenList');if(!el)return;el.replaceChildren();const keys=Object.keys(draft).filter(k=>draft[k]?.hidden===true);if(!keys.length){el.textContent='Aucun élément masqué.';return}for(const k of keys){const b=document.createElement('button');b.type='button';b.className='smallbtn';b.style.display='block';b.textContent='↩ Rétablir : '+(targets.find(t=>t[1]===k)?.[0]||k);b.onclick=()=>{snapshot();delete draft[k].hidden;apply();renderHidden();status('Élément rétabli (non publié)')};el.append(b)}}
 function status(text){by('zvStatus').textContent=text;by('zvDirty').textContent=text;by('zvPreviewNotice').textContent=text}function snapshot(){history.push(JSON.stringify(draft));if(history.length>50)history.shift();redo=[]}
-function setKey(key){if(!key){selectedKey='';by('zvFields').hidden=true;apply();return}selectedKey=key;by('zvFields').hidden=!key;const nodeForLabel=frameDoc()?.querySelector(key);by('zvSelectInfo').textContent=key==='body'?'Fond de page — couleur, image Wix, opacité et cadrage':nodeForLabel?.matches('.fact')?'Encart individuel — fond, bordure et coins':nodeForLabel?.matches('.fact strong,.fact span')?'Texte de l’encart — police et couleur':(targets.find(x=>x[1]===key)?.[0]||(zvNodeKey(key)?'Élément individuel sélectionné':'Élément'));const val=draft[key]||{};by('zvTextContent').value=val.content??(key&&!customKey(key)?(frameDoc()?.querySelector(key)?.textContent||''):'');by('zvLink').value=val.href||'';by('zvImageSrc').value=val.src||'';by('zvBackgroundImage').value=val.backgroundImage||'';by('zvTextContent').parentElement.querySelector('label[for=zvTextContent]');by('zvTextContent').style.display=(val.kind==='text'||(!val.kind&&!!frameDoc()?.querySelector(key)?.matches('h1,h2,h3,h4,p,span,a,button,label,.panel-big,.panel-title,.panel-chip')))?'block':'none';by('zvLink').style.display=frameDoc()?.querySelector(key)?.matches('a')?'block':'none';by('zvImageSrc').style.display=['image','media'].includes(val.kind)?'block':'none';for(const [id,k] of Object.entries(props)){const el=by(id);if(['zvColor','zvBg','zvBorderColor'].includes(id)){el.value=/^#[\da-f]{6}$/i.test(val[k]||'')?val[k]:(id==='zvColor'?'#182e43':'#ffffff')}else if(['zvOpacity','zvBgX','zvBgY','zvBgZoom'].includes(id))el.value=val[k]??(id==='zvOpacity'?100:id==='zvBgZoom'?100:50);else el.value=val[k]??''}apply()}
+function setKey(key){if(!key){selectedKey='';by('zvFields').hidden=true;apply();return}selectedKey=key;by('zvFields').hidden=!key;const nodeForLabel=frameDoc()?.querySelector(key);by('zvSelectInfo').textContent=key==='body'?'Fond de page — couleur, image Wix, opacité et cadrage':nodeForLabel?.matches('.fact')?'Encart individuel — fond, bordure et coins':nodeForLabel?.matches('.fact strong,.fact span')?'Texte de l’encart — police et couleur':(targets.find(x=>x[1]===key)?.[0]||(zvNodeKey(key)?'Élément individuel sélectionné':'Élément'));const val=draft[key]||{};by('zvShape').value=['0','10','22','999'].includes(String(val.borderRadius??''))?String(val.borderRadius):'';by('zvTextContent').value=val.content??(key&&!customKey(key)?(frameDoc()?.querySelector(key)?.textContent||''):'');by('zvLink').value=val.href||'';by('zvImageSrc').value=val.src||'';by('zvBackgroundImage').value=val.backgroundImage||'';by('zvTextContent').parentElement.querySelector('label[for=zvTextContent]');by('zvTextContent').style.display=(val.kind==='text'||(!val.kind&&!!frameDoc()?.querySelector(key)?.matches('h1,h2,h3,h4,p,span,a,button,label,.panel-big,.panel-title,.panel-chip')))?'block':'none';by('zvLink').style.display=frameDoc()?.querySelector(key)?.matches('a')?'block':'none';by('zvImageSrc').style.display=['image','media'].includes(val.kind)?'block':'none';for(const [id,k] of Object.entries(props)){const el=by(id);if(['zvColor','zvBg','zvBorderColor'].includes(id)){el.value=/^#[\da-f]{6}$/i.test(val[k]||'')?val[k]:(id==='zvColor'?'#182e43':'#ffffff')}else if(['zvOpacity','zvBgX','zvBgY','zvBgZoom'].includes(id))el.value=val[k]??(id==='zvOpacity'?100:id==='zvBgZoom'?100:50);else el.value=val[k]??''}apply()}
 function getTarget(node){
- const doc=frameDoc();
- if(!node || !doc)return 'body';
+ const doc=frameDoc();if(!doc||!node)return 'body';
  let el=node.nodeType===3?node.parentElement:node;
- if(!el || el.nodeType!==1)return 'body';
+ if(!el||el.nodeType!==1)return 'body';
+ if(el.closest('#zvResizeHandle,#zvContextMenu'))return selectedKey||'body';
  if(el.closest('.zv-hero-photo'))return '.hero';
- if(el.closest('img,video,picture')){const media=el.closest('img,video,picture');return zvUniqueNodeKey(media.matches('picture')?(media.querySelector('img')||media):media)}
  const custom=el.closest('[data-zv-block]');
  if(custom)return '[data-zv-block="'+custom.dataset.zvBlock+'"]';
- const textSelector='h1,h2,h3,h4,h5,h6,p,span,strong,small,a,button,label,li,summary,figcaption,blockquote,.panel-big,.panel-title,.panel-chip';
- // Chaque tuile « En un coup d'œil » est un bloc indépendant :
- // clic sur son fond = tuile ; clic sur son texte = texte (en mode Texte).
- const fact=el.closest('.fact');
- if(fact){
-   const exactText=el.closest('strong,span');
-   if(pickMode==='text' && exactText && fact.contains(exactText))return zvUniqueNodeKey(exactText);
-   return zvUniqueNodeKey(fact);
- }
- if(el.closest('.fact-grid') && pickMode==='block' && el.matches('.fact-grid'))return zvUniqueNodeKey(el);
- // Filtres : ne jamais sélectionner automatiquement la zone rouge quand on clique la carte blanche.
- const filterCard=el.closest('.control-card');
- if(filterCard){
-   if(pickMode==='text'){
-     const text=el.closest('button,label,span,strong,p,a');
-     if(text&&filterCard.contains(text))return zvUniqueNodeKey(text);
-   }
-   // Un bouton peut être stylisé indépendamment, même en mode Bloc.
-   const btn=el.closest('button');
-   if(btn&&filterCard.contains(btn))return zvUniqueNodeKey(btn);
-   // Un clic dans le vide ou dans les champs sélectionne uniquement la carte blanche.
-   return '.control-card';
- }
- if(el.closest('.logo-mark'))return zvUniqueNodeKey(el.closest('.logo-mark'));
- const blockSelector='.content,.control-card,.control-grid,.control-block,.searchbox,.day-switch,.filters,.zika-facets,.fact,.hero-panel,.hero-copy,.zika-banner,.hero,.topbar,.brand,.top-actions,.filters,.filter-panel,.event-card,.card,.timeline,.programme-layout,.program-layout,.map-panel,.map-container,header,nav,section,article,footer';
+ // The image itself, its surrounding box and its caption are always independent.
+ const media=el.closest('img,video,picture');
+ if(media)return zvUniqueNodeKey(media.matches('picture')?(media.querySelector('img')||media):media);
+ const exactText='h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,a,button,label,li,summary,figcaption,blockquote,.panel-big,.panel-title,.panel-chip';
  if(pickMode==='text'){
-   const text=el.closest(textSelector);
-   if(text && !text.closest('script,style,svg'))return zvUniqueNodeKey(text);
+   const text=el.closest(exactText);
+   if(text&&!text.closest('script,style,svg'))return zvUniqueNodeKey(text);
  }
- const block=el.closest(blockSelector);
- if(block && block!==doc.body){
-   // A stable node-specific key avoids changing every event card at once.
-   return zvUniqueNodeKey(block);
+ // Explicitly select inner cards before any exterior panel.
+ const inner=el.closest('.fact,.control-card,.event-card,.filter-panel,.searchbox,.hero-panel,.panel-chip,.card');
+ if(inner)return zvUniqueNodeKey(inner);
+ if(pickMode==='block'){
+   const block=el.closest('button,a,label,article,figure,section,aside,nav,header,footer,div,main');
+   if(block&&block!==doc.body)return zvUniqueNodeKey(block);
  }
- for(let cur=el;cur && cur!==doc.body;cur=cur.parentElement){
-   for(const [,selector] of targets){try{if(cur.matches(selector))return selector}catch{}}
- }
- return zvUniqueNodeKey(el);
+ // Directly clicked text in block mode still selects its own visual box.
+ if(el!==doc.body)return zvUniqueNodeKey(el);
+ return 'body';
 }
 function setPickMode(next){
  pickMode=next;selectedKey='';by('zvFields').hidden=true;
@@ -1041,16 +1020,32 @@ by('zvPickContent').onclick=()=>{setPickMode('block');setKey('.content');status(
 
 
 // Poignée de redimensionnement indépendante : fonctionne aussi pour les blocs du programme.
+const zvDirections=['nw','n','ne','e','se','s','sw','w'];
 function updateResizeHandle(){
  const doc=frameDoc();if(!doc)return;
- let h=doc.getElementById('zvResizeHandle');
- if(!h){h=doc.createElement('button');h.type='button';h.id='zvResizeHandle';h.setAttribute('aria-label','Redimensionner le bloc sélectionné');h.title='Glisser pour agrandir ou réduire';h.style.cssText='position:fixed;display:none;width:24px;height:24px;border:2px solid white;border-radius:6px;background:#f88722;box-shadow:0 1px 8px #0008;z-index:2147483647;cursor:nwse-resize;touch-action:none;';h.textContent='↘';h.style.color='#10283b';doc.body.append(h)}
  const node=selectedKey&&mode==='edit'?doc.querySelector(selectedKey):null;
- if(!node||node===doc.body||!node.getClientRects().length){h.style.display='none';return}
- const r=node.getBoundingClientRect();h.style.left=Math.max(0,Math.min(doc.documentElement.clientWidth-26,r.right-12))+'px';h.style.top=Math.max(0,Math.min(doc.documentElement.clientHeight-26,r.bottom-12))+'px';h.style.display='block';
+ for(const d of zvDirections){let h=doc.getElementById('zvHandle-'+d);
+  if(!h){h=doc.createElement('button');h.type='button';h.id='zvHandle-'+d;h.dataset.zvDirection=d;h.setAttribute('aria-label','Redimensionner '+d);h.title='Redimensionner '+d;h.style.cssText='position:fixed;display:none;width:14px;height:14px;border:2px solid #fff;border-radius:4px;background:#f88722;box-shadow:0 1px 6px #0008;z-index:2147483647;touch-action:none;cursor:'+({n:'ns',s:'ns',e:'ew',w:'ew',ne:'nesw',sw:'nesw',nw:'nwse',se:'nwse'}[d])+'-resize';doc.body.append(h)}
+  if(!node||node===doc.body||!node.getClientRects().length){h.style.display='none';continue}
+  const r=node.getBoundingClientRect();const coords={nw:[r.left,r.top],n:[r.left+r.width/2,r.top],ne:[r.right,r.top],e:[r.right,r.top+r.height/2],se:[r.right,r.bottom],s:[r.left+r.width/2,r.bottom],sw:[r.left,r.bottom],w:[r.left,r.top+r.height/2]}[d];
+  h.style.left=(coords[0]-7)+'px';h.style.top=(coords[1]-7)+'px';h.style.display='block';
+ }
+}
+// Reserve the original footprint before editing; the selected visual box is free to grow
+// without pushing its siblings, stretching its contents, or expanding the header.
+function zvReserveFrame(doc,el){
+ if(!el||el===doc.body||el.dataset.zvFrameReady)return;
+ const r=el.getBoundingClientRect(),parent=el.parentElement;if(!parent||r.width<1||r.height<1)return;
+ const holder=doc.createElement('div');holder.dataset.zvReserved='1';
+ const cs=doc.defaultView.getComputedStyle(el);
+ holder.style.cssText='position:relative;box-sizing:border-box;flex:0 0 auto;min-width:0;min-height:0;width:'+r.width+'px;height:'+r.height+'px;margin:'+cs.margin+';';
+ // Keep the natural position in parent flow (including flex/grid placement).
+ el.before(holder);holder.append(el);
+ el.dataset.zvFrameReady='1';el.style.setProperty('position','absolute','important');el.style.setProperty('left','0','important');el.style.setProperty('top','0','important');el.style.setProperty('margin','0','important');el.style.setProperty('width',r.width+'px','important');el.style.setProperty('height',r.height+'px','important');
+ el.style.setProperty('max-width','none','important');el.style.setProperty('z-index','30','important');
 }
 function handleClick(e){
- if(mode!=='edit'||e.target?.isContentEditable||e.target.closest('#zvContextMenu,#zvResizeHandle'))return;
+ if(mode!=='edit'||e.target?.isContentEditable||e.target.closest('#zvContextMenu,[data-zv-direction]'))return;
  if(skipClick){skipClick=false;return}
  // In editing mode prevent navigation, but don't swallow native double-click handling.
  if(e.target.closest('a,button'))e.preventDefault();
@@ -1061,21 +1056,21 @@ function handlePointerDown(e){
  if(e.detail>=2)return; // leave the second click to text editing
  // A text node remains draggable on a deliberate drag; a normal double-click still edits its text.
  // Selection is deferred to click until movement exceeds the threshold.
- const handle=e.target.closest('#zvResizeHandle');
+ const handle=e.target.closest('[data-zv-direction]');
  const key=handle?selectedKey:getTarget(e.target);
  if(!key||key==='body')return;
  /* Selection deferred until click: preserves the native dblclick target. */
  const doc=frameDoc(),el=doc?.querySelector(key);if(!el)return;
- const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
- const oldW=Number(draft[key]?.width)||rect.width/Math.max(1,parentW)*100;
+ if(handle)zvReserveFrame(doc,el);const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
+ const oldW=Number(draft[key]?.widthPx)?Number(draft[key].widthPx)/Math.max(1,parentW)*100:(Number(draft[key]?.width)||rect.width/Math.max(1,parentW)*100);
  const oldH=Number(draft[key]?.height)||rect.height;
  const isHeroPhoto=!handle&&!!e.target.closest('.zv-hero-photo');
  const isHeroCrop=!handle&&(isHeroPhoto||(imageAdjustMode&&!!e.target.closest('.hero')&&!(e.target.closest('h1,h2,h3,h4,p,span,a,button'))));
- const cropImage= !handle && (isHeroCrop || ((imageAdjustMode || !!e.target.closest('.zika-banner__image,.zika-banner__video')) && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')));
+ const cropImage= !handle && (isHeroCrop || (imageAdjustMode && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')) || !!e.target.closest('.zika-banner__image,.zika-banner__video'));
  if(cropImage){e.preventDefault();if(isHeroCrop&&selectedKey!=='.hero')setKey('.hero');}
  const targetKey=isHeroCrop?'.hero':(cropImage?(e.target.closest('.zika-banner')?'.zika-banner':key):key);
  const baseCrop=draft[targetKey]||{};
- drag={key:targetKey,startX:e.clientX,startY:e.clientY,oldX:Number(draft[key]?.x)||0,oldY:Number(draft[key]?.y)||0,oldW,oldH,parentW,oldScaleX:Number(draft[key]?.scaleX)||1,oldScaleY:Number(draft[key]?.scaleY)||1,resize:!!handle,cropImage,oldCropX:Number(baseCrop.bgX??50),oldCropY:Number(baseCrop.bgY??50),cropW:Math.max(1,rect.width),cropH:Math.max(1,rect.height),moved:false};
+ drag={key:targetKey,startX:e.clientX,startY:e.clientY,oldX:Number(draft[key]?.x)||0,oldY:Number(draft[key]?.y)||0,oldW,oldH,parentW,oldScaleX:Number(draft[key]?.scaleX)||1,oldScaleY:Number(draft[key]?.scaleY)||1,resize:!!handle,direction:handle?.dataset.zvDirection||'se',cropImage,oldCropX:Number(baseCrop.bgX??50),oldCropY:Number(baseCrop.bgY??50),cropW:Math.max(1,rect.width),cropH:Math.max(1,rect.height),moved:false};
  if(handle){e.preventDefault();e.stopPropagation()}
  if(handle)try{e.target.setPointerCapture(e.pointerId)}catch{}
 }
@@ -1085,7 +1080,13 @@ function handlePointerMove(e){
  if(Math.abs(dx)+Math.abs(dy)<5&&!drag.moved)return;
  if(!drag.moved){snapshot();if(!drag.cropImage&&!drag.resize&&selectedKey!==drag.key){selectedKey=drag.key;by('zvSelectInfo').textContent='Élément déplacé indépendamment';by('zvFields').hidden=false}}drag.moved=true;const v=draft[drag.key]||{};
  if(drag.cropImage){const zoom=Math.max(1,Number(v.bgZoom??100)/100);v.bgX=Math.max(0,Math.min(100,Math.round(drag.oldCropX-dx/drag.cropW*100/zoom)));v.bgY=Math.max(0,Math.min(100,Math.round(drag.oldCropY-dy/drag.cropH*100/zoom)))}
- else if(drag.resize){if(v.baseHeight===undefined)v.baseHeight=drag.oldH;if(v.baseWidthPx===undefined)v.baseWidthPx=drag.oldW*drag.parentW/100;v.width=Math.round(Math.max(10,Math.min(100,(drag.oldW*drag.parentW/100+dx)/drag.parentW*100))*100)/100;v.height=Math.round(Math.max(24,Math.min(1400,drag.oldH+dy)));delete v.scaleX;delete v.scaleY}
+ else if(drag.resize){const d=drag.direction;
+ const dw=(d.includes('e')?dx:d.includes('w')?-dx:0),dh=(d.includes('s')?dy:d.includes('n')?-dy:0);
+ const width=Math.max(35,drag.oldW*drag.parentW/100+dw),height=Math.max(20,drag.oldH+dh);
+ v.widthPx=Math.round(width);v.height=Math.round(height);
+ if(d.includes('w'))v.x=Math.round((drag.oldX||0)+dx);
+ if(d.includes('n'))v.y=Math.round((drag.oldY||0)+dy);
+ delete v.width;delete v.scaleX;delete v.scaleY} 
  else{v.x=Math.round(Math.max(-1200,Math.min(1200,drag.oldX+dx)));v.y=Math.round(Math.max(-1200,Math.min(1200,drag.oldY+dy)))}
  draft[drag.key]=v;apply();
 }
@@ -1127,7 +1128,8 @@ by('zvEdit').onclick=showPreview;
 by('zvBackToEdit').onclick=returnToEdit;
 by('zvDesktop').onclick=()=>{frame.classList.remove('mobile');status('Aperçu ordinateur')};by('zvMobile').onclick=()=>{frame.classList.add('mobile');status('Aperçu mobile')};
 by('zvUndo').onclick=()=>{if(!history.length){status('Aucune modification à annuler');return}redo.push(JSON.stringify(draft));draft=JSON.parse(history.pop());setKey(selectedKey);status('Modification annulée')};by('zvRedo').onclick=()=>{if(!redo.length){status('Aucune modification à rétablir');return}history.push(JSON.stringify(draft));draft=JSON.parse(redo.pop());setKey(selectedKey);status('Modification rétablie')};
-for(const [id,k] of Object.entries(props)){const el=by(id);el.addEventListener(id.startsWith('zvBg')&&id!=='zvBg'?'input':el.type==='range'||el.type==='color'?'input':'change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};if(id==='zvWidth'||id==='zvHeight'){v[k]=el.value;delete v.scaleX;delete v.scaleY}else v[k]=el.value;draft[selectedKey]=v;apply();status('Modifications non publiées')})}
+for(const [id,k] of Object.entries(props)){const el=by(id);el.addEventListener(id.startsWith('zvBg')&&id!=='zvBg'?'input':el.type==='range'||el.type==='color'?'input':'change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};if(id==='zvWidth'||id==='zvHeight'){const node=frameDoc()?.querySelector(selectedKey);if(node)zvReserveFrame(frameDoc(),node);v[k]=el.value;if(id==='zvWidth')delete v.widthPx;delete v.scaleX;delete v.scaleY}else {v[k]=el.value;if(['zvBorderStyle','zvBorderWidth','zvBorderColor'].includes(id)&&v.borderStyle!=='none'){v.borderStyle=v.borderStyle||'solid';v.borderWidth=v.borderWidth||2;v.borderColor=v.borderColor||'#172b3c'}}draft[selectedKey]=v;apply();status('Modifications non publiées')})}
+by('zvShape').addEventListener('change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};v.borderRadius=by('zvShape').value;draft[selectedKey]=v;by('zvRadius').value=v.borderRadius;apply();status('Forme du cadre modifiée')});
 // Réutilise le sélecteur Wix de l'administration, sans second catalogue ni clés privées.
 function pickStudioImage(field, forcedKey){
  const key=forcedKey||selectedKey;
