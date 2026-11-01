@@ -95,7 +95,7 @@ async function wixCall(payload){
  if(!response.ok)throw Error(result.error||'Erreur HTTP '+response.status);
  return result;
 }
-const wixMore=document.createElement('button');wixMore.type='button';wixMore.className='wix-pick-button';wixMore.textContent='Charger les médias suivants';wixMore.hidden=true;wixResults.after(wixMore);
+const wixMore=document.createElement('button');wixMore.type='button';wixMore.className='wix-pick-button';wixMore.textContent='Reprendre le chargement';wixMore.hidden=true;wixResults.after(wixMore);
 const wixUpload=document.createElement('input');wixUpload.type='file';wixUpload.accept='image/*,video/mp4,video/webm,video/quicktime';wixUpload.multiple=true;wixUpload.hidden=true;
 const wixUploadBtn=document.createElement('button');wixUploadBtn.type='button';wixUploadBtn.className='wix-pick-button';wixUploadBtn.textContent='＋ Ajouter des médias à Wix';document.getElementById('wixRefresh').after(wixUploadBtn,wixUpload);
 const wixApply=document.createElement('button');wixApply.type='button';wixApply.className='wix-pick-button';wixApply.textContent='Utiliser la sélection';wixApply.hidden=true;wixMore.after(wixApply);
@@ -114,13 +114,46 @@ function wixRender(){
  }
  wixMore.hidden=!wixCursor;
 }
+let wixSearchGeneration=0;
 async function wixFetch(append=false){
- wixStatus.textContent='Chargement depuis Wix…';
- try{const data=await wixCall({action:'search',search:wixSearch.value.trim(),mediaType:document.getElementById('wixMediaType').value==='all'?undefined:document.getElementById('wixMediaType').value.toUpperCase(),cursor:append?wixCursor:undefined,limit:50});
- if(!append)wixFiles=[];const ids=new Set(wixFiles.map(f=>f.id));for(const f of data.files||[]){if(!ids.has(f.id)){wixFiles.push(f);ids.add(f.id)}}
- wixCursor=typeof data.nextCursor==='string'?data.nextCursor:(data.nextCursor?.cursor||null);
- wixRender();
- }catch(err){wixStatus.textContent='Impossible de charger les médias Wix : '+err.message}
+ const generation=++wixSearchGeneration;
+ if(!append){wixFiles=[];wixCursor=null;}
+ const ids=new Set(wixFiles.map(f=>f.id));
+ const visited=new Set();
+ let next=append?wixCursor:null;
+ let pages=0;
+ wixMore.hidden=true;
+ wixStatus.textContent='Chargement de toute la médiathèque Wix…';
+ try{
+  do {
+   if(generation!==wixSearchGeneration) return;
+   const data=await wixCall({
+    action:'search',
+    search:wixSearch.value.trim(),
+    mediaType:document.getElementById('wixMediaType').value==='all'?undefined:document.getElementById('wixMediaType').value.toUpperCase(),
+    cursor:next||undefined,
+    limit:200
+   });
+   if(generation!==wixSearchGeneration) return;
+   for(const f of data.files||[]){const key=f.id||f.fileInfo?.id||wixDirect(f);if(!ids.has(key)){wixFiles.push(f);ids.add(key)}}
+   const candidate=typeof data.nextCursor==='string'?data.nextCursor:(data.nextCursor?.cursor||null);
+   if(candidate && visited.has(candidate))throw Error('Wix a renvoyé plusieurs fois le même curseur de pagination.');
+   if(candidate)visited.add(candidate);
+   next=candidate;
+   wixCursor=next;
+   pages++;
+   wixStatus.textContent=wixFiles.length+' médias récupérés depuis Wix · '+pages+' page(s)…';
+   // Éviter de reconstruire toute la grille à chaque page lors d'une grande bibliothèque.
+   if(pages===1 || pages%5===0 || !next)wixRender();
+  } while(next);
+  if(generation===wixSearchGeneration){wixCursor=null;wixRender();wixStatus.textContent='Bibliothèque Wix chargée : '+wixFiles.length+' médias disponibles. Aucun plafond total imposé.';}
+ }catch(err){
+  if(generation!==wixSearchGeneration)return;
+  wixCursor=next;
+  wixRender();
+  wixStatus.textContent='Chargement interrompu après '+wixFiles.length+' médias : '+err.message;
+  wixMore.hidden=!next;
+ }
 }
 async function wixLoadFolders(){try{const data=await wixCall({action:'folders'});wixFolders=Array.isArray(data.folders)?data.folders:[];wixFolder.innerHTML='<option value="">Tous les dossiers</option>';for(const f of wixFolders){const o=document.createElement('option');o.value=f.id;o.textContent=f.displayName||f.name||f.id;wixFolder.append(o)}}catch(e){console.warn('Dossiers Wix non disponibles',e.message)}}
 function wixOpen(target){wixTarget=target;wixSelected.clear();wixApply.hidden=true;wixSearch.value='';document.getElementById('wixMediaType').value=target.name==='video_url'||target.id==='heroVideo'?'video':'all';wixModal.hidden=false;wixFetch();wixLoadFolders()}
