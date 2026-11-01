@@ -16,7 +16,7 @@
 <section data-section="backup" class="card hidden"><h2>Sauvegardes du programme</h2><p class="muted">Télécharge une copie complète des fiches et réglages de Supabase avant chaque mise à jour importante. Pour réimporter, les éléments existants seront mis à jour ou ajoutés ; aucune fiche ne sera supprimée automatiquement.</p><div class="buttons"><button type="button" class="btn" id="backupDownload">Télécharger une sauvegarde JSON</button></div><label>Restaurer une sauvegarde JSON</label><input type="file" id="backupFile" accept=".json,application/json"><p class="notice">La restauration modifie les données en ligne. Conserve toujours une copie récente et vérifie le fichier avant importation.</p><button class="btn secondary" type="button" id="backupRestore">Restaurer les données</button><div id="backupStatus" class="msg" role="status"></div></section></div></div>
 
 <style>
-#wixPicker[hidden]{display:none!important}#wixPicker{position:fixed;inset:0;z-index:10000;background:rgba(8,24,42,.77);display:grid;place-items:center;padding:16px}#wixPicker .wix-dialog{background:#fff;max-width:1000px;width:100%;max-height:92vh;overflow:auto;padding:22px;border-radius:18px;color:#172b3c;box-shadow:0 16px 70px #0005}#wixResults{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-top:15px}#wixResults button{border:1px solid #dbe4ed;border-radius:10px;overflow:hidden;background:#f7f9fc;text-align:left;padding:0;min-height:150px}#wixResults button:hover,#wixResults button:focus-visible{outline:3px solid #ff892d}#wixResults img{display:block;width:100%;height:110px;object-fit:cover;background:#dfe8f2}#wixResults .wix-filename{display:block;padding:7px;font-size:12px;word-break:break-word}#wixPicker .wix-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#wixPicker .wix-toolbar input{min-width:200px;flex:1;padding:10px;border:1px solid #abbecf;border-radius:8px}#wixPicker .wix-toolbar select{padding:10px}#wixPicker .wix-close{float:right}#wixStatus{margin:10px 0;font-size:13px}#wixPicker button{cursor:pointer}.wix-pick-button{margin:7px 0;padding:8px 12px;border-radius:10px;border:1px solid #b3cbdc;background:#eaf5fc;color:#103650;font-weight:700}
+#wixPicker[hidden]{display:none!important}#wixPicker{position:fixed;inset:0;z-index:10000;background:rgba(8,24,42,.77);display:grid;place-items:center;padding:16px}#wixPicker .wix-dialog{background:#fff;max-width:1000px;width:100%;max-height:92vh;overflow:auto;padding:22px;border-radius:18px;color:#172b3c;box-shadow:0 16px 70px #0005}#wixResults{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-top:15px}#wixResults button{border:1px solid #dbe4ed;border-radius:10px;overflow:hidden;background:#f7f9fc;text-align:left;padding:0;min-height:150px}#wixResults button:hover,#wixResults button:focus-visible{outline:3px solid #ff892d}#wixResults img{display:block;width:100%;height:110px;object-fit:cover;background:#dfe8f2}#wixResults .wix-filename{display:block;padding:7px;font-size:12px;word-break:break-word}#wixPicker .wix-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#wixPicker .wix-toolbar input{min-width:200px;flex:1;padding:10px;border:1px solid #abbecf;border-radius:8px}#wixPicker .wix-toolbar select{padding:10px}#wixPicker .wix-close{float:right}#wixStatus{margin:10px 0;font-size:13px}#wixPicker button{cursor:pointer}#wixPicker .wix-toolbar{position:sticky;top:0;background:#fff;z-index:4;padding:8px 0;border-bottom:1px solid #e5eaf0}#wixPicker .wix-apply-button{background:#ff892d;color:#1c2530;border-color:#ff892d}.wix-pick-button{margin:7px 0;padding:8px 12px;border-radius:10px;border:1px solid #b3cbdc;background:#eaf5fc;color:#103650;font-weight:700}
 </style>
 <div id="wixPicker" hidden role="dialog" aria-modal="true" aria-labelledby="wixPickerTitle">
  <div class="wix-dialog">
@@ -122,7 +122,7 @@ async function wixCall(payload){
 const wixMore=document.createElement('button');wixMore.type='button';wixMore.className='wix-pick-button';wixMore.textContent='Reprendre le chargement';wixMore.hidden=true;wixResults.after(wixMore);
 const wixUpload=document.createElement('input');wixUpload.type='file';wixUpload.removeAttribute('accept');wixUpload.multiple=true;wixUpload.hidden=true;
 const wixUploadBtn=document.createElement('button');wixUploadBtn.type='button';wixUploadBtn.className='wix-pick-button';wixUploadBtn.textContent='＋ Importer plusieurs fichiers dans Wix';document.getElementById('wixRefresh').after(wixUploadBtn,wixUpload);
-const wixApply=document.createElement('button');wixApply.type='button';wixApply.className='wix-pick-button';wixApply.textContent='Ajouter les fichiers sélectionnés';wixApply.hidden=true;wixMore.after(wixApply);
+const wixApply=document.createElement('button');wixApply.type='button';wixApply.className='wix-pick-button wix-apply-button';wixApply.textContent='Ajouter les fichiers sélectionnés à la fiche';wixApply.hidden=true;wixUploadBtn.after(wixApply);wixApply.after(wixMore);
 const wixFolder=document.createElement('select');wixFolder.id='wixFolder';wixFolder.setAttribute('aria-label','Dossier Wix');wixFolder.innerHTML='<option value="">Tous les dossiers</option>';document.getElementById('wixMediaType').after(wixFolder);
 const wixSearch=document.getElementById('wixSearch');wixSearch.placeholder='Rechercher dans toute la bibliothèque Wix';
 function wixRender(){
@@ -141,7 +141,7 @@ function wixRender(){
   wixRender();
   wixApply.hidden=wixSelected.size===0;
   wixApply.textContent='Ajouter '+wixSelected.size+' fichier(s) sélectionné(s)';
-  wixStatus.textContent=wixSelected.size+' fichier(s) sélectionné(s). Clique sur « Utiliser la sélection » pour confirmer.';
+  wixStatus.textContent=wixSelected.size+' fichier(s) sélectionné(s). Clique sur « Ajouter les fichiers sélectionnés à la fiche » en haut pour confirmer.';
 };wixResults.append(btn)
  }
  wixMore.hidden=!wixCursor;
@@ -218,6 +218,10 @@ wixUpload.onchange=async()=>{
  const successes=[];
  const failures=[];
  const total=files.length;
+ // Capturer les noms/identifiants avant import pour ne pas associer
+ // par erreur un ancien média portant le même nom.
+ const beforeIds=new Set(wixFiles.map(f=>String((f.fileInfo||f).id||'')));
+ const fromEvent=Boolean(wixTarget?.closest?.('#eventForm') && !document.getElementById('eventForm').classList.contains('hidden'));
  try{
   for(let i=0;i<total;i++){
    const file=files[i];
@@ -239,7 +243,7 @@ wixUpload.onchange=async()=>{
       if(check.found&&check.ready){confirmed=true;break;}
       wixStatus.textContent=prefix+'Wix traite '+file.name+' ('+(attempt+1)+'/12)';
      }
-     successes.push({name:file.name,pending:!confirmed});
+     successes.push({name:file.name,pending:!confirmed,fileId:finalized.fileId});
     }else{
      await wixPutWithProgress(signed.uploadUrl,file);
      successes.push({name:file.name,pending:true});
@@ -257,7 +261,50 @@ wixUpload.onchange=async()=>{
   const pending=successes.filter(x=>x.pending).length;
   wixStatus.textContent='Import multiple : '+successes.length+'/'+total+' fichier(s) envoyé(s) vers Wix'+(pending?' ('+pending+' encore en traitement ou à confirmer)':'')+'.'+(failures.length?' Échecs : '+failures.map(x=>x.name+' — '+x.error).join(' ; '):'')+' Actualise la bibliothèque si Wix traite encore des fichiers.';
   if(successes.length){
-   try{await wixFetch();}catch(error){wixStatus.textContent+=' Actualisation impossible : '+error.message;}
+   const importReport=wixStatus.textContent;
+   try{
+    await wixFetch();
+    // Import ≠ association : intégrer explicitement les nouveaux médias à la fiche.
+    if(fromEvent){
+     const found=[],missing=[];
+     const usedIds=new Set();
+     for(const item of successes){
+      const match=wixFiles.find(f=>{
+       const inf=f.fileInfo||f, id=String(inf.id||''), name=wixName(f);
+       return !usedIds.has(id) &&
+         ((item.fileId && id===String(item.fileId)) ||
+         (name===item.name && id && !beforeIds.has(id)));
+      });
+      if(match){usedIds.add(String((match.fileInfo||match).id||''));found.push(match)}
+      else missing.push(item.name);
+     }
+     const form=document.getElementById('eventForm');
+     const gallery=form.elements.gallery_urls,attachments=form.elements.attachment_urls;
+     const addLines=(field,urls)=>{
+      const prior=field.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+      field.value=[...new Set([...prior,...urls])].join('\n');
+      field.dispatchEvent(new Event('input',{bubbles:true}));
+     };
+     const photoUrls=[],otherUrls=[];
+     for(const media of found){
+      const url=wixDirect(media), isPrivate=(media.fileInfo||media).private===true;
+      if(!url || isPrivate){missing.push(wixName(media)+' (URL publique indisponible)');continue;}
+      if(wixType(media)==='IMAGE')photoUrls.push(url);
+      else otherUrls.push(url);
+     }
+     addLines(gallery,photoUrls);
+     addLines(attachments,otherUrls);
+     // Si aucune photo principale n'est renseignée, utiliser la première.
+     if(photoUrls.length && !form.elements.image_url.value.trim()){
+      form.elements.image_url.value=photoUrls[0];
+      form.elements.image_url.dispatchEvent(new Event('input',{bubbles:true}));
+     }
+     const count=photoUrls.length+otherUrls.length;
+     wixStatus.textContent=importReport+' '+count+' fichier(s) ajoutés aux champs de la fiche. '+
+       (missing.length?'Non associés : '+missing.join(', ')+'. Ouvre la bibliothèque après traitement. ':'')+
+       'Ferme cette fenêtre puis clique sur « Enregistrer cette fiche » pour sauvegarder.';
+    }else wixStatus.textContent=importReport+' Aucun événement ouvert : fichiers importés dans Wix seulement.';
+   }catch(error){wixStatus.textContent=importReport+' Association automatique impossible : '+error.message+'; utilise « Ajouter les fichiers sélectionnés ».';}
   }
  }
 };
