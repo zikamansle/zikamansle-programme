@@ -455,6 +455,24 @@ img,video{max-width:100%;height:auto}
  .zika-split-right iframe,.zika-plan-embedded{height:min(66dvh,460px)!important}
 }
 </style>
+
+<style id="zikaPublicMobileSafety">
+@media(max-width:700px){
+html,body{width:100%!important;max-width:100vw!important;overflow-x:clip!important}
+body *{box-sizing:border-box}
+.wrap,.content,main,.hero,.hero-panel,.zika-banner,.zika-split-grid,.zika-split-left,.zika-split-right,.event-card,.control-card,.filter-panel{max-width:100%!important;min-width:0!important}
+.zika-split-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
+.zika-split-left,.zika-split-right{grid-column:auto!important;width:100%!important}
+.zika-split-right{position:static!important;top:auto!important}
+.zika-plan-embedded{width:100%!important;height:min(440px,65dvh)!important}
+.hero img,.hero-panel img,.zika-banner img,.event-card img{max-width:100%!important}
+.hero h1,.hero h2,.hero-panel h1,.hero-panel h2{max-width:100%!important;overflow-wrap:anywhere!important}
+.event-card,.control-card,#modal .dialog{overflow-wrap:anywhere!important}
+#modal .dialog{max-width:calc(100vw - 12px)!important}
+.zika-gallery{max-width:100vw!important}
+}
+@media(max-width:420px){.zika-plan-embedded{height:340px!important}#modal .detail-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -722,13 +740,12 @@ function render(){
         </div>
         <div class="event-actions">
           <button class="action-btn" data-open="${e.id}">Voir le détail</button>
-          <button class="ghost-btn ${state.favorites.has(e.id)?'active':''}" data-fav="${e.id}">${state.favorites.has(e.id)?'♥ Dans ma sélection':'♡ Ajouter à ma sélection'}</button><button class="zika-share" data-share="${e.id}">Partager ↗</button><button class="zika-share" data-qr="${e.id}">QR code</button>${!e.free&&/^https:\/\//.test(e.ticketUrl||e.url||'')?`<a class="action-btn" style="text-align:center;text-decoration:none" href="${escapeHtml(e.ticketUrl||e.url)}" target="_blank" rel="noopener noreferrer">Billetterie</a>`:''}
+          <button class="ghost-btn ${state.favorites.has(e.id)?'active':''}" data-fav="${e.id}">${state.favorites.has(e.id)?'♥ Dans ma sélection':'♡ Ajouter à ma sélection'}</button><button class="zika-share" data-share="${e.id}">Partager ↗</button>${!e.free&&/^https:\/\//.test(e.ticketUrl||e.url||'')?`<a class="action-btn" style="text-align:center;text-decoration:none" href="${escapeHtml(e.ticketUrl||e.url)}" target="_blank" rel="noopener noreferrer">Billetterie</a>`:''}
         </div>
       </div>
     </article>`).join('') : `<div class="empty"><strong>Aucun résultat</strong><br><br>Essaie une autre catégorie, une autre journée ou retire certains filtres.</div>`;
   $('results').querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>openModal(btn.dataset.open));
   $('results').querySelectorAll('[data-fav]').forEach(btn=>btn.onclick=()=>toggleFav(btn.dataset.fav));
-  $('results').querySelectorAll('[data-qr]').forEach(btn=>btn.onclick=()=>zikaShowQR(btn.dataset.qr));
   $('results').querySelectorAll('[data-share]').forEach(btn=>btn.onclick=()=>{const e=EVENTS.find(x=>x.id===btn.dataset.share);const u=location.origin+location.pathname+'#fiche='+encodeURIComponent(e.shareSlug||e.id);if(navigator.share)navigator.share({title:e.title,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>{btn.textContent='Lien copié ✓'});else prompt('Copier le lien',u)});
 }
 function syncModalFav(){
