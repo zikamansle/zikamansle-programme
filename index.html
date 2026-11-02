@@ -352,12 +352,6 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
 .zika-banner__button{display:inline-block;padding:12px 24px;border-radius:10px;background:var(--zika-btn,#168fdf);color:white;text-decoration:none}
 @media(max-width:800px){.zika-split-grid{grid-template-columns:1fr}.zika-split-right{position:static}.zika-split-right .zika-plan-embedded{height:450px;min-height:360px}}
 @media(prefers-reduced-motion:reduce){.event-card{transition:none!important}.zika-banner__video{display:none}}
-</style><style id="zika-map-program-final">
-.zika-plan-embedded{height:850px!important;max-height:none!important;display:block!important}
-.zika-map-place-status{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff0e1;color:#092d47;border-radius:12px;padding:12px 16px;margin:12px 0}
-.zika-map-place-status[hidden]{display:none!important}
-.zika-map-place-status button{background:#0e2946;color:#fff;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}
-@media(max-width:700px){.zika-plan-embedded{height:690px!important}}
 </style></head>
 <body>
 <header class="topbar">
@@ -532,13 +526,13 @@ let EVENTS = [
 ];
 const categories=['Tout','Musique','Animations','Parade','Jeux','Culture','Prévention'];
 let configuredCategories=[]; // Catégories enregistrées dans l'administration
-const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:'',mapPlace:''};
+const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:''};
 let currentId=null;
 try{state.favorites=new Set(JSON.parse(localStorage.getItem('zika_favorites_2027')||'[]'))}catch(e){}
 const $=id=>document.getElementById(id);
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 function saveFav(){try{localStorage.setItem('zika_favorites_2027',JSON.stringify([...state.favorites]))}catch(e){}}
-function eventDay(e){return e.both?'Samedi 24 & dimanche 25 avril':e.day==='samedi'?'Samedi 24 avril':'Dimanche 25 avril'}
+function eventDay(e){const first=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;const end=e.endsAt?.slice(0,10);const fmt=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return '';return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};if(first){return end&&end!==first?fmt(first)+' — '+fmt(end):fmt(first)}return e.both?'Samedi 24 et dimanche 25 avril 2027':e.day==='samedi'?'Samedi 24 avril 2027':'Dimanche 25 avril 2027'}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function toggleFav(id){state.favorites.has(id)?state.favorites.delete(id):state.favorites.add(id);saveFav();render();if(currentId===id)syncModalFav()}
 function eventStamp(e){
@@ -553,7 +547,7 @@ function filtered(){
  const q=norm(state.q);
  const matches=EVENTS.filter(e=>{
   const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);
-  return (!state.mapPlace||zikaPlaceMatchesEvent(e,state.mapPlace))&& (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
  });
  return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
 }
@@ -572,35 +566,24 @@ function renderFilters(){
   $('mySelection').onclick=()=>{state.mine=!state.mine;render()};
   $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
 }
-function renderTimeline(rows){const h=$('zikaTimelineHost');if(!h)return;const slots=[];for(const e of rows){if(e.schedule?.length){for(const s of e.schedule)if(s.date&&s.start)slots.push({date:s.date,time:s.start,end:s.end||'',name:e.title,id:e.id,place:e.place})}else if(e.start){slots.push({date:e.customDate||('2027-04-'+(e.day==='dimanche'?'25':'24')),time:e.start,end:e.end||'',name:e.title,id:e.id,place:e.place})}}slots.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));h.innerHTML=slots.length?'<div class="zika-timeline"><h2 style="margin-top:0">Planning chronologique</h2><table><thead><tr><th>Date</th><th>Horaire</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>'+slots.map(s=>`<tr><td>${escapeHtml(s.date)}</td><td>${escapeHtml(s.time)}${s.end?' – '+escapeHtml(s.end):''}</td><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.place)}</td></tr>`).join('')+'</tbody></table></div>':''}
+function renderTimeline(rows){const h=$('zikaTimelineHost');if(!h)return;const slots=[];for(const e of rows){if(e.startsAt){slots.push({date:e.startsAt.slice(0,10),time:e.startsAt.slice(11,16),end:e.endsAt?.slice(11,16)||'',name:e.title,id:e.id,place:e.place})}else if(e.schedule?.length){for(const s of e.schedule)if(s.date&&s.start)slots.push({date:s.date,time:s.start,end:s.end||'',name:e.title,id:e.id,place:e.place})}else if(e.start){slots.push({date:e.customDate||('2027-04-'+(e.day==='dimanche'?'25':'24')),time:e.start,end:e.end||'',name:e.title,id:e.id,place:e.place})}}slots.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));h.innerHTML=slots.length?'<div class="zika-timeline"><h2 style="margin-top:0">Planning chronologique</h2><table><thead><tr><th>Date</th><th>Horaire</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>'+slots.map(s=>`<tr><td>${escapeHtml(s.date)}</td><td>${escapeHtml(s.time)}${s.end?' – '+escapeHtml(s.end):''}</td><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.place)}</td></tr>`).join('')+'</tbody></table></div>':''}
 function openDeepLink(){const slug=decodeURIComponent((location.hash.match(/fiche=([^&]+)/)||[])[1]||'');if(!slug)return;const e=EVENTS.find(x=>x.id===slug||x.shareSlug===slug);if(e)openModal(e.id)}
 window.addEventListener('hashchange',openDeepLink);
 // Le clic sur un marqueur du plan affiche les événements qui s'y déroulent.
 window.addEventListener('message',event=>{
- if(event.data?.type!=='ZIKA_SELECTED_PLACE')return;
- const source=document.querySelector('#zikaPublicPlanEmbed iframe');
- if(!source||event.source!==source.contentWindow)return;
+ if(event.origin!==location.origin||event.data?.type!=='ZIKA_SELECTED_PLACE')return;
  const place=String(event.data.id||'');if(!place)return;
- state.mapPlace=place;state.day='all';state.cat='Tout';state.q='';state.mine=false;
- state.discipline='';state.audience='';state.price='';state.from='';state.to='';
- for(const id of ['filterDiscipline','filterAudience','filterPrice','filterFrom','filterTo']){const field=document.getElementById(id);if(field)field.value=''}
- render();
- const host=document.getElementById('zikaMapPlaceStatus');
- if(host){const hits=EVENTS.filter(e=>zikaPlaceMatchesEvent(e,place));
- host.hidden=false;host.querySelector('.zika-map-caption').textContent='Lieu '+place+' · '+hits.length+' événement'+(hits.length>1?'s':'')+' associé'+(hits.length>1?'s':'')+' au plan';}
- /* Ne pas déplacer la page : garder le plan et les résultats côte à côte. */
+ const hits=EVENTS.filter(e=>String(e.mapMarker||'')===place);
+ if(!hits.length)return;
+ state.day='all';state.cat='Tout';state.q='';state.mine=false;
+ for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price']]){state[key]='';const field=document.getElementById(id);if(field)field.value=''}
+ render();const first=document.querySelector('[data-open="'+CSS.escape(hits[0].id)+'"]');
+ first?.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});
 });
 
 const ZIKA_PALETTE={"Musique": "#f28b36", "Cinéma": "#6c63b5", "Danse": "#d65b97", "Associations": "#337ab7", "Sport": "#23a58c", "Exposition": "#a26bca", "Théâtre et spectacle": "#bb5656", "Littérature": "#8b63cc", "Jeux": "#2a9ca6", "Arts et création": "#d17e3e", "Parade": "#e4a02c", "Patrimoine": "#94754e", "Prévention et santé": "#53965e", "Environnement": "#5a9b74", "Atelier": "#457bb7", "Autre": "#607d8b"};
 let zikaOverrides={};
 function zikaCategoryColor(name){const c=zikaOverrides[name]||ZIKA_PALETTE[name]||'#607d8b';return /^#[0-9a-f]{6}$/i.test(c)?c:'#607d8b';}
-function zikaPlaceMatchesEvent(e,point){
- const id=String(point||'');if(!id)return true;
- const raw=(e.place||'')+' '+(e.location||'')+' '+(e.venue||'')+' '+(e.lieu||'');
- const normalized=norm(raw);
- const names={'1':['hotel de ville','place de l hotel','mairie','zikavillage'],'2':['square de verdun','zikaludik'],'3':['gautier capucon','salle gautier'],'4':['mediatheque'],'5':['parc floral','jean pierre lanson']};
- return String(e.mapMarker||'')===id||(names[id]||[]).some(n=>normalized.includes(norm(n)));
-}
 function render(){
   renderFilters();
   if(!document.getElementById("zsTimeFilter")){const sel=document.createElement("select");sel.id="zsTimeFilter";sel.setAttribute("aria-label","Filtrer par période");sel.innerHTML="<option value=all>Tous les événements</option><option value=now>En cours</option><option value=future>À venir</option><option value=past>Terminés</option>";sel.value=window.zsTimeFilterValue||"all";sel.onchange=()=>{window.zsTimeFilterValue=sel.value;render()};document.getElementById("filters")?.append(sel)}
@@ -612,7 +595,7 @@ function render(){
   renderTimeline(rows);
   $('results').innerHTML = rows.length ? rows.map(e=>`
     <article class="event-card" data-cat="${escapeHtml(e.cat)}">
-      <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${(e.thumbnail||e.image) ? `<img src="${escapeHtml(e.thumbnail||e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;object-position:${Number(e.cropX)||50}% ${Number(e.cropY)||50}%;display:block" onerror="this.style.display='none'">` : ``}
+      <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${(e.thumbnail||e.image) ? `<div style="height:185px;width:100%;overflow:hidden"><img src="${escapeHtml(e.thumbnail||e.image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;object-position:${e.thumbnail?Number(e.thumbX):Number(e.cropX)}% ${e.thumbnail?Number(e.thumbY):Number(e.cropY)}%;transform:scale(${(e.thumbnail?Number(e.thumbZoom):Number(e.cropZoom))/100});display:block" onerror="this.style.display='none'"></div>` : ``}
       ${e.video && /^https:\/\//.test(e.video) ? (/\.mp4(?:[?#]|$)/i.test(e.video) ? `<video controls playsinline preload="none" ${e.videoPoster&&/^https:\/\//.test(e.videoPoster)?`poster="${escapeHtml(e.videoPoster)}"`:''} ${e.videoLoop?'loop':''} ${e.videoMuted?'muted':''} style="display:block;width:100%;max-height:300px;background:#071426"><source src="${escapeHtml(e.video)}" type="video/mp4"></video>` : /^(https:\/\/)(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)/.test(e.video) ? `<a style="display:block;padding:10px 24px;color:var(--blue);font-weight:700" href="${escapeHtml(e.video)}" target="_blank" rel="noopener noreferrer">▶ Voir la vidéo</a>` : '') : ''}
       ${e.gallery?.length?`<div class="zika-gallery">${e.gallery.filter(x=>/^https:\/\//.test(x)).map(x=>`<img src="${escapeHtml(x)}" alt="Galerie ${escapeHtml(e.title)}" loading="lazy">`).join('')}</div>`:''}
       <div class="event-inner">
@@ -724,7 +707,7 @@ render();
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:r.extra?.disciplines_extra||[],audiencesExtra:r.extra?.audiences_extra||[],priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,mapMarker:r.extra?.map_marker||''}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
+    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:r.extra?.disciplines_extra||[],audiencesExtra:r.extra?.audiences_extra||[],priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,thumbX:r.extra?.thumbnail_x??50,thumbY:r.extra?.thumbnail_y??50,thumbZoom:r.extra?.thumbnail_zoom??100,mapMarker:r.extra?.map_marker||''}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
   const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));zikaOverrides=st.event_form_options?.categoryColors||{};configuredCategories=Array.isArray(st.event_form_options?.categories)?st.event_form_options.categories.filter(x=>typeof x==='string'&&x.trim()):[];setupFacets();render();
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
@@ -772,7 +755,7 @@ const slot=document.createElement('div');slot.id='zikaFlexibleSections';slot.cla
 const insertion=document.querySelector('.wrap.summary');insertion?.before(slot);
 function ensureMap(){const host=document.getElementById('zikaMapHost');if(!host)return;let container=host.querySelector('#zikaPublicPlanEmbed');if(container)return;
 container=document.createElement('div');container.id='zikaPublicPlanEmbed';container.innerHTML='<h2 class="zika-map-heading">Plan interactif du Festival ZikaMansle</h2><iframe class="zika-plan-embedded" title="Plan interactif du festival" loading="lazy" src="plan.html"></iframe><a class="zika-map-expand" href="plan.html" target="_blank" rel="noopener">Ouvrir le plan en grand</a>';
-host.prepend(container);const bar=document.createElement('div');bar.id='zikaMapPlaceStatus';bar.hidden=true;bar.className='zika-map-place-status';bar.innerHTML='<strong class="zika-map-caption"></strong> <button type="button" id="zikaClearMapPlace">Afficher tous les événements</button>';const results=document.getElementById('results');results?.parentNode?.insertBefore(bar,results);document.getElementById('zikaClearMapPlace').onclick=()=>{state.mapPlace='';bar.hidden=true;render()}}
+host.prepend(container)}
 function apply(cfg){if(!cfg||typeof cfg!=='object')return;ensureMap();const allowedFont=new Set(['Alfabet', 'Anton', 'Bebas Neue', 'Oswald', 'Barlow Condensed', 'Barlow', 'Montserrat', 'Inter', 'Inter Tight', 'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Raleway', 'Rubik', 'Work Sans', 'DM Sans', 'Manrope', 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Sora', 'Archivo Black', 'Fjalla One', 'Playfair Display', 'Georgia', 'Arial']);const colors=[['heading_color','--zika-title'],['text_color','--zika-ink'],['surface','--zika-surface'],['border','--zika-outline'],['button','--zika-btn'],['button_text','--zika-btntext']];for(const [k,v] of colors)if(/^#[0-9a-f]{6}$/i.test(cfg[k]||''))document.documentElement.style.setProperty(v,cfg[k]);for(const [key,css,fall] of [['heading_font','--zika-headfont','Anton'],['body_font','--zika-bodyfont','Inter']]){const font=allowedFont.has(cfg[key])?cfg[key]:fall;document.documentElement.style.setProperty(css,'"'+font+'", Arial, sans-serif');}
 let sections=Array.isArray(cfg.sections)?cfg.sections:fixed.map(id=>({id,visible:true}));const targets=getTargets();const ordered=new Set();
 for(const p of sections){if(!p||typeof p.id!=='string'||ordered.has(p.id))continue;ordered.add(p.id);if(p.id==='hero'){targets.hero.hidden=p.visible===false;continue}let el=targets[p.id];if(p.id.startsWith('custom-')){el=document.querySelector('[data-custom-section="'+CSS.escape(p.id)+'"]');if(!el){el=document.createElement('div');el.className='wrap zika-custom-section';el.dataset.customSection=p.id;}el.innerHTML='';const box=document.createElement('div');box.className='zika-layout-surface';const h=document.createElement('h2');h.textContent=p.title||'Section';const b=document.createElement('p');b.textContent=p.body||'';box.append(h,b);el.append(box);}if(!el)continue;el.hidden=p.visible===false;slot.append(el);}
