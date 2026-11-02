@@ -533,8 +533,8 @@ body *{box-sizing:border-box}
 <style id="zvHeroTextWidthFix">
 @media(min-width:701px){.hero .hero-copy,.hero .hero-copy h1{overflow:visible!important}.hero .hero-copy h1{max-width:none!important;white-space:nowrap!important;width:max-content!important}.hero .hero-copy{max-width:none!important}}
 @media(max-width:700px){.hero .hero-copy,.hero .hero-copy h1{max-width:100%!important;min-width:0!important}.hero .hero-copy h1{white-space:normal!important;overflow-wrap:break-word!important}}
-</style><link rel="preload" href="programme-ui.js?v=f358404d3c" as="script">
-<link rel="stylesheet" href="programme-ui.css?v=7bedbf1057">
+</style><link rel="preload" href="programme-ui.js?v=b97782cb11" as="script">
+<link rel="stylesheet" href="programme-ui.css?v=2bc5a55442">
 </head>
 <body>
 <header class="topbar">
@@ -651,7 +651,7 @@ body *{box-sizing:border-box}
       </aside>
     </div>
 
-    <div class="wrap section"><div style="text-align:center;padding:16px"><a href="plan.html" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#0e2946;color:#fff;text-decoration:none;font-weight:800">Découvrir le plan interactif du festival ↗</a></div>
+    <div class="wrap section"><div style="text-align:center;padding:16px"><a href="plan.html?v=114fe88c9d" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#0e2946;color:#fff;text-decoration:none;font-weight:800">Découvrir le plan interactif du festival ↗</a></div>
       <div class="results" id="results"></div>
 
       <div class="bottom-cta">
@@ -704,7 +704,7 @@ body *{box-sizing:border-box}
 <dialog id="zikaMapDialog" aria-labelledby="proMapTitle"><div class="pro-map-dialog-head"><strong id="proMapTitle">Le plan du festival</strong><button id="zikaMapClose" aria-label="Fermer le plan">×</button></div></dialog>
 <nav id="zikaMobileTools" aria-label="Accès rapides au programme"><button id="zikaMobileMap">Voir le plan</button><button id="zikaMobileFavorites" aria-pressed="false">♡ Ma sélection (0)</button></nav>
 <output id="zikaFeedback" role="status" aria-live="polite" aria-atomic="true"></output>
-<script src="config.js"></script><script src="programme-ui.js?v=f358404d3c"></script>
+<script src="config.js"></script><script src="programme-ui.js?v=b97782cb11"></script>
 <script>
 let EVENTS = [
 {id:'village',day:'samedi',sort:1400,time:'14h–17h',start:'14:00',end:'17:00',title:'ZikaVillage',cat:'Animations',place:'Place de l’Hôtel de Ville',short:'Village festif avec démonstrations, stands associatifs et direct radio.',description:'Le ZikaVillage anime la place de l’Hôtel de Ville le samedi après-midi. Au programme : Radio Attitude en direct, Hopla Circus, l’APE pour le maquillage, Les Sangs Mêlés, Pa’ la Calle Charente, Arabesk, l’aïkido et le Do-In, ainsi que plusieurs stands associatifs et de prévention. Pas de buvette ni de restauration sur le village.',free:true},
@@ -749,7 +749,9 @@ function eventStamp(e){
 }
 function minPrice(e){return Number(e.priceMin??(e.free?0:999999));}
 function matchesProgrammePeriod(e,period){
- if(period==='all'||e.alwaysAvailable)return true;
+ if(period==='all')return true;
+ const chosen=Array.isArray(e.programmePeriods)?e.programmePeriods.filter(p=>['before','samedi','dimanche'].includes(p)):[];if(chosen.length)return chosen.includes(period);
+ if(e.alwaysAvailable)return true;
  const start=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(start||''))return period==='before'?false:(e.day===period||e.both);
  if(period==='before')return start<'2027-04-24';
@@ -803,7 +805,7 @@ function render(){
   $('results').innerHTML=window.zikaPro.renderResults(rows);
   $('results').querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>openModal(btn.dataset.open));
   $('results').querySelectorAll('[data-fav]').forEach(btn=>btn.onclick=()=>toggleFav(btn.dataset.fav));
-  $('results').querySelectorAll('[data-share]').forEach(btn=>btn.onclick=()=>{const e=EVENTS.find(x=>x.id===btn.dataset.share);const u=location.origin+location.pathname+'#fiche='+encodeURIComponent(e.shareSlug||e.id);if(navigator.share)navigator.share({title:e.title,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>{btn.textContent='Lien copié ✓'});else prompt('Copier le lien',u)});
+  $('results').querySelectorAll('[data-share]').forEach(btn=>btn.onclick=()=>{const e=EVENTS.find(x=>x.id===btn.dataset.share);if(e)window.zikaPro.shareEvent(e,btn)});
   window.zikaPro.afterRender(focusSnapshot);
 }
 function syncModalFav(){
@@ -816,7 +818,7 @@ function openModal(id){
   const e=EVENTS.find(x=>x.id===id); if(!e) return;
   currentId=id;
   $('modal').dataset.zvEvent=String(id);
-  const frame=document.querySelector('.zika-plan-embedded');if(frame&&e.mapMarker){frame.src='./plan.html?lieu='+encodeURIComponent(e.mapMarker);}
+  const frame=document.querySelector('.zika-plan-embedded');if(frame&&e.mapMarker){frame.src='./plan.html?lieu='+encodeURIComponent(e.mapMarker)+'&v=114fe88c9d&embedded=1';}
   // Métadonnées interactives : chaque pastille ouvre tous les événements associés.
   const tags=[...new Set([e.cat,e.discipline,...(e.disciplinesExtra||[])].filter(Boolean))];
   const publics=[...new Set([e.audience||'Tous publics',...(e.audiencesExtra||[])].filter(Boolean))];
@@ -862,7 +864,7 @@ function openModal(id){
    const panel=document.createElement('div');panel.id='modalExtras';panel.style.cssText='margin-top:20px;display:grid;gap:9px';
    if(e.customDate){const d=document.createElement('div');d.textContent='Date : '+e.customDate;panel.append(d)}
    for(const x of (e.schedule||[])){const d=document.createElement('div');d.style.cssText='padding:11px 14px;background:#f3f7fa;border-radius:12px';d.textContent=[x.date,[x.start,x.end].filter(Boolean).join(' – '),x.label].filter(Boolean).join(' · ');panel.append(d)}
-   if((/^(?:https:\/\/|plan\.html\?lieu=)/i.test(e.mapUrl||''))){const link=document.createElement('a');link.href=e.mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Situer sur le plan interactif';link.style.cssText='display:inline-block;font-weight:800;color:#1874b9;padding:12px 0';panel.append(link)}
+   if((/^(?:https:\/\/|plan\.html\?lieu=)/i.test(e.mapUrl||''))){const link=document.createElement('a');link.href=e.mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 Situer sur le plan interactif';if(/^plan\.html/.test(e.mapUrl)){link.onclick=event=>{event.preventDefault();closeModal();window.zikaPro.showMap(e.mapMarker||new URL(e.mapUrl,location.href).searchParams.get('lieu'))}}link.style.cssText='display:inline-block;font-weight:800;color:#1874b9;padding:12px 0';panel.append(link)}
    $('modalText').after(panel);
   }
   $('modalCalendar').style.display=(e.startsAt&&e.endsAt)||(e.start&&e.end)?'inline-block':'none';
@@ -932,7 +934,7 @@ window.zikaBoot.track((async function(){
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.extra?.all_day?'Toute la journée':(r.time_label||''),start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.extra?.location_type==='online'?'En ligne':r.extra?.location_type==='city'?'Dans toute la ville':(r.location||''),locationType:r.extra?.location_type||'venue',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,alwaysAvailable:!!r.extra?.always_available,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:Array.isArray(r.extra?.disciplines_extra)?r.extra.disciplines_extra:(typeof r.extra?.disciplines_extra==='string'?r.extra.disciplines_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),audiencesExtra:Array.isArray(r.extra?.audiences_extra)?r.extra.audiences_extra:(typeof r.extra?.audiences_extra==='string'?r.extra.audiences_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],attachments:r.extra?.attachments||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,thumbX:r.extra?.thumbnail_x??50,thumbY:r.extra?.thumbnail_y??50,thumbZoom:r.extra?.thumbnail_zoom??100,mediaCrops:r.extra?.media_crops||{},mapMarker:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':(r.extra?.map_marker||'')}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
+    free:!!r.is_free,alwaysAvailable:!!r.extra?.always_available,programmePeriods:r.extra?.programme_periods||[],discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:Array.isArray(r.extra?.disciplines_extra)?r.extra.disciplines_extra:(typeof r.extra?.disciplines_extra==='string'?r.extra.disciplines_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),audiencesExtra:Array.isArray(r.extra?.audiences_extra)?r.extra.audiences_extra:(typeof r.extra?.audiences_extra==='string'?r.extra.audiences_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':((r.extra?.map_marker && /^(?:[1-5]|parade|custom-[a-f0-9-]{36})$/i.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker)+'&v=114fe88c9d':(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],attachments:r.extra?.attachments||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,thumbX:r.extra?.thumbnail_x??50,thumbY:r.extra?.thumbnail_y??50,thumbZoom:r.extra?.thumbnail_zoom??100,mediaCrops:r.extra?.media_crops||{},mapMarker:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':(r.extra?.map_marker||'')}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
   const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));window.zikaPro.ticketURL=/^https:\/\//i.test(st.links?.ticket_url||'')?st.links.ticket_url:(EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.ticketUrl||EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.url||'');if(window.zikaPro.ticketURL){document.querySelectorAll('.bottom-cta .cta-buttons a,#proHeaderTicket').forEach(ticket=>ticket.href=window.zikaPro.ticketURL)}zikaOverrides=st.event_form_options?.categoryColors||{};configuredCategories=Array.isArray(st.event_form_options?.categories)?st.event_form_options.categories.filter(x=>typeof x==='string'&&x.trim()):[];setupFacets();render();
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
@@ -979,7 +981,7 @@ const slot=document.createElement('div');slot.id='zikaFlexibleSections';slot.cla
 // Sections inside the existing shell; keep hero outside to avoid breaking its full-width design.
 const insertion=document.querySelector('.wrap.summary');insertion?.before(slot);
 function ensureMap(){const host=document.getElementById('zikaMapHost');if(!host)return;let container=host.querySelector('#zikaPublicPlanEmbed');if(container)return;
-container=document.createElement('div');container.id='zikaPublicPlanEmbed';container.innerHTML='<h2 class="zika-map-heading">Plan interactif du Festival ZikaMansle</h2><iframe class="zika-plan-embedded" title="Plan interactif du festival" loading="lazy" src="plan.html"></iframe><a class="zika-map-expand" href="plan.html" target="_blank" rel="noopener">Ouvrir le plan en grand</a>';
+container=document.createElement('div');container.id='zikaPublicPlanEmbed';container.innerHTML='<h2 class="zika-map-heading">Plan interactif du Festival ZikaMansle</h2><iframe class="zika-plan-embedded" title="Plan interactif du festival" loading="lazy" src="plan.html?v=114fe88c9d&embedded=1"></iframe><a class="zika-map-expand" href="plan.html?v=114fe88c9d" target="_blank" rel="noopener">Ouvrir le plan en grand</a>';
 host.prepend(container)}
 function apply(cfg){if(!cfg||typeof cfg!=='object')return;ensureMap();const allowedFont=new Set(['Alfabet', 'Anton', 'Bebas Neue', 'Oswald', 'Barlow Condensed', 'Barlow', 'Montserrat', 'Inter', 'Inter Tight', 'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Raleway', 'Rubik', 'Work Sans', 'DM Sans', 'Manrope', 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Sora', 'Archivo Black', 'Fjalla One', 'Playfair Display', 'Georgia', 'Arial']);const colors=[['heading_color','--zika-title'],['text_color','--zika-ink'],['surface','--zika-surface'],['border','--zika-outline'],['button','--zika-btn'],['button_text','--zika-btntext']];for(const [k,v] of colors)if(/^#[0-9a-f]{6}$/i.test(cfg[k]||''))document.documentElement.style.setProperty(v,cfg[k]);for(const [key,css,fall] of [['heading_font','--zika-headfont','Anton'],['body_font','--zika-bodyfont','Inter']]){const font=allowedFont.has(cfg[key])?cfg[key]:fall;document.documentElement.style.setProperty(css,'"'+font+'", Arial, sans-serif');}
 let sections=Array.isArray(cfg.sections)?cfg.sections:fixed.map(id=>({id,visible:true}));const targets=getTargets();const ordered=new Set();

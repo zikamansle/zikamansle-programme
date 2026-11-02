@@ -1,62 +1,26 @@
 {
-  "notice": "Proposition complémentaire après première publication. Seuls la bannière et les fichiers de présentation changent ; les fiches existantes restent intactes.",
+  "notice": "Proposition de classement manuel uniquement. Conserver les dates, contenus et statuts de publication existants. Aucun ajout de fiche ni changement de bannière.",
   "new_events": [],
-  "event_updates": [],
-  "visual_editor_patch": {
-    ".hero": {
-      "x": 0,
-      "y": 0,
-      "height": 630,
-      "width": 100,
-      "bgX": 50,
-      "bgY": 28
+  "event_updates": [
+    {
+      "id": "1bfc2c08-299a-4e91-932d-04d5011cd06f",
+      "extra_patch": {
+        "programme_periods": [
+          "before"
+        ]
+      }
     },
-    ".hero h1": {
-      "x": 0,
-      "y": 0,
-      "color": "#1d3557",
-      "content": "Le programme",
-      "contentHtml": "Le programme"
-    },
-    ".hero .hero-copy p": {
-      "x": 0,
-      "y": 0,
-      "color": "#1d3557",
-      "content": "Avant le festival et pendant les deux jours de fête : retrouvez les concerts, les expositions, les jeux et les rendez-vous du Festival ZikaMansle."
+    {
+      "id": "94bded77-b45c-47df-a53a-0de965eb0737",
+      "extra_patch": {
+        "programme_periods": [
+          "before",
+          "samedi",
+          "dimanche"
+        ]
+      }
     }
-  },
-  "visual_editor_remove_properties": {
-    ".hero": [
-      "widthPx"
-    ],
-    ".hero h1": [
-      "widthPx",
-      "height"
-    ],
-    ".hero .hero-copy p": [
-      "widthPx",
-      "height"
-    ],
-    "[data-zv-node=\"n-section-2-div-1-div-1-div-1-h1-1\"]": [
-      "widthPx",
-      "height",
-      "x",
-      "y"
-    ],
-    "[data-zv-node=\"n-section-2-div-1-div-1-h1-1\"]": [
-      "widthPx",
-      "height",
-      "x",
-      "y"
-    ],
-    "[data-zv-node=\"n-section-2-div-1-div-1-p-1\"]": [
-      "widthPx",
-      "height",
-      "x",
-      "y"
-    ],
-    "[data-zv-node=\"n-section-2-div-1\"]": [
-      "color"
-    ]
-  }
+  ],
+  "visual_editor_patch": {},
+  "visual_editor_remove_properties": {}
 }
