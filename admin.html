@@ -1172,7 +1172,7 @@ function updateEditorModes(){
 }
 by('zvQuickText').onclick=()=>setPickMode('text');
 by('zvQuickBlock').onclick=()=>setPickMode('block');
-by('zvQuickCrop').onclick=()=>{if(!selectedKey){status('Sélectionne d’abord une image ou son bloc.');return;}imageAdjustMode=!imageAdjustMode;updateEditorModes();status(imageAdjustMode?'Mode cadrage : glisse l’image dans son cadre. Le bloc reste immobile.':'Mode sélection : clique sur un bloc.');};
+by('zvQuickCrop').onclick=()=>{if(!selectedKey){status('Sélectionne d’abord une image ou son bloc.');return;}imageAdjustMode=!imageAdjustMode;updateEditorModes();status(imageAdjustMode?'Mode cadrage : glisse le fond ou la photo dans son cadre. Le bloc reste immobile.':'Mode sélection : clique sur un bloc.');};
 by('zvPickText').onclick=()=>setPickMode('text');
 by('zvPickBlock').onclick=()=>setPickMode('block');
 by('zvPickPage').onclick=()=>{setPickMode('block');setKey('body');status('Fond général sélectionné — couleur ou image Wix, sans modifier les cartes.');};
@@ -1237,22 +1237,24 @@ function handlePointerDown(e){
  // A text node remains draggable on a deliberate drag; a normal double-click still edits its text.
  // Selection is deferred to click until movement exceeds the threshold.
  const handle=e.target.closest('[data-zv-direction]');
- const key=handle?selectedKey:getTarget(e.target);
- if(!key||key==='body')return;
+ const key=handle?selectedKey:(imageAdjustMode && selectedKey==='body'?'body':getTarget(e.target));
+ if(!key || (key==='body' && !imageAdjustMode))return;
  /* Selection deferred until click: preserves the native dblclick target. */
  const doc=frameDoc(),el=doc?.querySelector(key);if(!el)return;
+ // Each block owns a fixed footprint so dragging it cannot reflow neighbours.
+ if(!imageAdjustMode && !handle && key!=='body' && pickMode==='block' && !el.dataset.zvFrameReady) zvReserveFrame(doc,el);
  const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
  if(handle){zvReserveFrame(doc,el);}
  const oldW=rect.width;
  const oldH=rect.height;
  const isHeroPhoto=!handle&&imageAdjustMode&&!!e.target.closest('.zv-hero-photo');
  const isHeroCrop=!handle&&(isHeroPhoto||(imageAdjustMode&&!!e.target.closest('.hero')&&!(e.target.closest('h1,h2,h3,h4,p,span,a,button'))));
- const cropImage= !handle && (isHeroCrop || (imageAdjustMode && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')) || (imageAdjustMode&&!!e.target.closest('.zika-banner__image,.zika-banner__video')));
+ const cropImage= !handle && ((imageAdjustMode && key==='body') || isHeroCrop || (imageAdjustMode && !!e.target.closest('.zika-banner,img,video,[data-zv-block]')) || (imageAdjustMode&&!!e.target.closest('.zika-banner__image,.zika-banner__video')));
  if(cropImage){e.preventDefault();if(isHeroCrop&&selectedKey!=='.hero')setKey('.hero');}
  // Les médias ajoutés se déplacent par défaut comme les autres éléments.
  // Le cadrage ne commence qu'après activation explicite de « Ajuster l’image ».
  if(!handle&&e.target.closest('[data-zv-block]')&&!cropImage){e.preventDefault();e.stopPropagation();}
- const targetKey=isHeroCrop?'.hero':(cropImage?(e.target.closest('.zika-banner')?'.zika-banner':key):key);
+ const targetKey=isHeroCrop?'.hero':(cropImage?(key==='body'?'body':e.target.closest('.zika-banner')?'.zika-banner':key):key);
  const baseCrop=draft[targetKey]||{};
  drag={key:targetKey,startX:e.clientX,startY:e.clientY,oldX:Number(draft[key]?.x)||0,oldY:Number(draft[key]?.y)||0,oldW,oldH,parentW,oldScaleX:Number(draft[key]?.scaleX)||1,oldScaleY:Number(draft[key]?.scaleY)||1,resize:!!handle,direction:handle?.dataset.zvDirection||'se',cropImage,oldCropX:Number(baseCrop.bgX??50),oldCropY:Number(baseCrop.bgY??50),cropW:Math.max(1,rect.width),cropH:Math.max(1,rect.height),moved:false};
  if(handle){e.preventDefault();e.stopPropagation()}
@@ -1290,6 +1292,9 @@ function handlePointerMove(e){
   }else{
    node.style.setProperty('object-position',v.bgX+'% '+v.bgY+'%','important');
    node.style.setProperty('background-position',v.bgX+'% '+v.bgY+'%','important');
+   // Hero/background images have their own layer; move the actual layer too.
+   const actualPhoto=node.querySelector('.zv-hero-photo,.zika-banner__image');
+   if(actualPhoto)actualPhoto.style.setProperty('object-position',v.bgX+'% '+v.bgY+'%','important');
   }
   updateResizeHandle();
  }
