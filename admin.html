@@ -1053,7 +1053,13 @@ function isolateGeometry(doc){
     }
   }
 }
-function apply(){const doc=frameDoc();if(!doc)return;if(!doc.querySelector('[contenteditable=true]'))renderCustom(doc);applyContent(doc);applyMedia(doc);applyBannerCrop(doc);applyHeroPhoto(doc);let s=doc.getElementById('zvDraftStyles');if(!s){s=doc.createElement('style');s.id='zvDraftStyles';doc.head.append(s)}s.textContent=buildCss(draft);
+function apply(){const doc=frameDoc();if(!doc)return;
+ // Header elements must stay in their layout flow; movement is by translate only.
+ for(const n of doc.querySelectorAll('.topbar [data-zv-isolated="1"]')){
+   n.style.removeProperty('position');n.style.removeProperty('left');n.style.removeProperty('top');n.style.removeProperty('z-index');n.removeAttribute('data-zv-isolated');
+   const spare=n.nextElementSibling;if(spare?.dataset?.zvSpacer==='1')spare.remove();
+ }
+if(!doc.querySelector('[contenteditable=true]'))renderCustom(doc);applyContent(doc);applyMedia(doc);applyBannerCrop(doc);applyHeroPhoto(doc);let s=doc.getElementById('zvDraftStyles');if(!s){s=doc.createElement('style');s.id='zvDraftStyles';doc.head.append(s)}s.textContent=buildCss(draft);
 // Typography of individually selected header labels must win against fixed header CSS.
 // Only the exact selected node is styled; siblings and parent groups stay independent.
 for(const [selector,v] of Object.entries(draft)){
@@ -1149,6 +1155,9 @@ function getTarget(node){
  if(el.closest('[data-zv-direction],#zvContextMenu'))return selectedKey||'body';
  const eventTarget=eventKey(el);if(eventTarget)return eventTarget;
  if(el.closest('.zv-hero-photo'))return '.hero';
+ // Select the real header logo as one unit, never a detached child image.
+ const headerLogo=el.closest('.topbar .logo-mark, .topbar .brand img, .topbar .brand picture');
+ if(headerLogo){const actual=headerLogo.closest('.logo-mark')||headerLogo;return zvUniqueNodeKey(actual)}
  const custom=el.closest('[data-zv-block]');
  if(custom)return '[data-zv-block="'+custom.dataset.zvBlock+'"]';
  // The image itself, its surrounding box and its caption are always independent.
@@ -1265,7 +1274,7 @@ function handlePointerDown(e){
  // Each block owns a fixed footprint so dragging it cannot reflow neighbours.
  /* Selection alone never changes geometry; reserve only once a drag really begins. */
  const rect=el.getBoundingClientRect(),parentW=el.parentElement?.getBoundingClientRect().width||doc.documentElement.clientWidth;
- if(handle){zvReserveFrame(doc,el);}
+ if(handle && !el.closest('.topbar')){zvReserveFrame(doc,el);}
  const oldW=rect.width;
  const oldH=rect.height;
  const isHeroPhoto=!handle&&imageAdjustMode&&!!e.target.closest('.zv-hero-photo');
@@ -1286,7 +1295,7 @@ function handlePointerMove(e){
  if(!drag||mode!=='edit')return;
  const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
  if(Math.abs(dx)+Math.abs(dy)<5&&!drag.moved)return;
- if(!drag.moved){if(!drag.cropImage&&!drag.resize&&pickMode==='block'){const n=frameDoc()?.querySelector(drag.key);if(n)zvReserveFrame(frameDoc(),n)}snapshot();if(!drag.cropImage&&!drag.resize&&selectedKey!==drag.key){selectedKey=drag.key;by('zvSelectInfo').textContent='Élément déplacé indépendamment';by('zvFields').hidden=false}}drag.moved=true;const v=draft[drag.key]||{};
+ if(!drag.moved){if(!drag.cropImage&&!drag.resize&&pickMode==='block'){const n=frameDoc()?.querySelector(drag.key);if(n&&!n.closest('.topbar'))zvReserveFrame(frameDoc(),n)}snapshot();if(!drag.cropImage&&!drag.resize&&selectedKey!==drag.key){selectedKey=drag.key;by('zvSelectInfo').textContent='Élément déplacé indépendamment';by('zvFields').hidden=false}}drag.moved=true;const v=draft[drag.key]||{};
  if(drag.cropImage){const zoom=Math.max(1,Number(v.bgZoom??100)/100);v.bgX=Math.max(0,Math.min(100,Math.round(drag.oldCropX-dx/drag.cropW*100/zoom)));v.bgY=Math.max(0,Math.min(100,Math.round(drag.oldCropY-dy/drag.cropH*100/zoom)))}
  else if(drag.resize){const d=drag.direction;
  const dw=(d.includes('e')?dx:d.includes('w')?-dx:0),dh=(d.includes('s')?dy:d.includes('n')?-dy:0);
