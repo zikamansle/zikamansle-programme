@@ -1150,11 +1150,14 @@ function getTarget(node){
  // Buttons and links are independently selectable, regardless of mode.
  const clickTarget=el.closest('button,a,[role=button]');
  if(clickTarget&&!clickTarget.closest('[data-zv-direction]'))return zvUniqueNodeKey(clickTarget);
- // Explicitly select inner cards before any exterior panel.
+ // Always target the smallest visible item first. A nested caption, pill or
+ // button is not the same editable block as its parent group.
+ const own=el.closest('button,a,[role="button"],h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,label,li,summary,figcaption,blockquote,img,video');
+ if(own&&!own.closest('script,style,svg'))return zvUniqueNodeKey(own);
  const inner=el.closest('.fact,.control-card,.event-card,.filter-panel,.searchbox,.hero-panel,.panel-chip,.card');
- if(inner)return zvUniqueNodeKey(inner);
+ if(inner&&inner===el)return zvUniqueNodeKey(inner);
  if(pickMode==='block'){
-   const block=el.closest('button,a,label,article,figure,section,aside,nav,header,footer,div,main');
+   const block=el.closest('article,figure,section,aside,nav,header,footer,div,main');
    if(block&&block!==doc.body)return zvUniqueNodeKey(block);
  }
  // Directly clicked text in block mode still selects its own visual box.
@@ -1167,7 +1170,7 @@ function setPickMode(next){
   const b=by(id);b.setAttribute('aria-pressed',String(value===pickMode));b.style.background=value===pickMode?'#176ec0':'';b.style.color=value===pickMode?'#fff':'';
  }
  by('zvSelectInfo').textContent=next==='text'?'Clique sur un texte, double-clique pour le réécrire.':'Clique sur une zone pour modifier tout le bloc (fond, taille, coins, position).';
- status(next==='text'?'Sélection des textes activée':'Sélection des blocs activée');
+ status(next==='text'?'Sélection des textes activée':'Clique sur chaque élément séparément. Alt + clic sélectionne son conteneur parent.');
 }
 function updateEditorModes(){
  const map=[['zvQuickText',!imageAdjustMode&&pickMode==='text'],['zvQuickBlock',!imageAdjustMode&&pickMode==='block'],['zvQuickCrop',imageAdjustMode]];
@@ -1233,7 +1236,9 @@ function handleClick(e){
  if(skipClick){skipClick=false;return}
  // In editing mode prevent navigation, but don't swallow native double-click handling.
  if(e.target.closest('a,button'))e.preventDefault();
- const key=(imageAdjustMode&&selectedKey&&frameDoc()?.querySelector(selectedKey)?.matches('.hero'))?selectedKey:getTarget(e.target);if(key&&key!=='body'){setKey(key);status('Élément sélectionné')}
+ let key=(imageAdjustMode&&selectedKey&&frameDoc()?.querySelector(selectedKey)?.matches('.hero'))?selectedKey:getTarget(e.target);
+ if(e.altKey){const child=key&&frameDoc()?.querySelector(key);const parent=child?.parentElement;if(parent&&parent!==frameDoc()?.body)key=zvUniqueNodeKey(parent)}
+ if(key&&key!=='body'){setKey(key);status(e.altKey?'Conteneur parent sélectionné':'Élément individuel sélectionné — Suppr pour le masquer')}
 }
 function handlePointerDown(e){
  if(mode!=='edit'||e.button!==0||e.target.isContentEditable||e.target.closest('#zvContextMenu,input,textarea,select,[contenteditable=true]'))return;
