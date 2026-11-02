@@ -295,7 +295,32 @@ body{background:#f7f9fb;color:var(--text)}
 .dialog-actions .primary{background:#f28b36;color:#fff}
 
 .zika-gallery{display:flex;overflow-x:auto;gap:10px;padding:12px 20px;background:#f7fafc;scroll-snap-type:x mandatory}.zika-gallery img{height:125px;width:200px;object-fit:cover;border-radius:12px;scroll-snap-align:start}.zika-extra{padding:0 24px 16px;font-size:13px;color:#526b80}.zika-alert{background:#fff2e6;color:#462605;border-left:5px solid #f88722;padding:16px 20px;border-radius:14px;margin:20px auto;line-height:1.6}.zika-timeline{background:#fff;border-radius:22px;padding:20px;margin:12px 0 25px;box-shadow:0 8px 28px #19324c11}.zika-timeline table{width:100%;border-collapse:collapse;font-size:14px}.zika-timeline td,.zika-timeline th{padding:12px;border-bottom:1px solid #e4edf3;text-align:left;vertical-align:top}.zika-timeline a{color:#1769ab}.zika-share{border:1px solid #dce6ee;border-radius:14px;padding:10px;background:white;color:#24435e;font-weight:700;cursor:pointer}.zika-maplink{display:inline-block;padding:12px 16px;background:#e8f3ff;border-radius:12px;margin:8px 0;color:#145a93;text-decoration:none;font-weight:700}.zika-compact .event-inner{padding:14px}.zika-compact .event-main h3{font-size:27px}@media(max-width:640px){.zika-timeline{overflow-x:auto}.zika-timeline table{min-width:540px}}
-.zika-facets label{font-size:12px;font-weight:700;color:#486079}.zika-facets select,.zika-facets input{display:block;margin-top:5px;width:100%;min-height:42px;border-radius:12px;border:1px solid #d9e4ee;padding:9px;background:#fff;color:#18324a}</style>
+.zika-facets label{font-size:12px;font-weight:700;color:#486079}.zika-facets select,.zika-facets input{display:block;margin-top:5px;width:100%;min-height:42px;border-radius:12px;border:1px solid #d9e4ee;padding:9px;background:#fff;color:#18324a}
+/* Mini-fiche détaillée du Festival : hiérarchie claire et texte lisible */
+#modal{padding:12px;overflow-y:auto;overscroll-behavior:contain;align-items:safe center}
+#modal .dialog{width:min(740px,100%);max-height:min(92dvh,950px);overflow-y:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;box-shadow:0 30px 100px #091a3060}
+#modal .dialog-media{display:none;height:210px;position:relative;overflow:hidden;background:#edf4f7}
+#modal .dialog-media.has-photo{display:block}
+#modal .dialog-media img{width:100%;height:100%;object-fit:cover;display:block}
+#modal .dialog-head{background:#fff!important;color:#173550!important;padding:0 28px!important;border-bottom:1px solid #e8eff3}
+#modal .dialog-head-inner{padding:26px 46px 25px 0}
+#modal .dialog-head .cat-badge{display:inline-flex;background:#e8f3fb!important;color:#11669c!important;border-radius:30px;padding:7px 12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+#modal .dialog-head h2{color:#153951!important;margin:14px 0 8px;font-size:clamp(30px,5vw,48px);line-height:1.04;letter-spacing:.01em}
+#modal .dialog-head p{color:#536b7d!important;font-size:16px;line-height:1.55;max-width:65ch}
+#modal .close{position:sticky;float:right;margin-top:14px;margin-right:-12px;top:10px;background:#f0f4f7;color:#254661;z-index:5;box-shadow:0 2px 9px #1232}
+#modal .dialog-body{padding:22px 28px 28px}
+#modal .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:24px}
+#modal .detail-grid span{font-size:13px;font-weight:750;line-height:1.4;padding:12px 14px;border:1px solid #e6edf1;background:#f4f8fa;border-radius:12px;min-width:0;overflow-wrap:anywhere}
+#modal .zika-mini-description{border-top:1px solid #e9eef2;padding-top:19px}
+#modal .zika-mini-description h3{font-family:var(--zika-headfont),Impact,sans-serif;font-size:25px;color:#143b59;margin:0 0 12px;text-transform:uppercase;letter-spacing:.02em}
+#modal #modalText{font-size:15px;line-height:1.75;color:#354e62;overflow-wrap:anywhere}
+#modal #modalText p{margin:0 0 13px;white-space:pre-wrap}
+#modal #modalText p:last-child{margin-bottom:0}
+#modal .dialog-actions{margin-top:24px;padding-top:18px;border-top:1px solid #e8edf2}
+#modal .dialog-actions button{min-height:44px;cursor:pointer}
+@media(max-width:600px){#modal{padding:8px}#modal .dialog{max-height:96dvh;border-radius:17px}#modal .dialog-media{height:160px}#modal .dialog-head{padding:0 18px!important}#modal .dialog-head-inner{padding:22px 36px 19px 0}#modal .dialog-body{padding:19px 18px 24px}#modal .detail-grid{grid-template-columns:1fr 1fr;gap:7px}#modal .detail-grid span{padding:10px;font-size:12px}#modal .dialog-actions button{width:100%}}
+
+</style>
 <style>
 /* Palette lumineuse ZikaMansle */
 :root{--bg:#f8fbff;--bg2:#edf5fc;--panel:#ffffff;--soft:#f7fafc;--blue:#168fdf;--orange:#f88722;--gold:#ff982f;--shadow:0 10px 30px rgba(24,67,100,.09)}
@@ -492,6 +517,7 @@ img,video{max-width:100%;height:auto}
 
 <div class="modal" id="modal" aria-hidden="true">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="dialog-media" id="modalMedia" aria-hidden="true"></div>
     <div class="dialog-head" data-zv-role="head">
       <button class="close" id="close" aria-label="Fermer">×</button>
       <div class="dialog-head-inner">
@@ -502,7 +528,7 @@ img,video{max-width:100%;height:auto}
     </div>
     <div class="dialog-body" data-zv-role="body">
       <div class="detail-grid" id="modalDetails"></div>
-      <article id="modalText"></article>
+      <section class="zika-mini-description" id="modalDescriptionSection"><h3>À découvrir</h3><article id="modalText"></article></section>
       <div class="dialog-actions">
         <button class="primary" id="modalCalendar">Ajouter à mon calendrier</button>
         <button class="secondary" id="modalFavorite">Ajouter à ma sélection</button>
@@ -649,7 +675,14 @@ function openModal(id){
   $('modalTitle').textContent=e.title;
   $('modalShort').textContent=e.short;
   $('modalDetails').innerHTML=`<span>${escapeHtml(eventDay(e))}</span><span>${escapeHtml(e.time)}</span><span>${escapeHtml(e.place)}</span><span>${e.free?'Accès gratuit':'Accès payant'}</span>`;
-  $('modalText').textContent=e.description;
+  // L'image principale est présentée dans une bannière fixe ; aucun HTML provenant de la fiche n'est interprété.
+  const media=$('modalMedia');media.replaceChildren();media.classList.remove('has-photo');
+  const heroSrc=[e.image,e.thumbnail,...(Array.isArray(e.gallery)?e.gallery:[])].find(u=>typeof u==='string'&&/^https:\/\//i.test(u));
+  if(heroSrc){const photo=document.createElement('img');photo.src=heroSrc;photo.alt='Illustration de '+e.title;photo.loading='lazy';photo.onerror=()=>{media.replaceChildren();media.classList.remove('has-photo')};media.append(photo);media.classList.add('has-photo')}
+  const description=$('modalText');description.replaceChildren();
+  const parts=String(e.description||'').split(/\n\s*\n|(?<=[.!?])\s*\n/).map(x=>x.trim()).filter(Boolean);
+  for(const part of parts){const p=document.createElement('p');p.textContent=part;description.append(p)}
+  $('modalDescriptionSection').style.display=parts.length?'block':'none';
   const oldExtras=$('modalExtras'); if(oldExtras)oldExtras.remove();
   if((e.schedule&&e.schedule.length)||e.customDate||e.mapUrl){
    const panel=document.createElement('div');panel.id='modalExtras';panel.style.cssText='margin-top:20px;display:grid;gap:9px';
@@ -660,7 +693,7 @@ function openModal(id){
   }
   $('modalCalendar').style.display=(e.startsAt&&e.endsAt)||(e.start&&e.end)?'inline-block':'none';
   // Identifiants stables pour les styles propres à cet événement.
-  for(const [role,selector] of Object.entries({frame:'.dialog',head:'.dialog-head',body:'.dialog-body',category:'#modalCategory',title:'#modalTitle',summary:'#modalShort',details:'#modalDetails',description:'#modalText',calendar:'#modalCalendar',favorite:'#modalFavorite',extras:'#modalExtras'})){
+  for(const [role,selector] of Object.entries({frame:'.dialog',media:'#modalMedia',head:'.dialog-head',body:'.dialog-body',category:'#modalCategory',title:'#modalTitle',summary:'#modalShort',details:'#modalDetails',description:'#modalText',calendar:'#modalCalendar',favorite:'#modalFavorite',extras:'#modalExtras'})){
     const node=$('modal').querySelector(selector);if(node)node.dataset.zvRole=role;
   }
   // Chaque sous-élément de la fiche dispose d'une cible stable et indépendante.
