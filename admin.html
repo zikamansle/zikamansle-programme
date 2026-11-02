@@ -979,7 +979,7 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
 #zvStudio.zv-preview-mode{background:#fff}#zvStudio.zv-preview-mode #zvTop,#zvStudio.zv-preview-mode #zvPanel{display:none!important}#zvStudio.zv-preview-mode #zvGrid{display:block;position:absolute;inset:0}#zvStudio.zv-preview-mode #zvViewer{padding:0;display:block;overflow:hidden;width:100%;height:100%}#zvStudio.zv-preview-mode #zvFrame{display:block;width:100%;height:100%;margin:0;border:0;border-radius:0;box-shadow:none}#zvPreviewActions{display:none;position:absolute;top:14px;right:16px;z-index:10;gap:9px;align-items:center;background:#fffefb;box-shadow:0 5px 22px #092b4360;border:1px solid #d3dee8;padding:9px;border-radius:12px}#zvStudio.zv-preview-mode #zvPreviewActions{display:flex}#zvPreviewActions button{border:0;border-radius:8px;padding:11px 14px;font-weight:750;font:inherit;cursor:pointer;color:#173552;background:#e8f0f7}#zvPreviewActions button.publish{background:#167cbb;color:white}#zvPreviewActions button:disabled{opacity:.6;cursor:wait}#zvPreviewNotice{color:#385a6f;font-size:12px;max-width:250px}#zvStudio.zv-preview-mode #zvFrame.mobile{width:min(390px,100%);margin:auto}#zvStudio.zv-preview-mode #zvViewer:has(#zvFrame.mobile){background:#dce4eb}@media(max-width:650px){#zvPreviewActions{top:8px;left:8px;right:8px;justify-content:center;flex-wrap:wrap}#zvPreviewNotice{flex-basis:100%;text-align:center}}
 </style>
 <div id="zvStudio" role="dialog" aria-modal="true" aria-label="Éditeur visuel du programme">
- <div id="zvTop"><strong>Studio visuel</strong><button id="zvEdit" type="button">✎ Modifier</button><button id="zvAddTop" type="button" aria-expanded="false">＋ Ajouter</button><label for="zvEventChoice" style="font-size:12px">Page : <select id="zvEventChoice" style="max-width:195px;padding:8px;border-radius:8px"><option value="">Programme général</option></select></label><button id="zvQuickBlock" type="button" title="Sélectionner un bloc complet">▣ Sélectionner bloc</button><button id="zvQuickText" type="button" title="Sélectionner uniquement le texte">T Sélectionner texte</button><button id="zvQuickCrop" type="button" title="Déplacer l’image dans son cadre sans déplacer le bloc">↔ Cadrer image</button><button id="zvDesktop" type="button">Ordinateur</button><button id="zvMobile" type="button">Mobile</button><button id="zvUndo" type="button">↶ Annuler</button><button id="zvRedo" type="button">↷ Rétablir</button><button class="main" id="zvSave" type="button">Enregistrer et publier</button><button id="zvClose" type="button">Fermer</button><span id="zvStatus" role="status"></span></div>
+ <div id="zvTop"><strong>Studio visuel</strong><a id="zvReturnSite" href="https://www.zikamansle.fr/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#113553;border:1px solid #c7d6e7;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap">↗ Retour sur zikamansle.fr</a><button id="zvEdit" type="button">✎ Modifier</button><button id="zvAddTop" type="button" aria-expanded="false">＋ Ajouter</button><label for="zvEventChoice" style="font-size:12px">Page : <select id="zvEventChoice" style="max-width:195px;padding:8px;border-radius:8px"><option value="">Programme général</option></select></label><button id="zvQuickBlock" type="button" title="Sélectionner un bloc complet">▣ Sélectionner bloc</button><button id="zvQuickText" type="button" title="Sélectionner uniquement le texte">T Sélectionner texte</button><button id="zvQuickCrop" type="button" title="Déplacer l’image dans son cadre sans déplacer le bloc">↔ Cadrer image</button><button id="zvDesktop" type="button">Ordinateur</button><button id="zvMobile" type="button">Mobile</button><button id="zvUndo" type="button">↶ Annuler</button><button id="zvRedo" type="button">↷ Rétablir</button><button class="main" id="zvSave" type="button">Enregistrer et publier</button><button id="zvClose" type="button">Fermer</button><span id="zvStatus" role="status"></span></div>
  <div id="zvPreviewActions" role="toolbar" aria-label="Actions de l’aperçu"><button id="zvBackToEdit" type="button">← Retour à l’édition</button><button id="zvPreviewPublish" class="publish" type="button">Enregistrer et publier</button><span id="zvPreviewNotice" role="status" aria-live="polite">Aperçu privé · rien n’est publié</span></div>
  <div id="zvAddMenu" hidden style="position:absolute;top:55px;left:90px;z-index:80;background:#fff;padding:14px;border:1px solid #cbd9e8;border-radius:10px;box-shadow:0 10px 25px #0003;display:none;max-width:270px"><button type="button" data-add="text">＋ Texte</button><button type="button" data-add="image">＋ Image Wix</button><button type="button" data-add="media">＋ Vidéo Wix</button><button type="button" data-add="box">＋ Bloc vierge</button></div><div id="zvGrid"><div id="zvViewer"><iframe id="zvFrame" title="Programme en édition visuelle" src="./index.html?studio=1"></iframe></div><aside id="zvPanel"><h3>Personnalisation</h3><p class="hint">Clique sur un élément du programme pour changer son apparence. Les changements restent privés jusqu'à « Enregistrer et publier ».</p><div class="zv-pick-mode" role="group" aria-label="Cible de sélection" style="display:flex;gap:8px;margin:12px 0"><button type="button" id="zvPickText" aria-pressed="true" class="smallbtn">T Texte</button><button type="button" id="zvPickBlock" aria-pressed="false" class="smallbtn">▣ Bloc complet</button><button type="button" id="zvPickPage" class="smallbtn" title="Personnaliser le fond général du programme">▧ Fond de page</button><button type="button" id="zvPickContent" class="smallbtn">▤ Fond du programme</button></div><div id="zvSelectInfo">Sélectionne un élément dans le programme.</div><div id="zvFields" hidden>
  <label>Police</label><select id="zvFont"><option value="">Hériter de la police du site</option><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Trebuchet MS</option><option>Tahoma</option><option>Impact</option><option>Inter</option><option>Roboto</option><option>Montserrat</option><option>Poppins</option><option>Oswald</option><option>Anton</option><option>Alfabet</option><option>system-ui</option></select>
@@ -1025,34 +1025,17 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const safeCss=(s)=>String(s||'').replace(/[{};<>]/g,'');
 const customKey=k=>/^\[data-zv-block=\"zv-[a-z0-9-]+\"\]$/.test(k);
 const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');if(v.fontSize)add('line-height','normal');add('font-weight',v.fontWeight);add('font-style',v.fontStyle);add('color',v.color);add('background-color',v.opacity!==undefined ? `color-mix(in srgb, ${/^#[0-9a-fA-F]{3,8}$/.test(v.backgroundColor||'') ? v.backgroundColor : '#ffffff'} ${Math.max(0,Math.min(100,Number(v.opacity)))}%, transparent)` : v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');/* Transparence du fond seulement : jamais d'opacité sur le texte. */add('width',v.widthPx!==undefined?Number(v.widthPx)+'px':(v.width?Number(v.width)+'%':''));add('height',v.height?Number(v.height)+'px':'');if(v.widthPx!==undefined){add('max-width','none');add('min-width','0')}if(v.height!==undefined){add('min-height','0')}add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);if(v.borderStyle&&v.borderStyle!=='none'&&v.borderWidth===undefined)add('border-width','2px');add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
-const buildCss=data=>{
-const rules=[];
-for(const [key,v] of Object.entries(data)){
- if(!eventSelector.test(key)||!key.endsWith('[data-zv-role="frame"]')||!v||typeof v!=='object')continue;
- if(/^#[0-9a-fA-F]{3,8}$/.test(v.backgroundColor||'')){
-  const modal=key.replace(' [data-zv-role="frame"]','');
-  /* Le cadre conserve sa propre couleur : ne pas repeindre ses sections enfants. */
- }
-}
-return rules.concat(Object.entries(data).filter(([k,v])=>(targets.some(t=>t[1]===k)||customKey(k)||zvNodeKey(k)||eventSelector.test(k))&&v&&typeof v==='object').map(([key,v])=>{const base=`${key}{${styleFor(key,v)}}`;const container=/^(?:\[data-zv-block=|#modal|\.event-card|\.fact|\.control-card|\.hero-panel|\.panel-chip|\.topbar|\.aside-card|\.event-main|\.meta|\.hero|\.bottom-cta)/.test(key);const descendants=[];const textChildren=':is(h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,a,button,label,li,summary,blockquote)';if(container){if(v.fontSize!==undefined&&Number.isFinite(Number(v.fontSize))&&Number(v.fontSize)>=8)descendants.push('font-size:'+Number(v.fontSize)+'px !important','line-height:1.12 !important');if(v.fontWeight!==undefined&&v.fontWeight!=='')descendants.push('font-weight:'+safeCss(v.fontWeight)+' !important');if(v.fontStyle!==undefined&&v.fontStyle!=='')descendants.push('font-style:'+safeCss(v.fontStyle)+' !important')}return base+(descendants.length?`\n${key} ${textChildren}{${descendants.join(';')}}`:'')})).join('\n');
-};
+const buildCss=data=>Object.entries(data)
+ .filter(([key,v])=>(targets.some(t=>t[1]===key)||customKey(key)||zvNodeKey(key)||eventSelector.test(key))&&v&&typeof v==='object')
+ .map(([key,v])=>`${key}{${styleFor(key,v)}}`).join('\n');
+
 function frameDoc(){try{return frame.contentDocument}catch{return null}}
 function isolateGeometry(doc){
-  for(const [key,v] of Object.entries(draft)){
-    if(!v || (v.width===undefined&&v.height===undefined))continue;
-    let el;try{el=doc.querySelector(key)}catch{}if(!el||el===doc.body||el.matches('html,body'))continue;
-    // Keep the original layout footprint. Resizing the edited element does not resize its ancestors.
-    if(!el.dataset.zvIsolated){
-      const r=el.getBoundingClientRect();const parent=el.parentElement;
-      if(!parent||parent===doc.documentElement)continue;
-      const spacer=doc.createElement('span');spacer.dataset.zvSpacer='1';spacer.style.cssText='display:block;position:relative;pointer-events:none;visibility:hidden;width:'+r.width+'px;height:'+r.height+'px;flex-shrink:0;';
-      el.after(spacer);el.dataset.zvIsolated='1';
-      el.style.setProperty('position','absolute','important');el.style.setProperty('left',(el.offsetLeft)+'px','important');el.style.setProperty('top',(el.offsetTop)+'px','important');
-      parent.style.setProperty('position','relative');
-      el.style.setProperty('z-index','20','important');
-    }
-  }
+ // Do not add spacers or pull elements out of flex/grid.
+ // Design geometry is represented by CSS translate and dimensions on the target.
+ return;
 }
+
 function apply(){const doc=frameDoc();if(!doc)return;
  // Header elements must stay in their layout flow; movement is by translate only.
  for(const n of doc.querySelectorAll('.topbar [data-zv-isolated="1"]')){
@@ -1060,6 +1043,12 @@ function apply(){const doc=frameDoc();if(!doc)return;
    const spare=n.nextElementSibling;if(spare?.dataset?.zvSpacer==='1')spare.remove();
  }
 if(!doc.querySelector('[contenteditable=true]'))renderCustom(doc);applyContent(doc);applyMedia(doc);applyBannerCrop(doc);applyHeroPhoto(doc);let s=doc.getElementById('zvDraftStyles');if(!s){s=doc.createElement('style');s.id='zvDraftStyles';doc.head.append(s)}s.textContent=buildCss(draft);
+// Header logo owns an absolute layer in the brand. No flex placeholder,
+// no second logo node, and no movement of the title/subtitle.
+let logoStyle=doc.getElementById('zvLogoStableLayout');
+if(!logoStyle){logoStyle=doc.createElement('style');logoStyle.id='zvLogoStableLayout';doc.head.append(logoStyle)}
+logoStyle.textContent='.topbar .brand{position:relative!important;padding-left:56px!important;min-height:44px!important}.topbar .brand>.logo-mark{position:absolute!important;left:0!important;top:50%!important;flex:none!important;transform:translateY(-50%)!important;display:block!important;box-sizing:border-box!important;z-index:2!important}';
+
 // Typography of individually selected header labels must win against fixed header CSS.
 // Only the exact selected node is styled; siblings and parent groups stay independent.
 for(const [selector,v] of Object.entries(draft)){
@@ -1072,24 +1061,7 @@ for(const [selector,v] of Object.entries(draft)){
  if(v.fontSize!==undefined)n.style.setProperty('line-height','normal','important');
 }
 
-// Undo/redo also restores the isolated frame's pixel dimensions, not only CSS rules.
-for(const node of doc.querySelectorAll('[data-zv-frame-ready="1"]')){
- const holder=node.parentElement;
- if(!holder||holder.dataset.zvReserved!=='1')continue;
- const w=parseFloat(holder.style.width), h=parseFloat(holder.style.height);
- if(Number.isFinite(w))node.style.setProperty('width',w+'px','important');
- if(Number.isFinite(h))node.style.setProperty('height',h+'px','important');
-}
-// Le cadre isolé possède width/height inline !important : ces dimensions
-// priment sur les règles CSS du brouillon. On actualise donc l'élément lui-même.
-for(const [key,val] of Object.entries(draft)){
- if(!val||typeof val!=='object')continue;
- let node;try{node=doc.querySelector(key)}catch{};
- if(!node||node.dataset.zvFrameReady!=='1')continue;
- if(val.widthPx!==undefined&&Number.isFinite(Number(val.widthPx)))node.style.setProperty('width',Math.max(35,Number(val.widthPx))+'px','important');
- else if(val.width!==undefined&&Number.isFinite(Number(val.width)))node.style.setProperty('width',Math.max(1,Number(val.width))+'%','important');
- if(val.height!==undefined&&Number.isFinite(Number(val.height)))node.style.setProperty('height',Math.max(20,Number(val.height))+'px','important');
-}
+// The document structure is never changed by selecting or dragging an item.
 doc.documentElement.classList.toggle('zv-editing',mode==='edit');doc.querySelectorAll('[data-zv-selected]').forEach(e=>e.removeAttribute('data-zv-selected'));if(selectedKey&&mode==='edit')doc.querySelectorAll(selectedKey).forEach(e=>e.setAttribute('data-zv-selected','1'));renderHidden();updateResizeHandle()}
 
 // Un zoom réglé sur la bannière elle-même s'applique à son image de couverture.
@@ -1132,7 +1104,7 @@ function isCustom(){return customKey(selectedKey)}
 function newBlock(kind){snapshot();const id='zv-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*999).toString(36),key='[data-zv-block="'+id+'"]';draft[key]=(kind==='image'||kind==='media')?{kind,src:'',widthPx:360,height:220,borderRadius:12}:kind==='box'?{kind,content:'',width:80,height:180,backgroundColor:'#e9f2fb',borderRadius:15,padding:16}:{kind,content:'Nouveau texte',fontSize:26,color:'#183653',padding:12};apply();setKey(key);status('Bloc créé — personnalise-le dans le panneau')}
 function renderHidden(){const el=by('zvHiddenList');if(!el)return;el.replaceChildren();const keys=Object.keys(draft).filter(k=>draft[k]?.hidden===true);if(!keys.length){el.textContent='Aucun élément masqué.';return}for(const k of keys){const b=document.createElement('button');b.type='button';b.className='smallbtn';b.style.display='block';b.textContent='↩ Rétablir : '+(targets.find(t=>t[1]===k)?.[0]||k);b.onclick=()=>{snapshot();delete draft[k].hidden;apply();renderHidden();status('Élément rétabli (non publié)')};el.append(b)}}
 function status(text){by('zvStatus').textContent=text;by('zvDirty').textContent=text;by('zvPreviewNotice').textContent=text}function snapshot(){history.push(JSON.stringify(draft));if(history.length>50)history.shift();redo=[];updateHistoryButtons()}function updateHistoryButtons(){by('zvUndo').disabled=!history.length;by('zvRedo').disabled=!redo.length;by('zvUndo').title=history.length?'Annuler la dernière modification':'Rien à annuler';by('zvRedo').title=redo.length?'Rétablir la modification annulée':'Rien à rétablir'}
-function setKey(key){if(!key){selectedKey='';by('zvFields').hidden=true;apply();return}selectedKey=key;by('zvFields').hidden=!key;const nodeForLabel=frameDoc()?.querySelector(key);by('zvSelectInfo').textContent=key==='body'?'Fond de page — couleur, image Wix, opacité et cadrage':nodeForLabel?.matches('.fact')?'Encart individuel — fond, bordure et coins':nodeForLabel?.matches('.fact strong,.fact span')?'Texte de l’encart — police et couleur':(targets.find(x=>x[1]===key)?.[0]||(zvNodeKey(key)?'Élément individuel sélectionné':'Élément'));const val=draft[key]||{};by('zvShape').value=['0','10','22','999'].includes(String(val.borderRadius??''))?String(val.borderRadius):'';by('zvTextContent').value=val.content??(key&&!customKey(key)?(frameDoc()?.querySelector(key)?.textContent||''):'');by('zvLink').value=val.href||'';by('zvImageSrc').value=val.src||'';by('zvBackgroundImage').value=val.backgroundImage||'';by('zvTextContent').parentElement.querySelector('label[for=zvTextContent]');by('zvTextContent').style.display=(eventSelector.test(key)||val.kind==='text'||(!val.kind&&!!frameDoc()?.querySelector(key)?.matches('h1,h2,h3,h4,p,span,a,button,label,.panel-big,.panel-title,.panel-chip')))?'block':'none';by('zvLink').style.display=frameDoc()?.querySelector(key)?.matches('a')?'block':'none';by('zvImageSrc').style.display=(['image','media'].includes(val.kind)||!!nodeForLabel?.matches('img,video'))?'block':'none';for(const [id,k] of Object.entries(props)){const el=by(id);if(['zvColor','zvBg','zvBorderColor'].includes(id)){el.value=/^#[\da-f]{6}$/i.test(val[k]||'')?val[k]:(id==='zvColor'?'#182e43':'#ffffff')}else if(['zvOpacity','zvBgX','zvBgY','zvBgZoom'].includes(id))el.value=val[k]??(id==='zvOpacity'?100:id==='zvBgZoom'?100:50);else el.value=val[k]??''}apply()}
+function setKey(key){if(key&&frameDoc()?.querySelector(key)?.matches('.topbar .logo-mark'))key='.logo-mark';if(!key){selectedKey='';by('zvFields').hidden=true;apply();return}selectedKey=key;by('zvFields').hidden=!key;const nodeForLabel=frameDoc()?.querySelector(key);by('zvSelectInfo').textContent=key==='body'?'Fond de page — couleur, image Wix, opacité et cadrage':nodeForLabel?.matches('.fact')?'Encart individuel — fond, bordure et coins':nodeForLabel?.matches('.fact strong,.fact span')?'Texte de l’encart — police et couleur':(targets.find(x=>x[1]===key)?.[0]||(zvNodeKey(key)?'Élément individuel sélectionné':'Élément'));const val=draft[key]||{};by('zvShape').value=['0','10','22','999'].includes(String(val.borderRadius??''))?String(val.borderRadius):'';by('zvTextContent').value=val.content??(key&&!customKey(key)?(frameDoc()?.querySelector(key)?.textContent||''):'');by('zvLink').value=val.href||'';by('zvImageSrc').value=val.src||'';by('zvBackgroundImage').value=val.backgroundImage||'';by('zvTextContent').parentElement.querySelector('label[for=zvTextContent]');by('zvTextContent').style.display=(eventSelector.test(key)||val.kind==='text'||(!val.kind&&!!frameDoc()?.querySelector(key)?.matches('h1,h2,h3,h4,p,span,a,button,label,.panel-big,.panel-title,.panel-chip')))?'block':'none';by('zvLink').style.display=frameDoc()?.querySelector(key)?.matches('a')?'block':'none';by('zvImageSrc').style.display=(['image','media'].includes(val.kind)||!!nodeForLabel?.matches('img,video'))?'block':'none';for(const [id,k] of Object.entries(props)){const el=by(id);if(['zvColor','zvBg','zvBorderColor'].includes(id)){el.value=/^#[\da-f]{6}$/i.test(val[k]||'')?val[k]:(id==='zvColor'?'#182e43':'#ffffff')}else if(['zvOpacity','zvBgX','zvBgY','zvBgZoom'].includes(id))el.value=val[k]??(id==='zvOpacity'?100:id==='zvBgZoom'?100:50);else el.value=val[k]??''}apply()}
 const eventSelector=/^#modal\[data-zv-event="[a-zA-Z0-9_-]{1,100}"\] \[data-zv-role="(?:frame|head|head-inner|body|category|title|summary|details|detail-[1-9][0-9]*|description|calendar|favorite|extras|extra-[1-9][0-9]*|actions|close)"\]$/;
 function eventKey(node){
  const doc=frameDoc(),modal=node?.closest?.('#modal[data-zv-event]');
@@ -1157,7 +1129,7 @@ function getTarget(node){
  if(el.closest('.zv-hero-photo'))return '.hero';
  // Select the real header logo as one unit, never a detached child image.
  const headerLogo=el.closest('.topbar .logo-mark, .topbar .brand img, .topbar .brand picture');
- if(headerLogo){const actual=headerLogo.closest('.logo-mark')||headerLogo;return zvUniqueNodeKey(actual)}
+ if(headerLogo){const actual=headerLogo.closest('.logo-mark')||headerLogo;return actual.matches('.logo-mark')?'.logo-mark':zvUniqueNodeKey(actual)}
  const custom=el.closest('[data-zv-block]');
  if(custom)return '[data-zv-block="'+custom.dataset.zvBlock+'"]';
  // The image itself, its surrounding box and its caption are always independent.
@@ -1211,7 +1183,7 @@ by('zvPickContent').onclick=()=>{setPickMode('block');setKey('.content');status(
 const zvDirections=['nw','n','ne','e','se','s','sw','w'];
 function updateResizeHandle(){
  const doc=frameDoc();if(!doc)return;
- const node=selectedKey&&mode==='edit'?doc.querySelector(selectedKey):null;
+ let node=null;try{node=selectedKey&&mode==='edit'?doc.querySelector(selectedKey):null}catch(_){}
  for(const d of zvDirections){let h=doc.getElementById('zvHandle-'+d);
   if(!h){h=doc.createElement('button');h.type='button';h.id='zvHandle-'+d;h.dataset.zvDirection=d;h.setAttribute('aria-label','Redimensionner '+d);h.title='Redimensionner '+d;h.style.cssText='position:fixed;display:none;width:14px;height:14px;border:2px solid #fff;border-radius:4px;background:#f88722;box-shadow:0 1px 6px #0008;z-index:2147483647;touch-action:none;cursor:'+({n:'ns',s:'ns',e:'ew',w:'ew',ne:'nesw',sw:'nesw',nw:'nwse',se:'nwse'}[d])+'-resize';doc.body.append(h)}
   if(!node||node===doc.body||!node.getClientRects().length){h.style.display='none';continue}
@@ -1222,34 +1194,9 @@ function updateResizeHandle(){
 // Reserve the original footprint before editing; the selected visual box is free to grow
 // without pushing its siblings, stretching its contents, or expanding the header.
 function zvReserveFrame(doc,el){
- // Preserve the original layout box. Only the selected element becomes absolute
- // inside a fixed-footprint holder; its siblings keep their original positions.
- if(!el||el===doc.body||el.dataset.zvFrameReady)return;
- const rect=el.getBoundingClientRect(), parent=el.parentElement;
- if(!parent||rect.width<2||rect.height<2)return;
- const computed=doc.defaultView.getComputedStyle(el);
- const holder=doc.createElement('div'); holder.dataset.zvReserved='1';
- holder.style.position='relative';holder.style.boxSizing='border-box';
- holder.style.width=rect.width+'px';holder.style.height=rect.height+'px';
- holder.style.minWidth='0';holder.style.minHeight='0';holder.style.flexShrink='0';
- holder.style.flexGrow='0';holder.style.flexBasis=rect.width+'px';
- holder.style.alignSelf=computed.alignSelf;
- holder.style.margin=computed.margin;
- holder.style.display=computed.display==='inline'?'inline-block':'block';
- el.before(holder);holder.appendChild(el);
- el.dataset.zvFrameReady='1';
- el.style.setProperty('position','absolute','important');
- el.style.setProperty('left','0px','important');el.style.setProperty('top','0px','important');
- el.style.setProperty('margin','0px','important');
- el.style.setProperty('width',rect.width+'px','important');
- el.style.setProperty('height',rect.height+'px','important');
- el.style.setProperty('max-width','none','important');
- el.style.setProperty('min-width','0','important');
- el.style.setProperty('min-height','0','important');
- el.style.setProperty('box-sizing','border-box','important');
- el.style.setProperty('z-index','30','important');
- // Images keep their natural proportions inside their independently sized frames.
- if(el.matches('img,video'))el.style.setProperty('object-fit','cover','important');
+ // Never create placeholder DOM nodes. Selection, dragging and resize must preserve
+ // the original page hierarchy so that CSS selectors and sibling layout are stable.
+ return;
 }
 
 function handleClick(e){
@@ -1475,7 +1422,17 @@ if(canonical(actual)!==canonical(expected))throw Error('Les réglages relus ne c
 saved=structuredClone(draft);history=[];redo=[];updateHistoryButtons();
 // Le programme embarqué se recharge sur les données qui viennent d'être vérifiées.
 try{const visualFrame=by('zvFrame');if(visualFrame?.contentWindow)visualFrame.contentWindow.postMessage({type:'zika-design-published'},location.origin)}catch(_){}
-status('Modifications enregistrées et vérifiées. Le programme public actualise ses réglages automatiquement.')}catch(e){status('Échec de publication : '+e.message+' · les modifications restent dans l’éditeur')}finally{b1.disabled=b2.disabled=false}}
+status('Enregistré dans Supabase. Vérification du programme public…');
+const previewWindow=by('zvFrame')?.contentWindow;
+if(!previewWindow)throw Error('Aucun aperçu public disponible pour vérifier le rendu.');
+const publicCheck=await new Promise(resolve=>{
+ const timeout=setTimeout(()=>{window.removeEventListener('message',onMessage);resolve(false)},6500);
+ function onMessage(e){if(e.origin!==location.origin||e.source!==previewWindow||e.data?.type!=='zika-visual-design-confirmed')return;clearTimeout(timeout);window.removeEventListener('message',onMessage);resolve(e.data.signature===canonical(expected))}
+ window.addEventListener('message',onMessage);
+ previewWindow.postMessage({type:'zika-design-published',verify:true},location.origin);
+});
+if(!publicCheck)throw Error('Supabase a enregistré le design, mais son application dans le programme public n’a pas été confirmée.');
+status('Publication vérifiée : Supabase et programme public synchronisés.')}catch(e){status('Échec de publication : '+e.message+' · les modifications restent dans l’éditeur')}finally{b1.disabled=b2.disabled=false}}
 by('zvSave').onclick=publishStudio;
 by('zvPreviewPublish').onclick=publishStudio;
 const launcher=document.createElement('button');launcher.type='button';launcher.className='btn';launcher.textContent='✎ Modifier le design visuellement';launcher.style.margin='8px';launcher.onclick=open;document.querySelector('#editorPanel .tools')?.prepend(launcher);
