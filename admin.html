@@ -1503,7 +1503,7 @@ async function publishStudio(){
    function finish(ok,reason){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);frameToCheck.removeEventListener('load',onLoad);ok?resolve(true):reject(Error(reason||'Vérification publique impossible.'))}
    function onMessage(event){
     if(event.origin!==location.origin||event.source!==frameToCheck.contentWindow||event.data?.type!=='zika-visual-design-confirmed')return;
-    if(event.data.signature===canonical(published))finish(true);
+    if(event.data.signature===canonical(published)){if(Number(event.data.missingMainSelectors||0)>0)finish(false,'Certains éléments du design ne sont pas présents sur la page publique ('+event.data.missingMainSelectors+').');else finish(true)}
    }
    function onLoad(){
     // A fresh public instance loads design independently. Ask it to re-read the DB.
