@@ -352,6 +352,12 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
 .zika-banner__button{display:inline-block;padding:12px 24px;border-radius:10px;background:var(--zika-btn,#168fdf);color:white;text-decoration:none}
 @media(max-width:800px){.zika-split-grid{grid-template-columns:1fr}.zika-split-right{position:static}.zika-split-right .zika-plan-embedded{height:450px;min-height:360px}}
 @media(prefers-reduced-motion:reduce){.event-card{transition:none!important}.zika-banner__video{display:none}}
+</style><style id="zika-map-program-final">
+.zika-plan-embedded{height:850px!important;max-height:none!important;display:block!important}
+.zika-map-place-status{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff0e1;color:#092d47;border-radius:12px;padding:12px 16px;margin:12px 0}
+.zika-map-place-status[hidden]{display:none!important}
+.zika-map-place-status button{background:#0e2946;color:#fff;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}
+@media(max-width:700px){.zika-plan-embedded{height:690px!important}}
 </style></head>
 <body>
 <header class="topbar">
@@ -526,7 +532,7 @@ let EVENTS = [
 ];
 const categories=['Tout','Musique','Animations','Parade','Jeux','Culture','Prévention'];
 let configuredCategories=[]; // Catégories enregistrées dans l'administration
-const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:''};
+const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:'',mapPlace:''};
 let currentId=null;
 try{state.favorites=new Set(JSON.parse(localStorage.getItem('zika_favorites_2027')||'[]'))}catch(e){}
 const $=id=>document.getElementById(id);
@@ -547,7 +553,7 @@ function filtered(){
  const q=norm(state.q);
  const matches=EVENTS.filter(e=>{
   const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);
-  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+  return (!state.mapPlace||zikaPlaceMatchesEvent(e,state.mapPlace))&& (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
  });
  return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
 }
@@ -571,19 +577,30 @@ function openDeepLink(){const slug=decodeURIComponent((location.hash.match(/fich
 window.addEventListener('hashchange',openDeepLink);
 // Le clic sur un marqueur du plan affiche les événements qui s'y déroulent.
 window.addEventListener('message',event=>{
- if(event.origin!==location.origin||event.data?.type!=='ZIKA_SELECTED_PLACE')return;
+ if(event.data?.type!=='ZIKA_SELECTED_PLACE')return;
+ const source=document.querySelector('#zikaPublicPlanEmbed iframe');
+ if(!source||event.source!==source.contentWindow)return;
  const place=String(event.data.id||'');if(!place)return;
- const hits=EVENTS.filter(e=>String(e.mapMarker||'')===place);
- if(!hits.length)return;
- state.day='all';state.cat='Tout';state.q='';state.mine=false;
- for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price']]){state[key]='';const field=document.getElementById(id);if(field)field.value=''}
- render();const first=document.querySelector('[data-open="'+CSS.escape(hits[0].id)+'"]');
- first?.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});
+ state.mapPlace=place;state.day='all';state.cat='Tout';state.q='';state.mine=false;
+ state.discipline='';state.audience='';state.price='';state.from='';state.to='';
+ for(const id of ['filterDiscipline','filterAudience','filterPrice','filterFrom','filterTo']){const field=document.getElementById(id);if(field)field.value=''}
+ render();
+ const host=document.getElementById('zikaMapPlaceStatus');
+ if(host){const hits=EVENTS.filter(e=>zikaPlaceMatchesEvent(e,place));
+ host.hidden=false;host.querySelector('.zika-map-caption').textContent='Lieu '+place+' · '+hits.length+' événement'+(hits.length>1?'s':'')+' associé'+(hits.length>1?'s':'')+' au plan';}
+ /* Ne pas déplacer la page : garder le plan et les résultats côte à côte. */
 });
 
 const ZIKA_PALETTE={"Musique": "#f28b36", "Cinéma": "#6c63b5", "Danse": "#d65b97", "Associations": "#337ab7", "Sport": "#23a58c", "Exposition": "#a26bca", "Théâtre et spectacle": "#bb5656", "Littérature": "#8b63cc", "Jeux": "#2a9ca6", "Arts et création": "#d17e3e", "Parade": "#e4a02c", "Patrimoine": "#94754e", "Prévention et santé": "#53965e", "Environnement": "#5a9b74", "Atelier": "#457bb7", "Autre": "#607d8b"};
 let zikaOverrides={};
 function zikaCategoryColor(name){const c=zikaOverrides[name]||ZIKA_PALETTE[name]||'#607d8b';return /^#[0-9a-f]{6}$/i.test(c)?c:'#607d8b';}
+function zikaPlaceMatchesEvent(e,point){
+ const id=String(point||'');if(!id)return true;
+ const raw=(e.place||'')+' '+(e.location||'')+' '+(e.venue||'')+' '+(e.lieu||'');
+ const normalized=norm(raw);
+ const names={'1':['hotel de ville','place de l hotel','mairie','zikavillage'],'2':['square de verdun','zikaludik'],'3':['gautier capucon','salle gautier'],'4':['mediatheque'],'5':['parc floral','jean pierre lanson']};
+ return String(e.mapMarker||'')===id||(names[id]||[]).some(n=>normalized.includes(norm(n)));
+}
 function render(){
   renderFilters();
   if(!document.getElementById("zsTimeFilter")){const sel=document.createElement("select");sel.id="zsTimeFilter";sel.setAttribute("aria-label","Filtrer par période");sel.innerHTML="<option value=all>Tous les événements</option><option value=now>En cours</option><option value=future>À venir</option><option value=past>Terminés</option>";sel.value=window.zsTimeFilterValue||"all";sel.onchange=()=>{window.zsTimeFilterValue=sel.value;render()};document.getElementById("filters")?.append(sel)}
@@ -755,7 +772,7 @@ const slot=document.createElement('div');slot.id='zikaFlexibleSections';slot.cla
 const insertion=document.querySelector('.wrap.summary');insertion?.before(slot);
 function ensureMap(){const host=document.getElementById('zikaMapHost');if(!host)return;let container=host.querySelector('#zikaPublicPlanEmbed');if(container)return;
 container=document.createElement('div');container.id='zikaPublicPlanEmbed';container.innerHTML='<h2 class="zika-map-heading">Plan interactif du Festival ZikaMansle</h2><iframe class="zika-plan-embedded" title="Plan interactif du festival" loading="lazy" src="plan.html"></iframe><a class="zika-map-expand" href="plan.html" target="_blank" rel="noopener">Ouvrir le plan en grand</a>';
-host.prepend(container)}
+host.prepend(container);const bar=document.createElement('div');bar.id='zikaMapPlaceStatus';bar.hidden=true;bar.className='zika-map-place-status';bar.innerHTML='<strong class="zika-map-caption"></strong> <button type="button" id="zikaClearMapPlace">Afficher tous les événements</button>';const results=document.getElementById('results');results?.parentNode?.insertBefore(bar,results);document.getElementById('zikaClearMapPlace').onclick=()=>{state.mapPlace='';bar.hidden=true;render()}}
 function apply(cfg){if(!cfg||typeof cfg!=='object')return;ensureMap();const allowedFont=new Set(['Alfabet', 'Anton', 'Bebas Neue', 'Oswald', 'Barlow Condensed', 'Barlow', 'Montserrat', 'Inter', 'Inter Tight', 'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Raleway', 'Rubik', 'Work Sans', 'DM Sans', 'Manrope', 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Sora', 'Archivo Black', 'Fjalla One', 'Playfair Display', 'Georgia', 'Arial']);const colors=[['heading_color','--zika-title'],['text_color','--zika-ink'],['surface','--zika-surface'],['border','--zika-outline'],['button','--zika-btn'],['button_text','--zika-btntext']];for(const [k,v] of colors)if(/^#[0-9a-f]{6}$/i.test(cfg[k]||''))document.documentElement.style.setProperty(v,cfg[k]);for(const [key,css,fall] of [['heading_font','--zika-headfont','Anton'],['body_font','--zika-bodyfont','Inter']]){const font=allowedFont.has(cfg[key])?cfg[key]:fall;document.documentElement.style.setProperty(css,'"'+font+'", Arial, sans-serif');}
 let sections=Array.isArray(cfg.sections)?cfg.sections:fixed.map(id=>({id,visible:true}));const targets=getTargets();const ordered=new Set();
 for(const p of sections){if(!p||typeof p.id!=='string'||ordered.has(p.id))continue;ordered.add(p.id);if(p.id==='hero'){targets.hero.hidden=p.visible===false;continue}let el=targets[p.id];if(p.id.startsWith('custom-')){el=document.querySelector('[data-custom-section="'+CSS.escape(p.id)+'"]');if(!el){el=document.createElement('div');el.className='wrap zika-custom-section';el.dataset.customSection=p.id;}el.innerHTML='';const box=document.createElement('div');box.className='zika-layout-surface';const h=document.createElement('h2');h.textContent=p.title||'Section';const b=document.createElement('p');b.textContent=p.body||'';box.append(h,b);el.append(box);}if(!el)continue;el.hidden=p.visible===false;slot.append(el);}
