@@ -524,12 +524,13 @@ function sync(){
  updatePlace();return true;
 }
 function togglePending(){
+ const kind=form.elements.location_type.value;if(kind!=='online')document.getElementById('zikaAlwaysAvailable').checked=false;
  const d=document.getElementById('zikaDatesLater').checked||document.getElementById('zikaAlwaysAvailable').checked, l=document.getElementById('zikaPlaceLater').checked;
  for(const el of [startDate,endDate]){el.disabled=d;el.required=!d;el.closest('div').style.display=d?'none':'';}
  for(const el of [startTime,endTime]){el.disabled=d||allDay.checked;el.required=!(d||allDay.checked);el.closest('div').style.display=(d||allDay.checked)?'none':'';}
  allDay.disabled=d;
  document.getElementById('zikaDateFields').style.display=d?'none':'contents';
- const kind=form.elements.location_type.value;document.getElementById('zikaOnlineAvailability').hidden=kind!=='online';if(kind!=='online')document.getElementById('zikaAlwaysAvailable').checked=false;document.getElementById('zikaPlaceFields').style.display=l||kind!=='venue'?'none':'';
+ document.getElementById('zikaOnlineAvailability').hidden=kind!=='online';document.getElementById('zikaPlaceFields').style.display=l||kind!=='venue'?'none':'';
  document.getElementById('zikaNewPlaceActions').style.display=l||kind!=='venue'?'none':'';document.getElementById('zikaExternalPlace').hidden=l||kind!=='outside';
  if(l){form.elements.location.value='Lieu communiqué ultérieurement';form.elements.map_marker.value='';}
 }
