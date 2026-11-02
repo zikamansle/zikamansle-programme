@@ -212,16 +212,61 @@ if(new URLSearchParams(location.search).get('placer')==='1'){
   },true);
  }
 }
-</script><script id="zika-zoom-final">(function(){
-const view=document.getElementById('view'),scale=document.getElementById('scale'),out=document.getElementById('zoomLevel');
-const a=document.getElementById('zoomOut'),b=document.getElementById('zoomIn'),reset=document.getElementById('zoomReset');
-if(!view||!scale||!out||!a||!b||!reset)return;
-let zoom=100;
-function baseWidth(){return Math.min(view.clientWidth,Math.max(180,(window.innerHeight-(window.innerWidth<=750?165:140))*1122/1402));}
-function update(){out.textContent=zoom+' %';scale.style.setProperty('--zika-zoom-width',Math.round(baseWidth()*zoom/100)+'px');scale.style.width=Math.round(baseWidth()*zoom/100)+'px';scale.style.maxWidth='none';view.style.overflow=zoom>100?'auto':'visible';a.disabled=zoom<=100;b.disabled=zoom>=250;}
-window.addEventListener('resize',update);
-a.addEventListener('click',()=>{zoom=Math.max(100,zoom-25);update()});
-b.addEventListener('click',()=>{zoom=Math.min(250,zoom+25);update()});
-reset.addEventListener('click',()=>{zoom=100;update();view.scrollTo({left:0,top:0})});
-update();
+</script><style id="zika-zoom-parcours-robuste">
+/* L'image conserve ses proportions, même dans un cadre Wix étroit. */
+#view{overflow:auto!important;overscroll-behavior:contain;min-width:0!important}
+#scale{transition:none!important;max-width:none!important;min-width:0!important;flex:none!important;width:var(--zika-map-width, 100%)!important;aspect-ratio:1122/1402!important;height:auto!important}
+#scale>img{display:block!important;width:100%!important;height:auto!important;object-fit:fill!important}
+#paradeRoute{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:15!important;pointer-events:none!important}
+#paradeRoute.is-visible{display:block!important;visibility:visible!important;opacity:1!important}
+#toggleParade[aria-pressed="true"]{background:#f05a28!important;color:white!important}
+#scale .pin{z-index:20!important}
+.controls{position:sticky!important;top:0!important;z-index:60!important}
+</style>
+<script id="zika-zoom-final">(function(){
+ const view=document.getElementById('view'),scale=document.getElementById('scale'),out=document.getElementById('zoomLevel');
+ const minus=document.getElementById('zoomOut'),plus=document.getElementById('zoomIn'),reset=document.getElementById('zoomReset');
+ const route=document.getElementById('paradeRoute'),toggle=document.getElementById('toggleParade'),info=document.getElementById('paradeInfo');
+ if(!view||!scale||!out||!minus||!plus||!reset||!route||!toggle)return;
+ let percent=100;
+ // Ajuster la hauteur pour voir tout le plan à 100 %, sans couper l'image.
+ function fitWidth(){return Math.max(1,Math.min(view.clientWidth,(window.innerHeight-160)*1122/1402));}
+ function apply(){
+  const w=Math.round(fitWidth()*percent/100);
+  scale.style.setProperty('--zika-map-width',w+'px');
+  scale.style.setProperty('--zika-zoom-width',w+'px');
+  scale.style.width=w+'px';
+  out.textContent=percent+' %';
+  minus.disabled=percent<=100;plus.disabled=percent>=300;
+ }
+ // Remplacer les écouteurs antérieurs (aucun double déclenchement).
+ for(const button of [minus,plus,reset]){const copy=button.cloneNode(true);button.replaceWith(copy);}
+ const down=document.getElementById('zoomOut'),up=document.getElementById('zoomIn'),fit=document.getElementById('zoomReset');
+ function change(n){percent=Math.max(100,Math.min(300,n));apply2();}
+ down.onclick=()=>change(percent-25);
+ up.onclick=()=>change(percent+25);
+ fit.onclick=()=>{change(100);view.scrollTo({top:0,left:0,behavior:'instant'});};
+ function apply2(){apply();down.disabled=percent<=100;up.disabled=percent>=300;}
+ function routeShow(show){
+  route.classList.toggle('is-visible',show);
+  route.style.setProperty('display',show?'block':'none','important');
+  newToggle.setAttribute('aria-pressed',String(show));
+  newToggle.textContent=show?'Masquer le parcours de la ZikaParade':'Voir le parcours de la ZikaParade';
+  if(info)info.classList.toggle('is-visible',show);
+ }
+ // Une copie du bouton supprime les éventuels vieux handlers.
+ const routeCopy=toggle.cloneNode(true);toggle.replaceWith(routeCopy);
+ const newToggle=document.getElementById('toggleParade');
+ newToggle.onclick=()=>routeShow(newToggle.getAttribute('aria-pressed')!=='true');
+ // Parcours contrasté, lisible sur le fond orange de la carte.
+ const strokes=route.querySelectorAll('polyline');
+ if(strokes.length>=3){
+  strokes[0].setAttribute('stroke','#092d47');strokes[0].setAttribute('stroke-width','22');
+  strokes[1].setAttribute('stroke','#fff');strokes[1].setAttribute('stroke-width','16');
+  strokes[2].setAttribute('stroke','#e72715');strokes[2].setAttribute('stroke-width','10');
+ }
+ window.addEventListener('resize',apply2);
+ apply2();
+ // Le parcours activé par un lien reste compatible avec ?lieu=parade.
+ if(new URLSearchParams(location.search).get('lieu')==='parade')routeShow(true);
 })();</script></body></html>
