@@ -345,3 +345,5 @@ html body .pro-header-nav .pro-ticket-link{display:inline-flex;gap:10px;align-it
 .pro-scene-toggle:hover{background:#fff}
 @media(max-width:600px){.pro-scene-toggle{right:20px;bottom:32px;font-size:9px;padding:6px 8px}}
 @media(prefers-reduced-motion:reduce){.pro-scene-toggle{display:none}}
+/* The crop-sized scene extends beyond the banner; it must clip without creating an internal scroll area. */
+html body .hero{overflow:clip!important}
