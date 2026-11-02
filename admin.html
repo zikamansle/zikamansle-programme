@@ -953,7 +953,18 @@ function isolateGeometry(doc){
     }
   }
 }
-function apply(){const doc=frameDoc();if(!doc)return;if(!doc.querySelector('[contenteditable=true]'))renderCustom(doc);applyContent(doc);applyMedia(doc);applyBannerCrop(doc);applyHeroPhoto(doc);let s=doc.getElementById('zvDraftStyles');if(!s){s=doc.createElement('style');s.id='zvDraftStyles';doc.head.append(s)}s.textContent=buildCss(draft);doc.documentElement.classList.toggle('zv-editing',mode==='edit');doc.querySelectorAll('[data-zv-selected]').forEach(e=>e.removeAttribute('data-zv-selected'));if(selectedKey&&mode==='edit')doc.querySelectorAll(selectedKey).forEach(e=>e.setAttribute('data-zv-selected','1'));renderHidden();updateResizeHandle()}
+function apply(){const doc=frameDoc();if(!doc)return;if(!doc.querySelector('[contenteditable=true]'))renderCustom(doc);applyContent(doc);applyMedia(doc);applyBannerCrop(doc);applyHeroPhoto(doc);let s=doc.getElementById('zvDraftStyles');if(!s){s=doc.createElement('style');s.id='zvDraftStyles';doc.head.append(s)}s.textContent=buildCss(draft);
+// Le cadre isolé possède width/height inline !important : ces dimensions
+// priment sur les règles CSS du brouillon. On actualise donc l'élément lui-même.
+for(const [key,val] of Object.entries(draft)){
+ if(!val||typeof val!=='object')continue;
+ let node;try{node=doc.querySelector(key)}catch{};
+ if(!node||node.dataset.zvFrameReady!=='1')continue;
+ if(val.widthPx!==undefined&&Number.isFinite(Number(val.widthPx)))node.style.setProperty('width',Math.max(35,Number(val.widthPx))+'px','important');
+ else if(val.width!==undefined&&Number.isFinite(Number(val.width)))node.style.setProperty('width',Math.max(1,Number(val.width))+'%','important');
+ if(val.height!==undefined&&Number.isFinite(Number(val.height)))node.style.setProperty('height',Math.max(20,Number(val.height))+'px','important');
+}
+doc.documentElement.classList.toggle('zv-editing',mode==='edit');doc.querySelectorAll('[data-zv-selected]').forEach(e=>e.removeAttribute('data-zv-selected'));if(selectedKey&&mode==='edit')doc.querySelectorAll(selectedKey).forEach(e=>e.setAttribute('data-zv-selected','1'));renderHidden();updateResizeHandle()}
 
 // Un zoom réglé sur la bannière elle-même s'applique à son image de couverture.
 function applyHeroPhoto(doc){
@@ -1139,12 +1150,32 @@ function handlePointerMove(e){
  if(d.includes('n'))v.y=Math.round((drag.oldY||0)+dy);
  delete v.width;delete v.scaleX;delete v.scaleY} 
  else{v.x=Math.round(Math.max(-1200,Math.min(1200,drag.oldX+dx)));v.y=Math.round(Math.max(-1200,Math.min(1200,drag.oldY+dy)))}
- draft[drag.key]=v;apply();
+ draft[drag.key]=v;
+ // While dragging, update only the selected node. Rebuilding the entire preview
+ // interrupts pointer capture and may cause CSS/layout oscillation.
+ const doc=frameDoc();let node=null;
+ try{node=doc?.querySelector(drag.key)}catch{}
+ if(node){
+  if(drag.resize){
+   node.style.setProperty('width',v.widthPx+'px','important');
+   node.style.setProperty('height',v.height+'px','important');
+   node.style.setProperty('max-width','none','important');
+   node.style.setProperty('box-sizing','border-box','important');
+   node.style.setProperty('translate',(Number(v.x)||0)+'px '+(Number(v.y)||0)+'px','important');
+   if(node.matches('img,video'))node.style.setProperty('object-fit','cover','important');
+  } else if(!drag.cropImage){
+   node.style.setProperty('translate',(Number(v.x)||0)+'px '+(Number(v.y)||0)+'px','important');
+  }else{
+   node.style.setProperty('object-position',v.bgX+'% '+v.bgY+'%','important');
+   node.style.setProperty('background-position',v.bgX+'% '+v.bgY+'%','important');
+  }
+  updateResizeHandle();
+ }
 }
 function handlePointerUp(e){
  if(!drag)return;
  const changed=drag.moved;skipClick=changed;drag=null;
- setKey(selectedKey);
+ apply();setKey(selectedKey);
  if(changed)status('Position ou taille modifiée — non publiée');
 }
 
