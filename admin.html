@@ -824,7 +824,7 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
 (()=>{
  const el=id=>document.getElementById(id);
  const form=el('eventForm');if(!form)return;
- let view='card';let previewMode='event';const beforePreview=()=>{el('zsPreview').classList.add('show');el('zsPreviewBack').focus();drawPreview()};
+ let view='card';let previewMode='event';let zikaPublicCardCache=null;let zikaPreviewDoc=null;let zikaPreviewFrame=null;const beforePreview=()=>{el('zsPreview').classList.add('show');el('zsPreviewBack').focus();drawPreview()};
  let lastFocus=null;
  const back=()=>{el('zsPreview').classList.remove('show');el('zsPreviewBody').replaceChildren();el('zsViewCard').hidden=false;el('zsViewFull').hidden=false;(lastFocus||el('zsOpenPreview'))?.focus()};
  el('zsPreviewBack').onclick=back;el('zsViewCard').onclick=()=>{if(previewMode==='event'){view='card';drawPreview()}};el('zsViewFull').onclick=()=>{if(previewMode==='event'){view='full';drawPreview()}};
@@ -849,7 +849,7 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
   const thumb=f.thumbnail_url.value.trim()||f.image_url.value.trim();
   const isThumb=!!f.thumbnail_url.value.trim();
   const crop=isThumb?{x:Number(f.thumbnail_x.value||50),y:Number(f.thumbnail_y.value||50),z:Number(f.thumbnail_zoom.value||100)}:{x:Number(el('zsCropX').value||50),y:Number(el('zsCropY').value||50),z:Number(el('zsCropZoom').value||100)};
-  const image= /^https:\/\//i.test(thumb)?`<div style="height:185px;width:100%;overflow:hidden"><img src="${escHtml(thumb)}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:${crop.x}% ${crop.y}%;transform:scale(${crop.z/100});display:block"></div>`:'';
+  const image= /^https:\/\//i.test(thumb)?`<div style="height:185px;width:100%;overflow:hidden"><img src="${escHtml(thumb)}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:${crop.x}% ${crop.y}%;transform:scale(${crop.z/100});transform-origin:center center;display:block"></div>`:'';
   const cat=f.discipline.value||f.category.value||'Musique';
   const allCats=[...new Set([cat,...f.disciplines_extra.value.split(',').map(x=>x.trim()).filter(Boolean)])];
   const audiences=[...new Set([f.audience.value||'Tous publics',...f.audiences_extra.value.split(',').map(x=>x.trim()).filter(Boolean)])];
@@ -866,22 +866,25 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
   const full=`<article class="event-card">${image}<div class="event-inner" style="display:block"><h2>${title||'Sans titre'}</h2><p>${short}</p><p>${escHtml(date)} · ${escHtml(time)} · ${escHtml(place)}</p><hr><div>${desc}</div>${gallery.length?`<div class="zika-gallery">${gallery.map(u=>`<img src="${escHtml(u)}" alt="">`).join('')}</div>`:''}</div></article>`;
   el('zsPreviewTitle').textContent=view==='card'?'Aperçu réel de l’encart':'Aperçu de la fiche complète';
   const body=el('zsPreviewBody');
-  body.innerHTML='<iframe title="Aperçu visuel du programme" style="display:block;width:100%;min-height:610px;border:0;border-radius:14px;background:white" ></iframe>';
-  const iframe=body.querySelector('iframe');
+  body.replaceChildren();
+  const iframe=zikaPreviewFrame||document.createElement('iframe');
+  iframe.title='Aperçu de l’encart';
+  iframe.style.cssText='display:block;width:100%;min-height:410px;border:0;border-radius:14px;background:white';
+  body.append(iframe);
   const style=document.getElementById('zikaActualPublicStyles')?.textContent||'';
   // Charge le vrai programme public : mêmes CSS, polices, variables et réglages visuels enregistrés.
   // L'encart est ensuite présenté seul, sans reproduire sa feuille de style dans l'administration.
   iframe.style.visibility='hidden';
-  iframe.src='./index.html?zika_preview_styles='+Date.now();
-  iframe.onload=()=>{
+  const renderInFrame=()=>{
     const doc=iframe.contentDocument;
     if(!doc)return;
     let tries=0;
     const show=()=>{
-      const publicCard=doc.querySelector('#results .event-card');
+      const publicCard=zikaPublicCardCache||doc.querySelector('#results .event-card');
       if(!publicCard){if(tries++<35){setTimeout(show,130);return;}doc.body.textContent='Impossible de charger un encart réel du programme. Vérifie la connexion aux événements.';iframe.style.visibility='visible';return;}
-      // Keep precisely the public DOM and its computed visual styles: never rebuild a second card.
-      const clone=publicCard.cloneNode(true);
+      if(!zikaPublicCardCache)zikaPublicCardCache=publicCard.cloneNode(true);
+      // Reuse the same public card; no reload of the programme for each edit.
+      const clone=zikaPublicCardCache.cloneNode(true);
       clone.removeAttribute('data-zv-event');
       clone.dataset.cat=cat;
       const set=(selector,value)=>{const node=clone.querySelector(selector);if(node)node.textContent=value;};
@@ -908,6 +911,8 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
     };
     show();
   };
+  if(zikaPreviewFrame&&zikaPreviewDoc&&iframe.contentDocument===zikaPreviewDoc){renderInFrame();}
+  else{zikaPreviewFrame=iframe;iframe.onload=()=>{zikaPreviewDoc=iframe.contentDocument;renderInFrame()};iframe.src='./index.html?zika_preview_styles=1';}
  }
  const cardInputs=['thumbnail_url','thumbnail_x','thumbnail_y','thumbnail_zoom','image_url','title','short','logo_url','discipline','disciplines_extra','audience','audiences_extra','location','time_label'];
  form.addEventListener('input',e=>{if(el('zsPreview').classList.contains('show')&&previewMode==='event')drawPreview()});
