@@ -1,0 +1,91 @@
+/* UI helpers only: no write to the festival's database. */
+(()=>{
+ 'use strict';
+ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let toastTimer,lastModalFocus=null,lastMapFocus=null,bodyOverflow='';
+ const safeImage=url=>typeof url==='string'&&/^https:\/\//i.test(url);
+ function announce(message){const box=$('zikaFeedback');if(!box)return;clearTimeout(toastTimer);box.textContent=message;box.classList.add('show');toastTimer=setTimeout(()=>box.classList.remove('show'),2600)}
+ function reset(){state.locationType='';state.cat='Tout';state.day='all';state.q='';state.mine=false;state.mapPlace='';state.venue='';state.discipline='';state.audience='';state.price='';state.sort='chrono';state.from='';state.to='';window.zsTimeFilterValue='all';for(const [id,key] of [['filterLocationType','locationType'],['filterCategory','cat'],['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']])if($(id))$(id).value=key==='cat'?'':state[key];$('search').value='';$('zsTimeFilter').value='all';document.querySelectorAll('[data-day]').forEach(b=>{b.classList.toggle('active',b.dataset.day==='all');b.setAttribute('aria-pressed',String(b.dataset.day==='all'))});render();announce('Tous les rendez-vous sont affichés')}
+ function formatDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value||'')?new Date(value+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):String(value||'')}
+ function cardDay(e){if(e.locationType==='online'&&!e.startsAt&&!e.customDate)return 'Accès libre';const date=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate,end=e.endsAt?.slice(0,10);const fmt=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});if(/^\d{4}-\d{2}-\d{2}$/.test(date||'')){return /^\d{4}-\d{2}-\d{2}$/.test(end||'')&&end!==date?fmt(date)+' – '+fmt(end):new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}return e.both?'24 & 25 avril':e.day==='dimanche'?'Dim. 25 avril':'Sam. 24 avril'}
+ function renderCard(e){
+  const image=[e.thumbnail,e.image,...(e.gallery||[])].find(safeImage),favorite=state.favorites.has(e.id),id=esc(e.id),title=esc(e.title),accent=zikaCategoryColor(e.cat);
+  const crop=e.thumbnail?{x:e.thumbX??50,y:e.thumbY??50,zoom:e.thumbZoom??100}:(e.mediaCrops?.[image]||{x:e.cropX??50,y:e.cropY??50,zoom:e.cropZoom??100});
+  const num=(v,f)=>Number.isFinite(Number(v))?Number(v):f;
+  const photo=image?`<div class="pro-event-photo"><img src="${esc(image)}" alt="${title}" width="680" height="420" loading="lazy" decoding="async" style="object-position:${num(crop.x,50)}% ${num(crop.y,50)}%;transform:scale(${Math.max(1,num(crop.zoom,100)/100)})" onerror="this.parentElement.classList.add('pro-event-placeholder');this.remove()"></div>`:`<div class="pro-event-photo pro-event-placeholder" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M5 25V12l11-7 11 7v13H5Z M12 25v-9h8v9" stroke="currentColor" stroke-width="1.5"/></svg><span>${esc(e.cat||'Festival ZikaMansle')}</span></div>`;
+  const logo=safeImage(e.logo)?`<span class="pro-event-logo"><img src="${esc(e.logo)}" alt="Logo de ${title}" width="48" height="48" loading="lazy" decoding="async"></span>`:'';
+  const play=e.locationType==='online'&&/^https:\/\//i.test(e.url||'')?`<a class="pro-play-link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Jouer en ligne ↗</a>`:'';
+  const directions=e.locationType==='outside'&&/^https:\/\//i.test(e.directionsUrl||'')?`<a class="pro-directions-link" href="${esc(e.directionsUrl)}" target="_blank" rel="noopener noreferrer">Voir l’itinéraire ↗</a>`:'';
+  const ticket=e.ticketUrl||e.url||window.zikaPro.ticketURL||'';
+  const price=e.free?'Gratuit':(e.priceMin!=null?'Dès '+Number(e.priceMin).toLocaleString('fr-FR')+' €':'Payant');
+  return `<article class="event-card" data-event-id="${id}" data-cat="${esc(e.cat)}" style="--event-accent:${accent}"><div class="event-band"></div>${photo}${logo}<div class="event-inner"><div class="event-time"><div class="time-big">${esc(e.time||'Horaire à venir')}</div><span class="day-badge">${esc(cardDay(e))}</span></div><div class="event-main"><h3>${title}</h3><p>${esc(e.short||'Découvrez ce rendez-vous du Festival ZikaMansle.')}</p><div class="meta-row"><span class="meta">${esc(e.place||'Lieu communiqué prochainement')}</span><span class="mode-badge ${e.free?'free':''}">${price}</span><span class="cat-badge">${esc(e.cat||e.discipline||'Festival')}</span>${e.audience&&e.audience!=='Tous publics'?`<span class="cat-badge">${esc(e.audience)}</span>`:''}${/^(?:https:\/\/|plan\.html\?lieu=)/i.test(e.mapUrl||'')?`<a class="meta" href="${esc(e.mapUrl)}" target="_blank" rel="noopener noreferrer" data-event-map="${id}">Situer sur le plan ↗</a>`:''}</div></div><div class="event-actions"><button class="action-btn" data-open="${id}">Découvrir</button><button class="ghost-btn ${favorite?'active':''}" data-fav="${id}" aria-label="${favorite?'Retirer de ma sélection':'Ajouter à ma sélection'} : ${title}" aria-pressed="${favorite}">${favorite?'♥':'♡'}</button><button class="zika-share" data-share="${id}" aria-label="Partager : ${title}">Partager ↗</button>${play}${directions}${!e.free&&/^https:\/\//.test(ticket)?`<a class="action-btn pro-ticket" href="${esc(ticket)}" target="_blank" rel="noopener noreferrer">Billetterie ↗</a>`:''}</div></div></article>`;
+ }
+ function renderResults(rows){if(rows.length)return rows.map(renderCard).join('');const badDates=state.from&&state.to&&state.from>state.to;return `<div class="empty"><strong>${state.mine?'Votre sélection est vide':'Aucun rendez-vous trouvé'}</strong><p>${badDates?'La date de fin doit être postérieure à la date de début.':state.mine?'Ajoutez vos rendez-vous avec le cœur pour les retrouver ici.':'Essayez un autre mot-clé ou retirez quelques filtres pour élargir votre recherche.'}</p><button data-reset-programme>Afficher tout le programme</button></div>`}
+ function renderFilters(){
+  const all=[...new Set([...categories,...configuredCategories,...EVENTS.flatMap(e=>[e.cat,e.discipline,...(e.disciplinesExtra||[])])])].filter(Boolean);
+  const existing=new Set(EVENTS.flatMap(e=>[e.cat,e.discipline,...(e.disciplinesExtra||[])]));
+  const chips=['Tout',...['Musique','Jeux','Exposition','Parade','Cinéma'].filter(c=>existing.has(c))];if(state.cat!=='Tout'&&!chips.includes(state.cat))chips.push(state.cat);
+  $('filters').innerHTML=chips.map(cat=>`<button class="chip ${state.cat===cat?'active':''}" data-cat="${esc(cat)}" aria-pressed="${state.cat===cat}">${esc(cat)}</button>`).join('')+`<div class="filter-tools"><button class="tool-btn ${state.mine?'active':''}" id="mySelection" aria-pressed="${state.mine}">${state.mine?'♥':'♡'} Ma sélection (${state.favorites.size})</button><button class="tool-btn" id="clearFilters">Tout effacer</button></div>`;
+  $('filters').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{state.cat=b.dataset.cat;$('filterCategory').value=state.cat==='Tout'?'':state.cat;render()});
+  $('mySelection').onclick=()=>{state.mine=!state.mine;render()};$('clearFilters').onclick=reset;
+  const select=$('filterCategory'),value=state.cat==='Tout'?'':state.cat;
+  if(select.dataset.options!==JSON.stringify(all)){select.innerHTML='<option value="">Toutes les catégories</option>'+all.filter(x=>x!=='Tout').sort((a,b)=>a.localeCompare(b,'fr')).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');select.dataset.options=JSON.stringify(all)}select.value=value;
+ }
+ function beforeRender(){const el=document.activeElement;if(!el)return null;for(const key of ['data-cat','data-fav','data-open','id'])if(el.getAttribute(key))return {key,value:el.getAttribute(key)};return null}
+ function activeFilters(){
+  const filters=[];const add=(key,value,label)=>{if(value)filters.push({key,label})};
+  if(state.day!=='all')add('day',true,state.day==='samedi'?'Samedi 24 avril':'Dimanche 25 avril');if(state.cat!=='Tout')add('cat',true,state.cat);
+  add('q',state.q,'Recherche : '+state.q);add('discipline',state.discipline,state.discipline);add('audience',state.audience,state.audience);
+  add('price',state.price,({free:'Gratuit',paid:'Payant',under10:'Jusqu’à 10 €',under25:'Jusqu’à 25 €'})[state.price]);add('from',state.from,'Dès le '+formatDate(state.from));add('to',state.to,'Jusqu’au '+formatDate(state.to));
+  add('locationType',state.locationType,({venue:'Lieux du festival',city:'Dans toute la ville',online:'En ligne',outside:'Hors de Mansle'})[state.locationType]);add('mine',state.mine,'Ma sélection');add('venue',state.venue,state.venue);add('mapPlace',state.mapPlace,EVENTS.find(e=>String(e.mapMarker)===state.mapPlace)?.place||'Lieu sur le plan');if(window.zsTimeFilterValue&&window.zsTimeFilterValue!=='all')add('period',true,({now:'En cours',future:'À venir',past:'Terminés'})[window.zsTimeFilterValue]);return filters;
+ }
+ function removeFilter(key){if(key==='period'){$('zsTimeFilter').value='all';window.zsTimeFilterValue='all'}else if(key==='day'){state.day='all';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'))}else if(key==='cat'){state.cat='Tout';$('filterCategory').value=''}else if(key==='mine')state.mine=false;else{state[key]='';const fields={locationType:'filterLocationType',q:'search',discipline:'filterDiscipline',audience:'filterAudience',price:'filterPrice',from:'filterStartDate',to:'filterEndDate'};if(fields[key])$(fields[key]).value=''}render()}
+ function afterRender(focus){
+  const filters=activeFilters(),host=$('proActiveFilters');host.innerHTML=filters.map(f=>`<button data-remove-filter="${esc(f.key)}" aria-label="Retirer le filtre ${esc(f.label)}">${esc(f.label)}<span aria-hidden="true">×</span></button>`).join('');host.querySelectorAll('[data-remove-filter]').forEach(b=>b.onclick=()=>removeFilter(b.dataset.removeFilter));
+  const n=filters.filter(f=>['discipline','audience','price','from','to','period','locationType'].includes(f.key)).length;$('proFilterCount').textContent=n?'('+n+')':'';
+  document.querySelectorAll('[data-day]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.day===state.day)));
+  $('results').querySelectorAll('[data-reset-programme]').forEach(b=>b.onclick=reset);
+  $('results').querySelectorAll('[data-event-map]').forEach(a=>a.onclick=event=>{const e=EVENTS.find(e=>e.id===a.dataset.eventMap);if(e&&/^plan\.html/.test(e.mapUrl||'')){event.preventDefault();showMap(e.mapMarker||new URL(e.mapUrl,location.href).searchParams.get('lieu'))}});
+  if($('zikaMobileFavorites')){$('zikaMobileFavorites').textContent='♡ Ma sélection ('+state.favorites.size+')';$('zikaMobileFavorites').setAttribute('aria-pressed',String(state.mine))}
+  if(focus){const selector=focus.key==='id'?'#'+CSS.escape(focus.value):'['+focus.key+'="'+CSS.escape(focus.value)+'"]';document.querySelector(selector)?.focus({preventScroll:true})}
+ }
+ function showMap(marker){const host=$('zikaMapHost'),dialog=$('zikaMapDialog');if(!host||!dialog)return;lastMapFocus=document.activeElement;
+  if(marker){const frame=host.querySelector('iframe');if(frame)frame.src='plan.html?lieu='+encodeURIComponent(marker)}
+  if(window.matchMedia('(max-width:980px)').matches){dialog.append(host);if(!dialog.open)dialog.showModal();$('zikaMapClose').focus()}else{host.scrollIntoView({behavior:'smooth',block:'start'});host.querySelector('iframe')?.focus()}
+ }
+ function closeMap(){const dialog=$('zikaMapDialog');if(dialog?.open)dialog.close()}
+ function returnMap(){const host=$('zikaMapHost'),right=document.querySelector('.zika-split-right');if(host&&right)right.append(host);lastMapFocus?.focus({preventScroll:true})}
+ function modalOpened(){lastModalFocus=document.activeElement;bodyOverflow=document.body.style.overflow;document.body.style.overflow='hidden';$('close').focus()}
+ function modalClosed(){document.body.style.overflow=bodyOverflow;lastModalFocus?.focus({preventScroll:true})}
+ function detailMedia(e){
+  $('proActivityLink')?.remove();const external=e.locationType==='online'?e.url:e.locationType==='outside'?e.directionsUrl:'';if(/^https:\/\//i.test(external||'')){const a=document.createElement('a');a.id='proActivityLink';a.className='pro-activity-link';a.href=external;a.target='_blank';a.rel='noopener noreferrer';a.textContent=e.locationType==='online'?(/zikarun/i.test(e.title)?'Jouer à ZikaRun ↗':'Accéder à l’activité ↗'):'Voir l’itinéraire ↗';$('modalText').after(a)}
+  $('proDetailMedia')?.remove();const images=[...new Set((e.gallery||[]).filter(safeImage))];const video=safeImage(e.video)?e.video:'';const files=(e.attachments||[]).filter(safeImage);if(!images.length&&!video&&!files.length)return;
+  const section=document.createElement('section');section.id='proDetailMedia';section.className='pro-detail-media';const title=document.createElement('h3');title.textContent='En images et en vidéo';section.append(title);
+  if(images.length){const gallery=document.createElement('div');gallery.className='pro-detail-gallery';images.forEach((src,index)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Voir la photo '+(index+1)+' de '+e.title);const img=document.createElement('img');img.src=src;img.alt=e.title+' — photo '+(index+1);img.loading='lazy';img.decoding='async';const crop=e.mediaCrops?.[src];if(crop){img.style.objectPosition=Number(crop.x??50)+'% '+Number(crop.y??50)+'%';img.style.transform='scale('+Math.max(1,Number(crop.zoom??100)/100)+')'}img.onerror=()=>b.remove();b.append(img);b.onclick=()=>openZikaPhoto(src,img.alt);gallery.append(b)});section.append(gallery)}
+  if(video){if(/\.mp4(?:[?#]|$)/i.test(video)){const v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='none';v.loop=!!e.videoLoop;v.muted=e.videoMuted!==false;v.src=video;if(safeImage(e.videoPoster))v.poster=e.videoPoster;section.append(v)}else{const a=document.createElement('a');a.href=video;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Voir la vidéo ↗';section.append(a)}}
+  files.forEach((src,index)=>{const a=document.createElement('a');a.href=src;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Document associé '+(index+1)+' ↗';section.append(a)});
+  $('modalText').after(section);
+ }
+ function init(){
+  $('filterLocationType').onchange=e=>{state.locationType=e.target.value;render()};$('filterCategory').onchange=e=>{state.cat=e.target.value||'Tout';render()};$('zikaMobileMap').onclick=()=>showMap();$('zikaMobileFavorites').onclick=()=>{state.mine=!state.mine;render();$('programme').scrollIntoView({behavior:'smooth'})};$('zikaMapClose').onclick=closeMap;$('zikaMapDialog').addEventListener('close',returnMap);
+  $('zikaMapDialog').addEventListener('click',e=>{if(e.target===$('zikaMapDialog'))closeMap()});window.addEventListener('resize',()=>{if(innerWidth>980)closeMap()});
+  document.querySelector('.section>div[style*="text-align:center"]')?.classList.add('pro-old-map-link');
+  const map=$('zikaPublicPlanEmbed');if(map&&!map.querySelector('.pro-map-intro')){const p=document.createElement('p');p.className='pro-map-intro';p.textContent='Choisissez un lieu pour afficher ses rendez-vous.';map.querySelector('h2')?.after(p)}
+  const details=$('modal');details.addEventListener('keydown',e=>{if(e.key!=='Tab'||!details.classList.contains('show'))return;const focusable=[...details.querySelectorAll('a[href],button:not([disabled]),input,select,textarea,[tabindex="0"]')].filter(el=>el.getClientRects().length);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}});
+  render();
+ }
+ window.zikaPro={formatDate,renderFilters,renderResults,beforeRender,afterRender,reset,announce,showMap,closeMap,modalOpened,modalClosed,detailMedia};
+ document.addEventListener('DOMContentLoaded',init,{once:true});
+})();
+
+/* Align the animated ensemble to the original illustration's exact crop. */
+(()=>{
+ let scene,observed,paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function align(){const hero=document.querySelector('.hero'),photo=hero?.querySelector('.zv-hero-photo');if(!photo?.naturalWidth||hero.hidden)return;
+  if(!scene){scene=document.createElement('img');scene.src='festival-scene.svg';scene.alt='';scene.className='pro-bridge-artists';scene.setAttribute('aria-hidden','true');hero.append(scene);const button=document.createElement('button');button.type='button';button.className='pro-scene-toggle';button.setAttribute('aria-pressed',String(paused));button.setAttribute('aria-label','Mettre l’animation en pause');button.textContent='Ⅱ Animation';button.onclick=()=>{paused=!paused;scene.src=paused?'festival-scene-static.svg':'festival-scene.svg';button.setAttribute('aria-pressed',String(paused));button.setAttribute('aria-label',paused?'Reprendre l’animation':'Mettre l’animation en pause');button.textContent=paused?'▷ Animation':'Ⅱ Animation'};hero.append(button);if(paused)scene.src='festival-scene-static.svg'}
+  const style=getComputedStyle(photo),position=style.objectPosition.split(' ').map(parseFloat),scale=Math.max(photo.clientWidth/photo.naturalWidth,photo.clientHeight/photo.naturalHeight),w=photo.naturalWidth*scale,h=photo.naturalHeight*scale;
+  Object.assign(scene.style,{width:w+'px',height:h+'px',left:((photo.clientWidth-w)*(Number.isFinite(position[0])?position[0]:50)/100)+'px',top:((photo.clientHeight-h)*(Number.isFinite(position[1])?position[1]:50)/100)+'px',transform:style.transform,transformOrigin:((Number.isFinite(position[0])?position[0]:50)+'% '+(Number.isFinite(position[1])?position[1]:50)+'%')});
+  if(observed!==photo){observed=photo;new MutationObserver(align).observe(photo,{attributes:true,attributeFilter:['style','src']});new ResizeObserver(align).observe(hero)}
+ }
+ window.addEventListener('zika-public-ready',align);window.addEventListener('zika-base-ready',()=>requestAnimationFrame(align));window.addEventListener('resize',align);window.addEventListener('load',align);
+})();

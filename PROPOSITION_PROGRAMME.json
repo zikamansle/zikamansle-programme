@@ -1,0 +1,108 @@
+{
+  "notice": "PROPOSITION UNIQUEMENT : aucune application automatique en production. Relire les données actuelles puis appliquer les champs ciblés après accord.",
+  "new_events": [
+    {
+      "id": "94bded77-b45c-47df-a53a-0de965eb0737",
+      "title": "ZikaRun — le jeu en ligne",
+      "category": "Jeux",
+      "event_date": null,
+      "start_time": null,
+      "end_time": null,
+      "time_label": "Jouez à votre rythme",
+      "location": "En ligne",
+      "description": "ZikaRun — Le jeu en ligne du Festival ZikaMansle\n\nAccompagnez Zika dans une aventure à travers les décors de Mansle-les-Fontaines et du festival. Évitez les obstacles, récoltez les notes de musique et progressez au fil des niveaux.\n\nUn jeu gratuit, accessible directement dans votre navigateur, sur ordinateur comme sur mobile. Les commandes au clavier et les commandes tactiles permettent à chacun de rejoindre l’aventure.\n\nRetrouvez les lieux et l’esprit du festival, puis relevez le défi du classement !\n\nUne autre façon de découvrir le Festival ZikaMansle, avant de nous retrouver les 24 et 25 avril 2027.",
+      "image_url": "https://zikamansle.github.io/zikarun2/assets/backgrounds_00.webp",
+      "logo_url": "https://zikamansle.github.io/zikarun2/assets/logo.webp",
+      "link_url": "https://zikamansle.github.io/zikarun2/",
+      "is_free": true,
+      "published": true,
+      "display_order": 2300,
+      "extra": {
+        "day": "samedi",
+        "both": true,
+        "short": "Accompagnez Zika dans les décors de Mansle ! Évitez les obstacles, récoltez les notes et relevez le défi du jeu gratuit du Festival ZikaMansle.",
+        "location_type": "online",
+        "location_pending": false,
+        "discipline": "Jeux",
+        "audience": "Tous publics",
+        "share_slug": "zikarun",
+        "gallery": [
+          "https://zikamansle.github.io/zikarun2/assets/backgrounds_01.webp"
+        ],
+        "map_marker": "",
+        "map_url": "",
+        "starts_at": "",
+        "ends_at": "",
+        "dates_pending": false,
+        "always_available": true,
+        "action_label": "Jouer en ligne"
+      }
+    }
+  ],
+  "event_updates": [
+    {
+      "id": "d6443b4a-437e-4ea6-8a1f-24e1d58a1212",
+      "location": "Dans toute la ville",
+      "extra_patch": {
+        "location_type": "city",
+        "location_pending": false,
+        "map_marker": "",
+        "map_url": ""
+      }
+    }
+  ],
+  "visual_editor_patch": {
+    ".hero": {
+      "x": 0,
+      "y": 0,
+      "height": 450,
+      "width": 100,
+      "bgX": 50,
+      "bgY": 37
+    },
+    ".hero h1": {
+      "x": 0,
+      "y": 0,
+      "color": "#173348",
+      "content": "Le programme du festival.",
+      "contentHtml": "Le programme<br><span style=\"color: rgb(23, 110, 155) !important;\">du festival.</span>"
+    },
+    ".hero .hero-copy p": {
+      "x": 0,
+      "y": 0,
+      "color": "#516570",
+      "content": "Deux jours. Une ville. Une fête. Concerts, découvertes et aventures au cœur de Mansle-les-Fontaines. Composez votre programme."
+    }
+  },
+  "visual_editor_remove_properties": {
+    ".hero": [
+      "widthPx"
+    ],
+    ".hero h1": [
+      "widthPx",
+      "height"
+    ],
+    ".hero .hero-copy p": [
+      "widthPx",
+      "height"
+    ],
+    "[data-zv-node=\"n-section-2-div-1-div-1-div-1-h1-1\"]": [
+      "widthPx",
+      "height",
+      "x",
+      "y"
+    ],
+    "[data-zv-node=\"n-section-2-div-1-div-1-h1-1\"]": [
+      "widthPx",
+      "height",
+      "x",
+      "y"
+    ],
+    "[data-zv-node=\"n-section-2-div-1-div-1-p-1\"]": [
+      "widthPx",
+      "height",
+      "x",
+      "y"
+    ]
+  }
+}
