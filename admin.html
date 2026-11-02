@@ -1433,32 +1433,55 @@ document.addEventListener('keydown',handleEditorKeys,true);
 for(const [id,key] of [['zvTextContent','content'],['zvLink','href'],['zvImageSrc','src'],['zvBackgroundImage','backgroundImage']])by(id).addEventListener('change',()=>{if(!selectedKey)return;if(key==='href'&&by(id).value&&!/^(https:\/\/[^\s]+|#[a-z][a-z0-9_-]*)$/i.test(by(id).value)){status('Lien invalide : utilise https:// ou #ancre');return}snapshot();draft[selectedKey]={...(draft[selectedKey]||{}),[key]:by(id).value};apply();status('Modifications non publiées')});
 by('zvHide').onclick=()=>{if(!selectedKey||selectedKey==='body')return;removeSelected()};
 by('zvReset').onclick=()=>{if(!selectedKey)return;snapshot();delete draft[selectedKey];setKey(selectedKey);status('Style de cet élément réinitialisé (non publié)')};
-async function publishStudio(){const b1=by('zvSave'),b2=by('zvPreviewPublish');b1.disabled=b2.disabled=true;status('Publication en cours…');try{await setting('visual_editor',structuredClone(draft));
-// Relire l'enregistrement en base avant d'annoncer la réussite.
-const rows=await api('/rest/v1/zika_settings?key=eq.visual_editor&select=value');
-if(!Array.isArray(rows)||!rows.length)throw Error('Enregistrement non retrouvé dans Supabase.');
-const expected=structuredClone(draft), actual=rows[0].value;
-const canonical=value=>JSON.stringify(value, (key,val)=> val&&typeof val==='object'&&!Array.isArray(val) ? Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])) : val);
-if(canonical(actual)!==canonical(expected))throw Error('Les réglages relus ne correspondent pas aux modifications.');
-saved=structuredClone(draft);history=[];redo=[];updateHistoryButtons();
-// Le programme embarqué se recharge sur les données qui viennent d'être vérifiées.
-try{const visualFrame=by('zvFrame');if(visualFrame?.contentWindow)visualFrame.contentWindow.postMessage({type:'zika-design-published'},location.origin)}catch(_){}
-status('Enregistré dans Supabase. Vérification du programme public…');
-// Un nouveau chargement de la page publique force le téléchargement du design publié.
-const previewFrame=by('zvFrame');
-if(!previewFrame)throw Error('Aucun aperçu public disponible pour vérifier le rendu.');
-previewFrame.src='./index.html?studio=1&design_version='+Date.now();
-await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Le programme public ne s’est pas rechargé.')),12000);previewFrame.addEventListener('load',()=>{clearTimeout(timer);resolve()}, {once:true})});
-const previewWindow=previewFrame.contentWindow;
-if(!previewWindow)throw Error('Aucun aperçu public disponible pour vérifier le rendu.');
-const publicCheck=await new Promise(resolve=>{
- const timeout=setTimeout(()=>{window.removeEventListener('message',onMessage);resolve(false)},6500);
- function onMessage(e){if(e.origin!==location.origin||e.source!==previewWindow||e.data?.type!=='zika-visual-design-confirmed')return;clearTimeout(timeout);window.removeEventListener('message',onMessage);resolve(e.data.signature===canonical(expected))}
- window.addEventListener('message',onMessage);
- previewWindow.postMessage({type:'zika-design-published',verify:true},location.origin);
-});
-if(!publicCheck)throw Error('Supabase a enregistré le design, mais son application dans le programme public n’a pas été confirmée.');
-status('Design enregistré et relu sur le programme public. Ouvre le programme pour vérifier le rendu.');const liveLink=document.getElementById('zvOpenPublished');if(liveLink)liveLink.href='./index.html?published='+Date.now()}catch(e){status('Échec de publication : '+e.message+' · les modifications restent dans l’éditeur')}finally{b1.disabled=b2.disabled=false}}
+async function publishStudio(){
+ const b1=by('zvSave'),b2=by('zvPreviewPublish');
+ if(b1.disabled)return;
+ const published=structuredClone(draft);
+ b1.disabled=b2.disabled=true;
+ status('Enregistrement du design…');
+ let checkFrame=null;
+ try{
+  // Freeze the exact design being published without replacing the editing iframe.
+  await setting('visual_editor',published);
+  const rows=await api('/rest/v1/zika_settings?key=eq.visual_editor&select=value');
+  if(!Array.isArray(rows)||!rows.length)throw Error('Enregistrement introuvable dans Supabase.');
+  const canonical=value=>JSON.stringify(value,(key,val)=>val&&typeof val==='object'&&!Array.isArray(val)?Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])):val);
+  if(canonical(rows[0].value)!==canonical(published))throw Error('Les réglages relus ne correspondent pas à ceux enregistrés.');
+  status('Enregistré dans Supabase. Vérification du programme public sans fermer le Studio…');
+  // Important: NEVER navigate the visible Studio frame while publishing.
+  checkFrame=document.createElement('iframe');
+  checkFrame.setAttribute('aria-hidden','true');
+  checkFrame.tabIndex=-1;
+  checkFrame.style.cssText='position:fixed;width:1px;height:1px;left:-10000px;top:-10000px;opacity:0;pointer-events:none;border:0';
+  const frameToCheck=checkFrame;
+  document.body.appendChild(frameToCheck);
+  const publicCheck=new Promise((resolve,reject)=>{
+   let done=false;
+   const timer=setTimeout(()=>finish(false,'La page publique ne confirme pas la publication.'),18000);
+   function finish(ok,reason){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);frameToCheck.removeEventListener('load',onLoad);ok?resolve(true):reject(Error(reason||'Vérification publique impossible.'))}
+   function onMessage(event){
+    if(event.origin!==location.origin||event.source!==frameToCheck.contentWindow||event.data?.type!=='zika-visual-design-confirmed')return;
+    if(event.data.signature===canonical(published))finish(true);
+   }
+   function onLoad(){
+    // A fresh public instance loads design independently. Ask it to re-read the DB.
+    try{frameToCheck.contentWindow.postMessage({type:'zika-design-published',verify:true},location.origin)}catch(_){}
+   }
+   window.addEventListener('message',onMessage);
+   frameToCheck.addEventListener('load',onLoad);
+  });
+  frameToCheck.src='./index.html?studio=1&publication_check='+Date.now();
+  await publicCheck;
+  saved=structuredClone(published);
+  // Keep undo history and all unsaved changes made during the request.
+  if(canonical(draft)===canonical(published)){history=[];redo=[];updateHistoryButtons()}
+  const liveLink=by('zvOpenPublished');if(liveLink)liveLink.href='./index.html?published='+Date.now();
+  status('Design publié et vérifié. Tes modifications restent visibles dans le Studio.');
+ }catch(e){status('Publication non confirmée : '+e.message+' — ton design reste dans le Studio.')}finally{
+  if(checkFrame)checkFrame.remove();
+  b1.disabled=b2.disabled=false;
+ }
+}
 by('zvSave').onclick=publishStudio;
 by('zvPreviewPublish').onclick=publishStudio;by('zvPreviewClose').onclick=()=>by('zvClose').click();
 const launcher=document.createElement('button');launcher.type='button';launcher.className='btn';launcher.textContent='✎ Modifier le design visuellement';launcher.style.margin='8px';launcher.onclick=open;document.querySelector('#editorPanel .tools')?.prepend(launcher);
