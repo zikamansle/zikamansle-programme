@@ -983,6 +983,12 @@ const cfg=window.ZIKA_CONFIG;if(!cfg?.url||!cfg?.publishableKey)return;
 const cssMap={borderStyle:'border-style',borderWidth:'border-width',borderColor:'border-color',boxShadow:'box-shadow',fontFamily:'font-family',fontSize:'font-size',fontWeight:'font-weight',fontStyle:'font-style',color:'color',backgroundColor:'background-color',width:'width',height:'height',padding:'padding',borderRadius:'border-radius',textAlign:'text-align',bgX:'background-position',bgZoom:'background-size'};
 
 function zvUniqueNodeKey(node){
+ if(node?.matches?.('.hero h1'))return '.hero h1';
+ if(node?.matches?.('.hero .hero-copy p'))return '.hero .hero-copy p';
+ if(node?.matches?.('.topbar .logo-mark'))return '.logo-mark';
+ if(node?.matches?.('.topbar .brand'))return '.brand';
+ if(node?.matches?.('.topbar'))return '.topbar';
+ if(node?.matches?.('.hero-panel'))return '.hero-panel';
  if(!node||node.nodeType!==1||node===node.ownerDocument.body)return '';
  if(node?.matches?.('.hero .kicker'))return '.hero .kicker';
  if(node?.matches?.('.hero .hero-badges > span')){const i=Array.from(node.parentElement.children).indexOf(node)+1;return '.hero .hero-badges span:nth-child('+i+')'}
@@ -1044,7 +1050,7 @@ const safeCss=(s)=>String(s||'').replace(/[{};<>]/g,'');
 const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==undefined&&value!==null&&value!=='')lines.push(name+':'+safeCss(value)+' !important')};add('font-family',v.fontFamily);add('font-size',v.fontSize?Number(v.fontSize)+'px':'');if(v.fontSize)add('line-height','normal');add('font-weight',v.fontWeight);add('font-style',v.fontStyle);add('color',v.color);add('background-color',v.opacity!==undefined ? `color-mix(in srgb, ${/^#[0-9a-fA-F]{3,8}$/.test(v.backgroundColor||'') ? v.backgroundColor : '#ffffff'} ${Math.max(0,Math.min(100,Number(v.opacity)))}%, transparent)` : v.backgroundColor);if(v.backgroundColor&&!v.backgroundImage)add('background-image','none');/* Transparence du fond seulement : jamais d'opacité sur le texte. */add('width',v.widthPx!==undefined?Number(v.widthPx)+'px':(v.width?Number(v.width)+'%':''));add('height',v.height?Number(v.height)+'px':'');if(v.widthPx!==undefined){add('max-width','none');add('min-width','0')}if(v.height!==undefined){add('min-height','0')}add('padding',v.padding!==undefined&&v.padding!==''?Number(v.padding)+'px':'');add('border-radius',v.borderRadius!==undefined&&v.borderRadius!==''?Number(v.borderRadius)+'px':'');add('border-style',v.borderStyle);add('border-width',v.borderWidth!==undefined&&v.borderWidth!==''?Number(v.borderWidth)+'px':'');add('border-color',v.borderColor);if(v.borderStyle&&v.borderStyle!=='none'&&v.borderWidth===undefined)add('border-width','2px');add('box-shadow',v.boxShadow);add('text-align',v.textAlign);if(v.hidden===true)add('display','none');if(v.x||v.y)add('translate',`${Number(v.x)||0}px ${Number(v.y)||0}px`);if(v.bgX!==undefined||v.bgY!==undefined){add('background-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`);add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}if(v.backgroundImage&&/^https:\/\//i.test(v.backgroundImage))add('background-image','url(\"'+v.backgroundImage.replace(/[\"()<>]/g,'')+'\")');/* Les anciennes valeurs scaleX/scaleY ne sont plus appliquées : elles déformaient le texte. */if(v.bgZoom){add('background-size',Number(v.bgZoom)+'% auto');if(key==='.event-card img'||customKey(key)){add('object-fit','cover');add('object-position',`${Number(v.bgX??50)}% ${Number(v.bgY??50)}%`)}}return lines.join(';')};
 const buildCss=data=>Object.entries(data)
  .filter(([key,v])=>(allowed.has(key)||customKey(key)||zvNodeKey(key)||zvHeroKey(key)||zvEventKey(key))&&v&&typeof v==='object')
- .map(([key,v])=>`${key}{${styleFor(key,v)}}`).join('\n');
+ .map(([key,v])=>`${key}{${styleFor(key,v)}}`+(v.hidden===true?`\n${key}{display:none !important;height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;overflow:hidden !important}`:'')).join('\n');
 
 function generate(data){
  if(!data||typeof data!=='object'||Array.isArray(data))return '';
@@ -1095,6 +1101,24 @@ window.zikaApplyEventDesign=()=>{
  let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.append(style)}
  style.textContent=generate(data);
 };
+function zvActualDesignProblems(data){
+ const problems=[];
+ for(const [key,v] of Object.entries(data||{})){
+  if(!v||typeof v!=='object')continue;
+  let el;try{el=document.querySelector(key)}catch(_){continue}
+  if(!el){if(v.hidden===true||v.color||v.fontSize||v.x||v.y||v.widthPx||v.content)problems.push(key+' : élément introuvable');continue}
+  const cs=getComputedStyle(el);
+  if(v.hidden===true&&cs.display!=='none')problems.push(key+' : élément supprimé encore visible');
+  if(v.fontSize&&Math.abs(parseFloat(cs.fontSize)-Number(v.fontSize))>1.1&&innerWidth>700)problems.push(key+' : taille incorrecte');
+  if(v.color&&/^(#[0-9a-f]{6})$/i.test(v.color)){
+    const hex=v.color.slice(1);const expected=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16));
+    const actual=(cs.color.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
+    if(expected.some((n,i)=>Math.abs(n-(actual[i]??-100))>2))problems.push(key+' : couleur incorrecte');
+  }
+  if(v.widthPx!==undefined&&innerWidth>700&&Math.abs(el.getBoundingClientRect().width-Number(v.widthPx))>4)problems.push(key+' : largeur incorrecte');
+ }
+ return problems.slice(0,18);
+}
 const cfg=window.ZIKA_CONFIG||window.zikaConfig||window.CONFIG;
 zvMarkNodes(document);
 // Les fiches sont créées après le chargement des paramètres : appliquer aussi leurs styles.
@@ -1105,7 +1129,7 @@ new MutationObserver(mutations=>{
  requestAnimationFrame(()=>{zvMutationQueued=false;zvMarkNodes(document);if(window.__zikaVisualData){renderContent(window.__zikaVisualData);window.zikaApplyEventDesign?.()}});
 }).observe(document.body,{childList:true,subtree:true});
 let zvLatestDesignSignature='';
-const load=async()=>{let url='',key='';if(cfg){url=cfg.url||cfg.supabaseUrl||'';key=cfg.publishableKey||cfg.anonKey||cfg.supabaseAnonKey||''}if(!url||!key)return;try{const res=await fetch(url+'/rest/v1/zika_settings?key=eq.visual_editor&select=value',{cache:'no-store',headers:{apikey:key,Authorization:'Bearer '+key,'Cache-Control':'no-cache'}});if(!res.ok)return;const rows=await res.json();const rawDesign=rows[0]?.value;const data=zvRestoreSemanticKeys(zvNormalizeVisibility(structuredClone(rawDesign)));if(!data||typeof data!=='object')return;const rawDesignSignature=JSON.stringify(rawDesign,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);const signature=JSON.stringify(data);if(signature===zvLatestDesignSignature&&document.getElementById('zvSavedStyles')){window.zikaApplyEventDesign?.();if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length},location.origin);return;}zvLatestDesignSignature=signature;window.__zikaVisualData=data;zvMarkNodes(document);const css=generate(data);renderCustom(data);renderContent(data);cropBanner();cropOrdinaryHero();const bannerNode=document.getElementById('zikaCustomBanner');if(bannerNode){const observer=new MutationObserver(()=>{renderContent(data);cropBanner()});observer.observe(bannerNode,{childList:true,subtree:true})}let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.appendChild(style)}style.textContent=css;
+const load=async()=>{let url='',key='';if(cfg){url=cfg.url||cfg.supabaseUrl||'';key=cfg.publishableKey||cfg.anonKey||cfg.supabaseAnonKey||''}if(!url||!key)return;try{const res=await fetch(url+'/rest/v1/zika_settings?key=eq.visual_editor&select=value',{cache:'no-store',headers:{apikey:key,Authorization:'Bearer '+key,'Cache-Control':'no-cache'}});if(!res.ok)return;const rows=await res.json();const rawDesign=rows[0]?.value;const data=zvRestoreSemanticKeys(zvNormalizeVisibility(structuredClone(rawDesign)));if(!data||typeof data!=='object')return;const rawDesignSignature=JSON.stringify(rawDesign,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);const signature=JSON.stringify(data);if(signature===zvLatestDesignSignature&&document.getElementById('zvSavedStyles')){window.zikaApplyEventDesign?.();if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length,designProblems:zvActualDesignProblems(data)},location.origin);return;}zvLatestDesignSignature=signature;window.__zikaVisualData=data;zvMarkNodes(document);const css=generate(data);renderCustom(data);renderContent(data);cropBanner();cropOrdinaryHero();const bannerNode=document.getElementById('zikaCustomBanner');if(bannerNode){const observer=new MutationObserver(()=>{renderContent(data);cropBanner()});observer.observe(bannerNode,{childList:true,subtree:true})}let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.appendChild(style)}style.textContent=css;
 // Use the same header geometry in editor and public rendering.
 let stable=document.getElementById('zvLogoStableLayout');
 if(!stable){stable=document.createElement('style');stable.id='zvLogoStableLayout';document.head.append(stable)}
@@ -1118,10 +1142,12 @@ for(const [sel,val] of Object.entries(data)){
  for(const [prop,v] of [['font-size',val.fontSize!==undefined?Number(val.fontSize)+'px':null],['font-weight',val.fontWeight],['font-style',val.fontStyle],['font-family',val.fontFamily]])if(v!==null&&v!==undefined&&v!=='')node.style.setProperty(prop,String(v),'important');
  if(val.fontSize!==undefined)node.style.setProperty('line-height','normal','important');
 }
-const keys=Object.keys(data).filter(k=>zvNodeKey(k));const missing=keys.filter(k=>!document.querySelector(k));if(missing.length)console.warn('Éléments de mise en page non retrouvés :',missing);if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length},location.origin)}catch(e){console.warn('Personnalisation indisponible',e)}};load();
+const keys=Object.keys(data).filter(k=>zvNodeKey(k));const missing=keys.filter(k=>!document.querySelector(k));if(missing.length)console.warn('Éléments de mise en page non retrouvés :',missing);if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length,designProblems:zvActualDesignProblems(data)},location.origin)}catch(e){console.warn('Personnalisation indisponible',e)}};load();
 // Actualiser les réglages sans recharger la page ni les fiches événements.
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 window.addEventListener('focus',load);
+window.addEventListener('storage',e=>{if(e.key==='zika-design-updated')load()});
+setInterval(()=>{if(!document.hidden)load()},45000);
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='zika-design-published')load()});
 setInterval(()=>{if(!document.hidden)load()},12000);
 })();

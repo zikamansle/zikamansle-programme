@@ -1035,6 +1035,12 @@ function zvNormalizeVisibility(data){
  return data;
 }
 function zvUniqueNodeKey(node){
+ if(node?.matches?.('.hero h1'))return '.hero h1';
+ if(node?.matches?.('.hero .hero-copy p'))return '.hero .hero-copy p';
+ if(node?.matches?.('.topbar .logo-mark'))return '.logo-mark';
+ if(node?.matches?.('.topbar .brand'))return '.brand';
+ if(node?.matches?.('.topbar'))return '.topbar';
+ if(node?.matches?.('.hero-panel'))return '.hero-panel';
  if(node?.matches?.(".hero .kicker"))return ".hero .kicker";
  if(node?.matches?.(".hero .hero-badges > span")){const i=Array.from(node.parentElement.children).indexOf(node)+1;return ".hero .hero-badges span:nth-child("+i+")";}
 
@@ -1067,7 +1073,7 @@ const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==unde
 const zvHeroKey=k=>/^\.hero \.kicker$/.test(k)||/^\.hero \.hero-badges span:nth-child\([1-9]\)$/.test(k);
 const buildCss=data=>Object.entries(data)
  .filter(([key,v])=>(targets.some(t=>t[1]===key)||customKey(key)||zvNodeKey(key)||zvHeroKey(key)||eventSelector.test(key))&&v&&typeof v==='object')
- .map(([key,v])=>`${key}{${styleFor(key,v)}}`).join('\n');
+ .map(([key,v])=>`${key}{${styleFor(key,v)}}`+(v.hidden===true?`\n${key}{display:none !important;height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;overflow:hidden !important}`:'')).join('\n');
 
 function frameDoc(){try{return frame.contentDocument}catch{return null}}
 function isolateGeometry(doc){
@@ -1480,6 +1486,7 @@ async function publishStudio(){
   // must never mark these persisted edits as unsaved.
   saved=structuredClone(published);
   settings.visual_editor=structuredClone(published);
+  try{localStorage.setItem('zika-design-updated',String(Date.now()))}catch(_){ }
   if(!studioHasUnsavedChanges()){updateHistoryButtons()}
   status('Design enregistré dans Supabase. Vérification de la page publique…');
   status('Enregistré dans Supabase. Vérification du programme public sans fermer le Studio…');
@@ -1496,7 +1503,7 @@ async function publishStudio(){
    function finish(ok,reason){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);frameToCheck.removeEventListener('load',onLoad);ok?resolve(true):reject(Error(reason||'Vérification publique impossible.'))}
    function onMessage(event){
     if(event.origin!==location.origin||event.source!==frameToCheck.contentWindow||event.data?.type!=='zika-visual-design-confirmed')return;
-    if(event.data.signature===canonical(published)){if(Number(event.data.missingMainSelectors||0)>0)finish(false,'Certains éléments du design ne sont pas présents sur la page publique ('+event.data.missingMainSelectors+').');else finish(true)}
+    if(event.data.signature===canonical(published)){if(event.data.designProblems?.length)finish(false,'Design enregistré mais rendu public différent : '+event.data.designProblems.slice(0,3).join(' ; '));else if(Number(event.data.missingMainSelectors||0)>0)finish(false,'Éléments du design manquants sur la page publique ('+event.data.missingMainSelectors+').');else finish(true)}
    }
    function onLoad(){
     // A fresh public instance loads design independently. Ask it to re-read the DB.
@@ -1510,7 +1517,7 @@ async function publishStudio(){
   // Saved state was already recorded after successful Supabase read-back.
   // Do not change the editing history here.
   const liveLink=by('zvOpenPublished');if(liveLink)liveLink.href='./index.html?published='+Date.now();
-  status('Design publié et vérifié. Tes modifications restent visibles dans le Studio.');
+  status('Design enregistré ; tailles, couleurs et suppressions vérifiées sur le programme public.');
  }catch(e){status((studioHasUnsavedChanges()?'Publication non confirmée : ':'Design sauvegardé dans Supabase, mais rendu public non confirmé : ')+e.message+' — le Studio reste ouvert.')}finally{
   if(checkFrame)checkFrame.remove();
   b1.disabled=b2.disabled=false;
