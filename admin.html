@@ -1368,7 +1368,7 @@ function showChosenEvent(id){const doc=frameDoc();if(!doc)return;selectedKey='';
 by('zvEventChoice').addEventListener('focus',populateEventChoices);
 by('zvEventChoice').addEventListener('change',e=>showChosenEvent(e.target.value));
 function open(){wixStudioCallback=null;if(by('editorPanel').classList.contains('hidden'))return;active=true;imageAdjustMode=false;draft=zvNormalizeVisibility(structuredClone((settings&&settings.visual_editor)||{}));if(!draft||typeof draft!=='object'||Array.isArray(draft))draft={};saved=structuredClone(draft);history=[];redo=[];updateHistoryButtons();mode='edit';pickMode='block';selectedKey='';setPickMode('block');by('zvFields').hidden=true;studio.classList.add('open');studio.classList.remove('zv-preview-mode');by('zvEdit').textContent='👁 Aperçu';frame.src='./index.html?studio=1&ts='+Date.now();status('Mode édition — sélectionne un élément')}
-by('zvClose').onclick=()=>{if(JSON.stringify(draft)!==JSON.stringify(saved)&&!confirm('Quitter sans enregistrer tes modifications ?'))return;studio.classList.remove('open','zv-preview-mode');active=false;mode='edit';frame.src='about:blank';document.querySelector('#editorPanel [data-tab="events"]')?.click()};
+by('zvClose').onclick=()=>{if(studioHasUnsavedChanges()&&!confirm('Quitter sans enregistrer tes modifications ?'))return;studio.classList.remove('open','zv-preview-mode');active=false;mode='edit';frame.src='about:blank';document.querySelector('#editorPanel [data-tab="events"]')?.click()};
 function showPreview(){mode='preview';selectedKey='';studio.classList.add('zv-preview-mode');apply();status('Aperçu privé · les modifications ne sont pas encore publiées');by('zvBackToEdit').focus()}
 function returnToEdit(){mode='edit';studio.classList.remove('zv-preview-mode');apply();status('Retour à l’édition · modifications conservées');by('zvEdit').focus()}
 by('zvEdit').onclick=showPreview;
@@ -1450,6 +1450,8 @@ document.addEventListener('keydown',handleEditorKeys,true);
 for(const [id,key] of [['zvTextContent','content'],['zvLink','href'],['zvImageSrc','src'],['zvBackgroundImage','backgroundImage']])by(id).addEventListener('change',()=>{if(!selectedKey)return;if(key==='href'&&by(id).value&&!/^(https:\/\/[^\s]+|#[a-z][a-z0-9_-]*)$/i.test(by(id).value)){status('Lien invalide : utilise https:// ou #ancre');return}snapshot();draft[selectedKey]={...(draft[selectedKey]||{}),[key]:by(id).value};apply();status('Modifications non publiées')});
 by('zvHide').onclick=()=>{if(!selectedKey||selectedKey==='body')return;removeSelected()};
 by('zvReset').onclick=()=>{if(!selectedKey)return;snapshot();delete draft[selectedKey];setKey(selectedKey);status('Style de cet élément réinitialisé (non publié)')};
+function studioCanonical(value){return JSON.stringify(value,(key,val)=>val&&typeof val==='object'&&!Array.isArray(val)?Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])):val)}
+function studioHasUnsavedChanges(){return studioCanonical(draft)!==studioCanonical(saved)}
 async function publishStudio(){
  const b1=by('zvSave'),b2=by('zvPreviewPublish');
  if(b1.disabled)return;
@@ -1462,8 +1464,14 @@ async function publishStudio(){
   await setting('visual_editor',published);
   const rows=await api('/rest/v1/zika_settings?key=eq.visual_editor&select=value');
   if(!Array.isArray(rows)||!rows.length)throw Error('Enregistrement introuvable dans Supabase.');
-  const canonical=value=>JSON.stringify(value,(key,val)=>val&&typeof val==='object'&&!Array.isArray(val)?Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])):val);
+  const canonical=studioCanonical;
   if(canonical(rows[0].value)!==canonical(published))throw Error('Les réglages relus ne correspondent pas à ceux enregistrés.');
+  // Read-back from Supabase proves persistence. A separate browser verification
+  // must never mark these persisted edits as unsaved.
+  saved=structuredClone(published);
+  settings.visual_editor=structuredClone(published);
+  if(!studioHasUnsavedChanges()){history=[];redo=[];updateHistoryButtons()}
+  status('Design enregistré dans Supabase. Vérification de la page publique…');
   status('Enregistré dans Supabase. Vérification du programme public sans fermer le Studio…');
   // Important: NEVER navigate the visible Studio frame while publishing.
   checkFrame=document.createElement('iframe');
@@ -1489,12 +1497,11 @@ async function publishStudio(){
   });
   frameToCheck.src='./index.html?studio=1&publication_check='+Date.now();
   await publicCheck;
-  saved=structuredClone(published);
-  // Keep undo history and all unsaved changes made during the request.
-  if(canonical(draft)===canonical(published)){history=[];redo=[];updateHistoryButtons()}
+  // Saved state was already recorded after successful Supabase read-back.
+  // Do not change the editing history here.
   const liveLink=by('zvOpenPublished');if(liveLink)liveLink.href='./index.html?published='+Date.now();
   status('Design publié et vérifié. Tes modifications restent visibles dans le Studio.');
- }catch(e){status('Publication non confirmée : '+e.message+' — ton design reste dans le Studio.')}finally{
+ }catch(e){status((studioHasUnsavedChanges()?'Publication non confirmée : ':'Design sauvegardé dans Supabase, mais rendu public non confirmé : ')+e.message+' — le Studio reste ouvert.')}finally{
   if(checkFrame)checkFrame.remove();
   b1.disabled=b2.disabled=false;
  }
