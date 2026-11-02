@@ -301,6 +301,19 @@ wixApply.onclick=()=>{
  const form=document.getElementById('eventForm');
  const isEvent=selected && !form.classList.contains('hidden') && wixTarget && form.contains(wixTarget);
  if(!selectedFiles.length){wixStatus.textContent='Sélectionne au moins un fichier.';return;}
+ if(isEvent && wixTarget?.name==='thumbnail_url'){
+  const image=selectedFiles.find(f=>wixType(f)==='IMAGE');
+  const url=image&&wixDirect(image);
+  if(!url){wixStatus.textContent='Sélectionne une image pour la miniature.';return;}
+  const target=wixTarget;
+  wixClose();
+  target.value=url;
+  for(const [key,value] of [['thumbnail_x',50],['thumbnail_y',50],['thumbnail_zoom',100]])form.elements[key].value=value;
+  target.dispatchEvent(new Event('input',{bubbles:true}));
+  if(typeof window.zikaOpenThumbnailCrop==='function')window.zikaOpenThumbnailCrop();
+  else msg('Miniature sélectionnée. Ouvre le cadrage avant enregistrement.');
+  return;
+ }
  if(isEvent){
   const append=(field,urls)=>{const previous=field.value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);field.value=[...new Set([...previous,...urls])].join('\n');field.dispatchEvent(new Event('input',{bubbles:true}));};
   const images=selectedFiles.filter(f=>wixType(f)==='IMAGE').map(wixDirect);
@@ -1365,12 +1378,16 @@ document.getElementById('zikaClearThumbnail').addEventListener('click',()=>{inpu
  let drag=null;area.onpointerdown=e=>{drag={px:e.clientX,py:e.clientY,x:+x.value,y:+y.value};area.setPointerCapture(e.pointerId)};
  area.onpointermove=e=>{if(!drag)return;x.value=Math.max(0,Math.min(100,drag.x-(e.clientX-drag.px)*100/area.clientWidth));y.value=Math.max(0,Math.min(100,drag.y-(e.clientY-drag.py)*100/area.clientHeight));paint()};
  area.onpointerup=area.onpointercancel=()=>drag=null;
- const b=document.createElement('button');b.type='button';b.className='btn secondary';b.textContent='✥ Ajuster la miniature';b.onclick=()=>{if(input.value&&/^https:\/\//i.test(input.value)){paint();dlg.showModal()}};
- document.getElementById('zikaChooseThumbnail')?.insertAdjacentElement('afterend',b);
- let old=input.value,armed=false;
- document.getElementById('zikaChooseThumbnail')?.addEventListener('click',()=>{armed=true;old=input.value},true);
- const watcher=setInterval(()=>{if(!armed||dlg.open)return;const v=input.value;if(v&&v!==old&&/^https:\/\//i.test(v)){armed=false;old=v;x.value=50;y.value=50;z.value=100;paint();dlg.showModal()}},250);
- input.addEventListener('input',()=>{if(armed&&input.value!==old&&/^https:\/\//i.test(input.value)){armed=false;old=input.value;x.value=50;y.value=50;z.value=100;paint();dlg.showModal()}});
+ // Ouvrir immédiatement le cadrage après la sélection dans la médiathèque Wix.
+ window.zikaOpenThumbnailCrop=()=>{
+   if(!/^https:\/\//i.test(input.value.trim()))return;
+   paint();
+   if(!dlg.open)dlg.showModal();
+ };
+ // Permettre de refaire le cadrage depuis l'aperçu, sans bouton intermédiaire.
+ document.getElementById('zikaThumbViewport')?.addEventListener('click',()=>window.zikaOpenThumbnailCrop());
+ // Un collage manuel d'URL déclenche également l'éditeur.
+ input.addEventListener('change',()=>{if(/^https:\/\//i.test(input.value.trim()))window.zikaOpenThumbnailCrop()});
 })();
 </script>
 </body></html>
