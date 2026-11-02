@@ -1428,7 +1428,10 @@ if(!Array.isArray(rows)||!rows.length)throw Error('Enregistrement non retrouvé 
 const expected=structuredClone(draft), actual=rows[0].value;
 const canonical=value=>JSON.stringify(value, (key,val)=> val&&typeof val==='object'&&!Array.isArray(val) ? Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])) : val);
 if(canonical(actual)!==canonical(expected))throw Error('Les réglages relus ne correspondent pas aux modifications.');
-saved=structuredClone(draft);history=[];redo=[];updateHistoryButtons();status('Modifications enregistrées dans Supabase et vérifiées. Actualise le programme public pour vérifier le rendu.')}catch(e){status('Échec de publication : '+e.message+' · les modifications restent dans l’éditeur')}finally{b1.disabled=b2.disabled=false}}
+saved=structuredClone(draft);history=[];redo=[];updateHistoryButtons();
+// Le programme embarqué se recharge sur les données qui viennent d'être vérifiées.
+try{const visualFrame=by('zvFrame');if(visualFrame?.contentWindow)visualFrame.contentWindow.postMessage({type:'zika-design-published'},location.origin)}catch(_){}
+status('Modifications enregistrées et vérifiées. Le programme public actualise ses réglages automatiquement.')}catch(e){status('Échec de publication : '+e.message+' · les modifications restent dans l’éditeur')}finally{b1.disabled=b2.disabled=false}}
 by('zvSave').onclick=publishStudio;
 by('zvPreviewPublish').onclick=publishStudio;
 const launcher=document.createElement('button');launcher.type='button';launcher.className='btn';launcher.textContent='✎ Modifier le design visuellement';launcher.style.margin='8px';launcher.onclick=open;document.querySelector('#editorPanel .tools')?.prepend(launcher);
