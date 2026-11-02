@@ -1,0 +1,8 @@
+.zika-app-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;background:#071426;color:white;padding:12px 18px;font:14px Inter,Arial,sans-serif;border-bottom:1px solid #28445d}
+.zika-app-bar button,.zika-app-dialog button{border:0;border-radius:24px;background:#ff8b26;color:#071426;font:700 14px Inter,Arial,sans-serif;padding:12px 18px;cursor:pointer;min-height:44px}
+.zika-app-bar button.secondary{background:#153b59;color:white}
+.zika-app-dialog{color:#10263d;background:#fff;max-width:480px;width:calc(100% - 32px);border:0;border-radius:22px;padding:26px;line-height:1.65;box-shadow:0 20px 70px #0006}
+.zika-app-dialog::backdrop{background:#071426bb}.zika-app-dialog h2{margin-top:0}.zika-app-dialog a{color:#0872b5}.zika-app-dialog li{margin-bottom:12px}
+#zikaConnection{display:block;text-align:center;background:#fff1d9;color:#653600;font:14px/1.5 Inter,Arial,sans-serif;padding:9px 15px}#zikaConnection[hidden]{display:none}
+@media(display-mode:standalone){.topbar{padding-top:env(safe-area-inset-top)}body{padding-bottom:env(safe-area-inset-bottom)}}
+@media print{.zika-app-bar,#zikaConnection{display:none!important}}

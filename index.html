@@ -4,6 +4,15 @@
 
 
 <meta charset="utf-8">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#071426">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZikaMansle">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
 <style id="zikaBootStyles">
 html[data-zika-loading] body{visibility:hidden!important}
 html[data-zika-loading]::before{content:"Chargement du programme…";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#f6f9fc;color:#173b58;font:600 16px system-ui,sans-serif}
@@ -16,7 +25,13 @@ html[data-zika-load-error]::before{display:none}
  const root=document.documentElement;root.setAttribute('data-zika-loading','');
  const pending=[];let settingsPromise;
  const boot=window.zikaBoot={complete:false,track(p){pending.push(p);return p},
-  async fetch(url,options={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);try{return await fetch(url,{...options,signal:controller.signal,cache:'no-store'})}finally{clearTimeout(timer)}},
+  async fetch(url,options={}){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+   const publicRead=new URLSearchParams(location.search).get('studio')!=='1'&&(!options.method||options.method==='GET')&&(/\/rest\/v1\/zika_settings\?select=key,value$/.test(url)||/\/rest\/v1\/zika_events\?select=\*&published=eq.true&order=display_order.asc$/.test(url));
+   const key='zika-public-cache:'+url;
+   try{const response=await fetch(url,{...options,signal:controller.signal,cache:'no-store'});if(publicRead&&response.ok){const body=await response.clone().text();try{localStorage.setItem(key,JSON.stringify({body,date:Date.now()}))}catch{}}return response}
+   catch(error){if(publicRead){try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved){window.zikaOfflineDate=Math.min(window.zikaOfflineDate||Infinity,saved.date);return new Response(saved.body,{headers:{'Content-Type':'application/json'}})}}catch{}}throw error}
+   finally{clearTimeout(timer)}},
   settings(){if(!settingsPromise)settingsPromise=(async()=>{const c=window.ZIKA_CONFIG;if(!c?.url||!c?.publishableKey)throw Error('Configuration indisponible');const r=await boot.fetch(c.url+'/rest/v1/zika_settings?select=key,value',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+c.publishableKey}});if(!r.ok)throw Error('Lecture des réglages impossible');const rows=await r.json();if(!Array.isArray(rows))throw Error('Réglages invalides');boot.ensureFonts(rows);return rows})();return settingsPromise}
  };
  const fontVariants={"Inter": "Inter:wght@400;500;600;700;800;900", "Roboto": "Roboto:wght@400;500;600;700;800;900", "Open Sans": "Open+Sans:wght@400;500;600;700;800;900", "Montserrat": "Montserrat:wght@400;500;600;700;800;900", "Poppins": "Poppins:wght@400;500;600;700;800;900", "Lato": "Lato:wght@400;500;600;700;800;900", "Nunito": "Nunito:wght@400;500;600;700;800;900", "Raleway": "Raleway:wght@400;500;600;700;800;900", "Rubik": "Rubik:wght@400;500;600;700;800;900", "Work Sans": "Work+Sans:wght@400;500;600;700;800;900", "DM Sans": "DM+Sans:wght@400;500;600;700;800;900", "Manrope": "Manrope:wght@400;500;600;700;800;900", "Outfit": "Outfit:wght@400;500;600;700;800;900", "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700;800;900", "Urbanist": "Urbanist:wght@400;500;600;700;800;900", "Mulish": "Mulish:wght@400;500;600;700;800;900", "Quicksand": "Quicksand:wght@400;500;600;700;800;900", "Josefin Sans": "Josefin+Sans:wght@400;500;600;700;800;900", "Barlow": "Barlow:wght@400;500;600;700;800;900", "Barlow Condensed": "Barlow+Condensed:wght@400;500;600;700;800;900", "Oswald": "Oswald:wght@400;500;600;700;800;900", "Anton": "Anton", "Bebas Neue": "Bebas+Neue", "Archivo Black": "Archivo+Black:wght@400;500;600;700;800;900", "Teko": "Teko:wght@400;500;600;700;800;900", "Rajdhani": "Rajdhani:wght@400;500;600;700;800;900", "Saira Condensed": "Saira+Condensed:wght@400;500;600;700;800;900", "Roboto Condensed": "Roboto+Condensed:wght@400;500;600;700;800;900", "Fjalla One": "Fjalla+One", "Playfair Display": "Playfair+Display:wght@400;500;600;700;800;900", "Merriweather": "Merriweather:wght@400;500;600;700;800;900", "Libre Baskerville": "Libre+Baskerville:wght@400;500;600;700;800;900", "Cormorant Garamond": "Cormorant+Garamond:wght@400;500;600;700;800;900", "Lora": "Lora:wght@400;500;600;700;800;900", "DM Serif Display": "DM+Serif+Display", "Abril Fatface": "Abril+Fatface", "Cinzel": "Cinzel:wght@400;500;600;700;800;900", "Bodoni Moda": "Bodoni+Moda:wght@400;500;600;700;800;900", "Pacifico": "Pacifico", "Dancing Script": "Dancing+Script", "Caveat": "Caveat:wght@400;500;600;700;800;900", "Great Vibes": "Great+Vibes", "Satisfy": "Satisfy:wght@400;500;600;700;800;900", "Lobster": "Lobster", "Permanent Marker": "Permanent+Marker", "Kalam": "Kalam:wght@400;500;600;700;800;900", "Amatic SC": "Amatic+SC", "Fredoka": "Fredoka:wght@400;500;600;700;800;900", "Comfortaa": "Comfortaa:wght@400;500;600;700;800;900", "Baloo 2": "Baloo+2:wght@400;500;600;700;800;900", "Righteous": "Righteous", "Bangers": "Bangers", "Alfa Slab One": "Alfa+Slab+One", "Space Grotesk": "Space+Grotesk:wght@400;500;600;700;800;900", "Space Mono": "Space+Mono:wght@400;500;600;700;800;900", "Orbitron": "Orbitron:wght@400;500;600;700;800;900", "Audiowide": "Audiowide", "Exo 2": "Exo+2:wght@400;500;600;700;800;900", "Inter Tight": "Inter+Tight:wght@400;500;600;700;800;900", "Sora": "Sora:wght@400;500;600;700;800"},loadedFonts=new Set();
@@ -1220,3 +1235,4 @@ setInterval(()=>{if(!document.hidden)load()},12000);
 </script>
 </body>
 </html>
+
