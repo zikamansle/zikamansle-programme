@@ -580,6 +580,9 @@ window.addEventListener('message',event=>{
  first?.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});
 });
 
+const ZIKA_PALETTE={"Musique": "#f28b36", "Cinéma": "#6c63b5", "Danse": "#d65b97", "Associations": "#337ab7", "Sport": "#23a58c", "Exposition": "#a26bca", "Théâtre et spectacle": "#bb5656", "Littérature": "#8b63cc", "Jeux": "#2a9ca6", "Arts et création": "#d17e3e", "Parade": "#e4a02c", "Patrimoine": "#94754e", "Prévention et santé": "#53965e", "Environnement": "#5a9b74", "Atelier": "#457bb7", "Autre": "#607d8b"};
+let zikaOverrides={};
+function zikaCategoryColor(name){const c=zikaOverrides[name]||ZIKA_PALETTE[name]||'#607d8b';return /^#[0-9a-f]{6}$/i.test(c)?c:'#607d8b';}
 function render(){
   renderFilters();
   if(!document.getElementById("zsTimeFilter")){const sel=document.createElement("select");sel.id="zsTimeFilter";sel.setAttribute("aria-label","Filtrer par période");sel.innerHTML="<option value=all>Tous les événements</option><option value=now>En cours</option><option value=future>À venir</option><option value=past>Terminés</option>";sel.value=window.zsTimeFilterValue||"all";sel.onchange=()=>{window.zsTimeFilterValue=sel.value;render()};document.getElementById("filters")?.append(sel)}
@@ -591,21 +594,21 @@ function render(){
   renderTimeline(rows);
   $('results').innerHTML = rows.length ? rows.map(e=>`
     <article class="event-card" data-cat="${escapeHtml(e.cat)}">
-      <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${e.image ? `<img src="${escapeHtml(e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;object-position:${Number(e.cropX)||50}% ${Number(e.cropY)||50}%;display:block" onerror="this.style.display='none'">` : ``}
+      <div class="event-band"></div>${e.logo && /^https:\/\//.test(e.logo) ? `<img src="${escapeHtml(e.logo)}" alt="" loading="lazy" style="position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2">` : ''}${(e.thumbnail||e.image) ? `<img src="${escapeHtml(e.thumbnail||e.image)}" alt="" loading="lazy" style="width:100%;height:185px;object-fit:cover;object-position:${Number(e.cropX)||50}% ${Number(e.cropY)||50}%;display:block" onerror="this.style.display='none'">` : ``}
       ${e.video && /^https:\/\//.test(e.video) ? (/\.mp4(?:[?#]|$)/i.test(e.video) ? `<video controls playsinline preload="none" ${e.videoPoster&&/^https:\/\//.test(e.videoPoster)?`poster="${escapeHtml(e.videoPoster)}"`:''} ${e.videoLoop?'loop':''} ${e.videoMuted?'muted':''} style="display:block;width:100%;max-height:300px;background:#071426"><source src="${escapeHtml(e.video)}" type="video/mp4"></video>` : /^(https:\/\/)(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)/.test(e.video) ? `<a style="display:block;padding:10px 24px;color:var(--blue);font-weight:700" href="${escapeHtml(e.video)}" target="_blank" rel="noopener noreferrer">▶ Voir la vidéo</a>` : '') : ''}
       ${e.gallery?.length?`<div class="zika-gallery">${e.gallery.filter(x=>/^https:\/\//.test(x)).map(x=>`<img src="${escapeHtml(x)}" alt="Galerie ${escapeHtml(e.title)}" loading="lazy">`).join('')}</div>`:''}
       <div class="event-inner">
         <div class="event-time">
           <div class="time-big">${escapeHtml(e.time)}</div>
           <span class="day-badge">${escapeHtml(eventDay(e))}</span>
-          <span class="cat-badge">${escapeHtml(e.cat)}</span>
+          <span class="cat-badge" style="background:${zikaCategoryColor(e.cat)};color:white">${escapeHtml(e.cat)}</span>
         </div>
         <div class="event-main">
           <h3>${escapeHtml(e.title)}</h3>
           <p>${escapeHtml(e.short)}</p>${e.accessibility?`<p style="margin-top:10px;font-size:12px">♿ ${escapeHtml(e.accessibility)}</p>`:''}
           <div class="meta-row">
             <span class="meta">📍 ${escapeHtml(e.place)}</span>${(/^(?:https:\/\/|plan\.html\?lieu=)/.test(e.mapUrl||''))?`<a class="meta" target="_blank" rel="noopener noreferrer" href="${escapeHtml(e.mapUrl)}">Voir sur le plan ↗</a>`:''}
-            <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':(e.priceMin!=null?'À partir de '+Number(e.priceMin).toLocaleString('fr-FR')+' €':'Accès payant')}</span><span class="cat-badge">${escapeHtml(e.discipline||e.cat)}</span><span class="cat-badge">${escapeHtml(e.audience||'Tous publics')}</span>
+            <span class="mode-badge ${e.free?'free':''}">${e.free?'Accès gratuit':(e.priceMin!=null?'À partir de '+Number(e.priceMin).toLocaleString('fr-FR')+' €':'Accès payant')}</span>${[...new Set([e.discipline||e.cat,...(e.disciplinesExtra||[])])].map(c=>`<span class="cat-badge" style="background:${zikaCategoryColor(c)};color:white">${escapeHtml(c)}</span>`).join('')}${[...new Set([e.audience||'Tous publics',...(e.audiencesExtra||[])])].map(a=>`<span class="cat-badge">${escapeHtml(a)}</span>`).join('')}
           </div>
         </div>
         <div class="event-actions">
@@ -703,8 +706,8 @@ render();
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.time_label||'',start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
     title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:r.extra?.disciplines_extra||[],audiencesExtra:r.extra?.audiences_extra||[],priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,mapMarker:r.extra?.map_marker||''}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
-  const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));
+    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:r.extra?.disciplines_extra||[],audiencesExtra:r.extra?.audiences_extra||[],priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,mapMarker:r.extra?.map_marker||''}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
+  const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));zikaOverrides=st.event_form_options?.categoryColors||{};if(rows.length)render();
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
   }
