@@ -533,31 +533,28 @@ body *{box-sizing:border-box}
 <style id="zvHeroTextWidthFix">
 @media(min-width:701px){.hero .hero-copy,.hero .hero-copy h1{overflow:visible!important}.hero .hero-copy h1{max-width:none!important;white-space:nowrap!important;width:max-content!important}.hero .hero-copy{max-width:none!important}}
 @media(max-width:700px){.hero .hero-copy,.hero .hero-copy h1{max-width:100%!important;min-width:0!important}.hero .hero-copy h1{white-space:normal!important;overflow-wrap:break-word!important}}
-</style><link rel="preload" href="programme-ui.js?v=8bbb0fb3ba" as="script">
-<link rel="stylesheet" href="programme-ui.css?v=97cb4e6ab0">
+</style><link rel="preload" href="programme-ui.js?v=1f443c6dac" as="script">
+<link rel="stylesheet" href="programme-ui.css?v=1bbddcf5a7">
 </head>
 <body>
 <header class="topbar">
-  <div class="wrap">
-    <div class="brand">
-      <div class="logo-mark" aria-hidden="true"></div>
-      <div>
-        <strong>Festival ZikaMansle</strong>
-        <span>Programme interactif · 24 & 25 avril 2027</span>
-      </div>
-    </div>
-    <div class="top-actions">
-      <a href="https://www.zikamansle.fr/" class="mini-btn" target="_blank" rel="noopener noreferrer">↗ Retour au site</a>
-      <a href="#programme" class="mini-btn">Voir le programme</a>
-      <a href="#infos" class="mini-btn">Infos pratiques</a>
-      <a href="https://www.zikamansle.fr" class="ticket-btn" target="_blank" rel="noopener">Billetterie</a>
-    </div>
+  <div class="wrap" data-zv-node="pro-header-wrap">
+    <a class="brand pro-brand" href="https://www.zikamansle.fr/" target="_blank" rel="noopener noreferrer" aria-label="Festival ZikaMansle — site officiel" data-zv-node="pro-header-brand">
+      <div class="logo-mark" aria-hidden="true" data-zv-node="pro-header-logo"></div>
+      <div data-zv-node="pro-header-identity"><strong data-zv-node="pro-header-title">Festival ZikaMansle</strong><span data-zv-node="pro-header-subtitle">24 &amp; 25 avril 2027 · Mansle-les-Fontaines</span></div>
+    </a>
+    <nav class="top-actions pro-header-nav" aria-label="Navigation principale" data-zv-node="pro-header-nav">
+      <a href="https://www.zikamansle.fr/" class="pro-site-link" target="_blank" rel="noopener noreferrer" data-zv-node="pro-header-home">Le site du festival ↗</a>
+      <a href="#programme" class="pro-programme-link" data-zv-node="pro-header-programme">Le programme</a>
+      <a id="proHeaderTicket" href="https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente" class="pro-ticket-link" target="_blank" rel="noopener noreferrer" data-zv-node="pro-header-ticket"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v5a2 2 0 0 0 0 4v5H4v-5a2 2 0 0 0 0-4V5Z M15 5v3m0 3v2m0 3v3" stroke="currentColor" stroke-width="1.6"/></svg>Billetterie <span aria-hidden="true">↗</span></a>
+    </nav>
   </div>
 </header>
 
 <section class="hero">
   <div class="wrap hero-grid">
-    <div class="hero-copy">
+    <div class="hero-copy" data-zv-node="pro-hero-copy">
+      <div class="pro-hero-eyebrow" data-zv-node="pro-hero-eyebrow"><span></span>24 &amp; 25 avril 2027 · Charente</div>
       <span class="kicker"><i></i> Mansle-les-Fontaines · Charente</span>
       <h1>Le programme <em>interactif</em><br>du festival</h1>
       <p>Deux jours de musique, de découvertes et de rencontres à Mansle-les-Fontaines. Composez votre programme.</p>
@@ -566,6 +563,7 @@ body *{box-sizing:border-box}
         <span>Dimanche 25 avril 2027</span>
         <span>Gratuit en journée · concerts payants le samedi soir</span>
       </div>
+      <a class="pro-hero-link" href="#programme" data-zv-node="pro-hero-link">Explorer le programme <span aria-hidden="true">↓</span></a>
     </div>
     <aside class="hero-panel" id="infos">
       <div class="hero-panel-top">
@@ -612,6 +610,7 @@ body *{box-sizing:border-box}
             <label>Catégorie<select id="filterCategory"><option value="">Toutes les catégories</option></select></label>
             <label>Discipline<select id="filterDiscipline"><option value="">Toutes les disciplines</option></select></label>
             <label>Public<select id="filterAudience"><option value="">Tous les publics</option></select></label>
+            <label>Lieu<select id="filterLocationType"><option value="">Tous les lieux</option><option value="venue">Lieux du festival</option><option value="city">Dans toute la ville</option><option value="online">En ligne</option><option value="outside">Hors de Mansle</option></select></label>
             <label>Prix<select id="filterPrice"><option value="">Tous les tarifs</option><option value="free">Gratuit</option><option value="paid">Payant</option><option value="under10">Jusqu'à 10 €</option><option value="under25">Jusqu'à 25 €</option></select></label>
             <label>Période<select id="zsTimeFilter" aria-label="Filtrer par période"><option value="all">Tous les événements</option><option value="now">En cours</option><option value="future">À venir</option><option value="past">Terminés</option></select></label>
             <label>À partir du<input id="filterStartDate" type="date"></label><label>Jusqu'au<input id="filterEndDate" type="date"></label>
@@ -701,7 +700,7 @@ body *{box-sizing:border-box}
 <dialog id="zikaMapDialog" aria-labelledby="proMapTitle"><div class="pro-map-dialog-head"><strong id="proMapTitle">Le plan du festival</strong><button id="zikaMapClose" aria-label="Fermer le plan">×</button></div></dialog>
 <nav id="zikaMobileTools" aria-label="Accès rapides au programme"><button id="zikaMobileMap">Voir le plan</button><button id="zikaMobileFavorites" aria-pressed="false">♡ Ma sélection (0)</button></nav>
 <output id="zikaFeedback" role="status" aria-live="polite" aria-atomic="true"></output>
-<script src="config.js"></script><script src="programme-ui.js?v=8bbb0fb3ba"></script>
+<script src="config.js"></script><script src="programme-ui.js?v=1f443c6dac"></script>
 <script>
 let EVENTS = [
 {id:'village',day:'samedi',sort:1400,time:'14h–17h',start:'14:00',end:'17:00',title:'ZikaVillage',cat:'Animations',place:'Place de l’Hôtel de Ville',short:'Village festif avec démonstrations, stands associatifs et direct radio.',description:'Le ZikaVillage anime la place de l’Hôtel de Ville le samedi après-midi. Au programme : Radio Attitude en direct, Hopla Circus, l’APE pour le maquillage, Les Sangs Mêlés, Pa’ la Calle Charente, Arabesk, l’aïkido et le Do-In, ainsi que plusieurs stands associatifs et de prévention. Pas de buvette ni de restauration sur le village.',free:true},
@@ -728,13 +727,13 @@ let EVENTS = [
 ];
 const categories=['Tout','Musique','Animations','Parade','Jeux','Culture','Prévention'];
 let configuredCategories=[]; // Catégories enregistrées dans l'administration
-const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:''};
+const state={day:'all',cat:'Tout',q:'',mine:false,favorites:new Set(),discipline:'',audience:'',price:'',sort:'chrono',from:'',to:'',locationType:''};
 let currentId=null;
 try{state.favorites=new Set(JSON.parse(localStorage.getItem('zika_favorites_2027')||'[]'))}catch(e){}
 const $=id=>document.getElementById(id);
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 function saveFav(){try{localStorage.setItem('zika_favorites_2027',JSON.stringify([...state.favorites]))}catch(e){}}
-function eventDay(e){const first=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;const end=e.endsAt?.slice(0,10);const fmt=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return '';return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};if(first){return end&&end!==first?fmt(first)+' — '+fmt(end):fmt(first)}return e.both?'Samedi 24 et dimanche 25 avril 2027':e.day==='samedi'?'Samedi 24 avril 2027':'Dimanche 25 avril 2027'}
+function eventDay(e){if(e.alwaysAvailable)return 'Accessible en ligne';const first=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;const end=e.endsAt?.slice(0,10);const fmt=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return '';return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};if(first){return end&&end!==first?fmt(first)+' — '+fmt(end):fmt(first)}return e.both?'Samedi 24 et dimanche 25 avril 2027':e.day==='samedi'?'Samedi 24 avril 2027':'Dimanche 25 avril 2027'}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function toggleFav(id){const removing=state.favorites.has(id);removing?state.favorites.delete(id):state.favorites.add(id);saveFav();render();if(currentId===id)syncModalFav();window.zikaPro.announce((EVENTS.find(e=>e.id===id)?.title||'Rendez-vous')+(removing?' retiré de votre sélection':' ajouté à votre sélection'))}
 function eventStamp(e){
@@ -749,7 +748,7 @@ function filtered(){
  const q=norm(state.q);
  const matches=EVENTS.filter(e=>{
   const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);let last=e.endsAt?.slice(0,10)||(e.schedule||[]).map(s=>s.date).filter(Boolean).sort().at(-1)||day;if(e.both&&day==='2027-04-24'&&last===day)last='2027-04-25';
-  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||last>=state.from)&&(!state.to||day<=state.to)&&(!state.mapPlace||String(e.mapMarker||'')===state.mapPlace)&&(!state.venue||String(e.place||'')===state.venue)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||!state.to||state.from<=state.to)&&(e.alwaysAvailable||((!state.from||last>=state.from)&&(!state.to||day<=state.to)))&&(!state.mapPlace||String(e.mapMarker||'')===state.mapPlace)&&(!state.venue||String(e.place||'')===state.venue)&&(!state.locationType||(e.locationType||'venue')===state.locationType)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
  });
  return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
 }
@@ -767,7 +766,7 @@ window.addEventListener('message',event=>{
  const frame=document.querySelector('#zikaPublicPlanEmbed iframe');
  if(event.data?.type!=='ZIKA_SELECTED_PLACE'||!frame||event.source!==frame.contentWindow)return;
  const place=String(event.data.id||'');if(!/^[1-9][0-9]*$/.test(place))return;
- state.mapPlace=place;state.day='all';state.cat='Tout';state.q='';state.mine=false;
+ state.locationType='';const locationFilter=document.getElementById('filterLocationType');if(locationFilter)locationFilter.value='';state.mapPlace=place;state.day='all';state.cat='Tout';state.q='';state.mine=false;
  state.discipline='';state.audience='';state.price='';state.from='';state.to='';
  for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterStartDate','from'],['filterEndDate','to']]){const field=document.getElementById(id);if(field)field.value='';}
  const search=document.getElementById('search');if(search)search.value='';
@@ -783,7 +782,7 @@ function render(){
   const timeSelect=$('zsTimeFilter');timeSelect.value=window.zsTimeFilterValue||'all';timeSelect.onchange=()=>{window.zsTimeFilterValue=timeSelect.value;render()};
   let rows = filtered();
   const statusFilter=document.getElementById('zsTimeFilter')?.value||'all';
-  if(statusFilter!=='all'){const now=new Date();rows=rows.filter(e=>{if(!e.startsAt||!e.endsAt)return false;const s=new Date(e.startsAt),t=new Date(e.endsAt);return statusFilter==='now'?s<=now&&t>=now:statusFilter==='future'?s>now:t<now})}
+  if(statusFilter!=='all'){const now=new Date();rows=rows.filter(e=>{if(e.alwaysAvailable)return statusFilter==='now';if(!e.startsAt||!e.endsAt)return false;const s=new Date(e.startsAt),t=new Date(e.endsAt);return statusFilter==='now'?s<=now&&t>=now:statusFilter==='future'?s>now:t<now})}
   $('sectionTitle').textContent = state.mine?'Ma sélection':state.day==='samedi'?'Samedi 24 avril':state.day==='dimanche'?'Dimanche 25 avril':'Tous les rendez-vous';
   $('count').textContent = `${rows.length} rendez-vous`;
   renderTimeline(rows);
@@ -812,7 +811,7 @@ function openModal(id){
     const b=document.createElement('button');b.type='button';b.className='zika-modal-facet';b.textContent=label;
     b.dataset.facet=facet;b.dataset.value=value;if(color)b.style.setProperty('--facet-color',color);
     b.addEventListener('click',()=>{
-      closeModal();state.cat='Tout';state.discipline='';state.audience='';state.price='';state.venue='';state.mapPlace='';
+      closeModal();state.locationType='';if($('filterLocationType'))$('filterLocationType').value='';state.cat='Tout';state.discipline='';state.audience='';state.price='';state.venue='';state.mapPlace='';
       state.day='all';state.q='';state.mine=false;state.from='';state.to='';
       const search=$('search');if(search)search.value='';
       document.querySelectorAll('[data-day]').forEach(n=>n.classList.toggle('active',n.dataset.day==='all'));
@@ -918,9 +917,9 @@ window.zikaBoot.track((async function(){
   // No initial disappearance: fallback built-in schedule until published data exists.
   if(rows.length){EVENTS=rows.map(r=>({id:r.id,day:r.extra?.day||'samedi',both:!!r.extra?.both,
     sort:r.display_order||1400,time:r.extra?.all_day?'Toute la journée':(r.time_label||''),start:r.start_time?.slice(0,5)||'',end:r.end_time?.slice(0,5)||'',
-    title:r.title,cat:r.category,place:r.location||'',short:r.extra?.short||'',description:r.description||'',
-    free:!!r.is_free,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:Array.isArray(r.extra?.disciplines_extra)?r.extra.disciplines_extra:(typeof r.extra?.disciplines_extra==='string'?r.extra.disciplines_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),audiencesExtra:Array.isArray(r.extra?.audiences_extra)?r.extra.audiences_extra:(typeof r.extra?.audiences_extra==='string'?r.extra.audiences_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],attachments:r.extra?.attachments||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,thumbX:r.extra?.thumbnail_x??50,thumbY:r.extra?.thumbnail_y??50,thumbZoom:r.extra?.thumbnail_zoom??100,mediaCrops:r.extra?.media_crops||{},mapMarker:r.extra?.map_marker||''}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
-  const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));window.zikaPro.ticketURL=/^https:\/\//i.test(st.links?.ticket_url||'')?st.links.ticket_url:(EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.ticketUrl||EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.url||'');if(window.zikaPro.ticketURL){const ticket=document.querySelector('.bottom-cta .cta-buttons a');if(ticket)ticket.href=window.zikaPro.ticketURL}zikaOverrides=st.event_form_options?.categoryColors||{};configuredCategories=Array.isArray(st.event_form_options?.categories)?st.event_form_options.categories.filter(x=>typeof x==='string'&&x.trim()):[];setupFacets();render();
+    title:r.title,cat:r.category,place:r.extra?.location_type==='online'?'En ligne':r.extra?.location_type==='city'?'Dans toute la ville':(r.location||''),locationType:r.extra?.location_type||'venue',short:r.extra?.short||'',description:r.description||'',
+    free:!!r.is_free,alwaysAvailable:!!r.extra?.always_available,discipline:r.extra?.discipline||r.category,audience:r.extra?.audience||'Tous publics',disciplinesExtra:Array.isArray(r.extra?.disciplines_extra)?r.extra.disciplines_extra:(typeof r.extra?.disciplines_extra==='string'?r.extra.disciplines_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),audiencesExtra:Array.isArray(r.extra?.audiences_extra)?r.extra.audiences_extra:(typeof r.extra?.audiences_extra==='string'?r.extra.audiences_extra.split(',').map(x=>x.trim()).filter(Boolean):[]),priceMin:r.extra?.price_min,priceMax:r.extra?.price_max,startsAt:r.extra?.starts_at||'',endsAt:r.extra?.ends_at||'',customDate:r.extra?.custom_date||r.event_date||'',schedule:r.extra?.schedule||[],mapUrl:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':((r.extra?.map_marker && /^(?:[1-5]|parade)$/.test(r.extra.map_marker))?'plan.html?lieu='+encodeURIComponent(r.extra.map_marker):(r.extra?.map_url||'')),gallery:r.extra?.gallery||[],attachments:r.extra?.attachments||[],accessibility:r.extra?.accessibility||'',directionsUrl:r.extra?.directions_url||'',shareSlug:r.extra?.share_slug||'',ticketUrl:r.extra?.ticket_url||'',url:r.link_url||'',image:r.image_url||'',thumbnail:r.extra?.thumbnail_url||'',logo:r.logo_url||'',video:r.video_url||'',videoPoster:r.video_poster_url||'',videoAutoplay:!!r.video_autoplay,videoLoop:!!r.video_loop,videoMuted:r.video_muted!==false,cropX:r.extra?.crop_x??50,cropY:r.extra?.crop_y??50,cropZoom:r.extra?.crop_zoom??100,thumbX:r.extra?.thumbnail_x??50,thumbY:r.extra?.thumbnail_y??50,thumbZoom:r.extra?.thumbnail_zoom??100,mediaCrops:r.extra?.media_crops||{},mapMarker:(r.extra?.location_type&&r.extra.location_type!=='venue')?'':(r.extra?.map_marker||'')}));setupFacets();wireFacets();render();setTimeout(openDeepLink,50);}
+  const st=Object.fromEntries(settings.map(x=>[x.key,x.value]));window.zikaPro.ticketURL=/^https:\/\//i.test(st.links?.ticket_url||'')?st.links.ticket_url:(EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.ticketUrl||EVENTS.find(e=>!e.free&&/^https:\/\//i.test(e.ticketUrl||e.url||''))?.url||'');if(window.zikaPro.ticketURL){document.querySelectorAll('.bottom-cta .cta-buttons a,#proHeaderTicket').forEach(ticket=>ticket.href=window.zikaPro.ticketURL)}zikaOverrides=st.event_form_options?.categoryColors||{};configuredCategories=Array.isArray(st.event_form_options?.categories)?st.event_form_options.categories.filter(x=>typeof x==='string'&&x.trim()):[];setupFacets();render();
   const theme=st.theme||{}; for(const [key,css] of Object.entries({blue:'--blue',orange:'--orange',background:'--bg',text:'--text'})){
    if(/^#[0-9a-f]{6}$/i.test(theme[key]||''))document.documentElement.style.setProperty(css,theme[key]);
   }

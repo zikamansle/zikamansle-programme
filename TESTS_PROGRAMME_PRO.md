@@ -40,3 +40,15 @@ La copie utilise un instantané de lecture des 25 réglages et des 13 fiches pub
 | Console et syntaxe | Pas d'erreur applicative relevée ; scripts vérifiés et git diff --check valide |
 
 Les tests de partage natif et de téléchargement calendrier n'ont pas été rejoués ; leurs fonctions restent inchangées. Le temps de chargement réel dépend du réseau et des médias ; aucun gain chiffré n'est avancé. Déploiement en attente de l'accord demandé.
+
+## Proposition visuelle enrichie après retour utilisateur
+
+- Palette blanc cassé, bleu profond et orange, bordures plus fines et arrondis réduits. En-tête restructuré avec logo et identité, navigation sobre et bouton Billetterie HelloAsso visible sur ordinateur et mobile.
+- Bannière plein écran en largeur conservant l’illustration Wix existante. Composition rééquilibrée, date, titre et introduction ; trois musiciens vectoriels animés alignés sur le cadrage exact du pont et notes musicales. Pause/reprise disponible ; version fixe pour la préférence de réduction des mouvements.
+- ZikaRun : nouvelle fiche gratuite, en ligne, visuels existants du dépôt officiel zikarun2 et lien https://zikamansle.github.io/zikarun2/ ouvert et vérifié. Bouton Jouer en ligne sur la carte et dans la fiche. Aucune date artificielle ni lien vers le plan pour cette activité ; l’accès permanent est identifié séparément.
+- Types de lieu dans l’administration et les filtres publics : lieu du festival, Dans toute la ville, En ligne et Hors de Mansle. Hors de Mansle conserve un champ ville/lieu libre ; aucun point, aucun lien vers le plan. Un itinéraire externe apparaît seulement si une URL d’itinéraire est renseignée. Le jeu de piste est proposé Dans toute la ville.
+- PROPOSITION_PROGRAMME.json décrit uniquement la fiche à ajouter et les champs ciblés à modifier après accord. Il n’est jamais exécuté par le site. Les données de production ne sont pas modifiées. Les anciens réglages et les autres fiches restent conservés ; aucune fiche de marché n’est inventée ou publiée.
+
+Contrôles supplémentaires sur la copie isolée : 14 fiches dont ZikaRun ; ouverture de sa fiche et présence du lien Jouer ; filtre En ligne + En cours = ZikaRun ; filtre Dans toute la ville = jeu de piste ; sauvegarde temporaire d’un lieu Vars — marché de Noël, relecture après rechargement et absence de lien au plan, puis restauration de ZikaRun en ligne via le formulaire ; bouton de billetterie et sa destination ; pause/reprise de l’animation ; mobile 390 px (375 px intérieurs), aucun débordement, billetterie visible ; ouverture/fermeture du plan mobile. Aucun nouvel échec applicatif relevé après correction d’un contrôle manquant dans le formulaire.
+
+Le mock a été étendu pour permettre les sauvegardes de fiches dans le stockage local de QA uniquement. Tout envoi externe non GET/HEAD reste bloqué. Les opérations de suppression ne sont pas activées dans ce mock. La copie est destinée à la revue utilisateur ; aucune publication de production n’est effectuée.
