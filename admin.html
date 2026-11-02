@@ -1073,7 +1073,7 @@ const styleFor=(key,v)=>{const lines=[];const add=(name,value)=>{if(value!==unde
 const zvHeroKey=k=>/^\.hero \.kicker$/.test(k)||/^\.hero \.hero-badges span:nth-child\([1-9]\)$/.test(k);
 const buildCss=data=>Object.entries(data)
  .filter(([key,v])=>(targets.some(t=>t[1]===key)||customKey(key)||zvNodeKey(key)||zvHeroKey(key)||eventSelector.test(key))&&v&&typeof v==='object')
- .map(([key,v])=>`${key}{${styleFor(key,v)}}`+(v.hidden===true?`\n${key}{display:none !important;height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;overflow:hidden !important}`:'')).join('\n');
+ .map(([key,v])=>`${key}{${styleFor(key,v)}}`+(v.color?`\n${key} :is(h1,h2,h3,h4,h5,h6,p,span,strong,small,em,b,i,a,button,label,li){color:${safeCss(v.color)} !important}`:'')+(v.hidden===true?`\n${key}{display:none !important;height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;overflow:hidden !important}`:'')).join('\n');
 
 function frameDoc(){try{return frame.contentDocument}catch{return null}}
 function isolateGeometry(doc){
@@ -1101,7 +1101,7 @@ for(const [selector,v] of Object.entries(draft)){
  if(!v || !zvNodeKey(selector))continue;
  let n;try{n=doc.querySelector(selector)}catch{};
  if(!n || !n.closest('.topbar'))continue;
- for(const [prop,val] of [['font-size',v.fontSize!==undefined?Number(v.fontSize)+'px':null],['font-weight',v.fontWeight],['font-style',v.fontStyle],['font-family',v.fontFamily]]){
+ for(const [prop,val] of [['font-size',v.fontSize!==undefined?Number(v.fontSize)+'px':null],['font-weight',v.fontWeight],['font-style',v.fontStyle],['font-family',v.fontFamily],['color',v.color]]){
   if(val!==null&&val!==undefined&&val!=='')n.style.setProperty(prop,String(val),'important');
  }
  if(v.fontSize!==undefined)n.style.setProperty('line-height','normal','important');
@@ -1397,7 +1397,7 @@ function zvRestoreHistory(next){
 }
 by('zvUndo').onclick=()=>{if(!history.length){status('Aucune modification à annuler');return}redo.push(JSON.stringify(draft));zvRestoreHistory(history.pop());updateHistoryButtons();status('Modification annulée')};
 by('zvRedo').onclick=()=>{if(!redo.length){status('Aucune modification à rétablir');return}history.push(JSON.stringify(draft));zvRestoreHistory(redo.pop());updateHistoryButtons();status('Modification rétablie')};
-for(const [id,k] of Object.entries(props)){const el=by(id);el.addEventListener(id.startsWith('zvBg')&&id!=='zvBg'?'input':el.type==='range'||el.type==='color'||id==='zvSize'?'input':'change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};if(id==='zvOpacity'&&!v.backgroundColor){const selected=frameDoc()?.querySelector(selectedKey);const c=selected&&frameDoc()?.defaultView.getComputedStyle(selected).backgroundColor;const m=c?.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);v.backgroundColor=m?'#'+[m[1],m[2],m[3]].map(n=>Number(n).toString(16).padStart(2,'0')).join(''):'#ffffff'}if(id==='zvWidth'||id==='zvHeight'){const node=frameDoc()?.querySelector(selectedKey);if(node)zvReserveFrame(frameDoc(),node);v[k]=el.value;if(id==='zvWidth')delete v.widthPx;delete v.scaleX;delete v.scaleY}else {v[k]=el.value;if(['zvBorderStyle','zvBorderWidth','zvBorderColor'].includes(id)&&v.borderStyle!=='none'){v.borderStyle=v.borderStyle||'solid';v.borderWidth=v.borderWidth||2;v.borderColor=v.borderColor||'#172b3c'}}draft[selectedKey]=v;apply();status('Modifications non publiées')})}
+for(const [id,k] of Object.entries(props)){const el=by(id);el.addEventListener(id.startsWith('zvBg')&&id!=='zvBg'?'input':el.type==='range'||el.type==='color'||id==='zvSize'?'input':'change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};if(id==='zvOpacity'&&!v.backgroundColor){const selected=frameDoc()?.querySelector(selectedKey);const c=selected&&frameDoc()?.defaultView.getComputedStyle(selected).backgroundColor;const m=c?.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);v.backgroundColor=m?'#'+[m[1],m[2],m[3]].map(n=>Number(n).toString(16).padStart(2,'0')).join(''):'#ffffff'}if(id==='zvWidth'||id==='zvHeight'){const node=frameDoc()?.querySelector(selectedKey);if(node)zvReserveFrame(frameDoc(),node);v[k]=el.value;if(id==='zvWidth')delete v.widthPx;delete v.scaleX;delete v.scaleY}else {v[k]=el.value;if(['zvBorderStyle','zvBorderWidth','zvBorderColor'].includes(id)&&v.borderStyle!=='none'){v.borderStyle=v.borderStyle||'solid';v.borderWidth=v.borderWidth||2;v.borderColor=v.borderColor||'#172b3c'}}draft[selectedKey]=v;apply();status(id==='zvColor'?'Couleur modifiée — non publiée':'Modifications non publiées')})}
 
 by('zvShape').addEventListener('change',()=>{if(!selectedKey)return;snapshot();const v=draft[selectedKey]||{};v.borderRadius=by('zvShape').value;draft[selectedKey]=v;by('zvRadius').value=v.borderRadius;apply();status('Forme du cadre modifiée')});
 // Réutilise le sélecteur Wix de l'administration, sans second catalogue ni clés privées.
