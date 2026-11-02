@@ -347,3 +347,79 @@ html body .pro-header-nav .pro-ticket-link{display:inline-flex;gap:10px;align-it
 @media(prefers-reduced-motion:reduce){.pro-scene-toggle{display:none}}
 /* The crop-sized scene extends beyond the banner; it must clip without creating an internal scroll area. */
 html body .hero{overflow:clip!important}
+
+/* Four periods remain equally accessible on small screens. */
+.control-card .day-switch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:600px){.control-card .day-switch{grid-template-columns:repeat(2,minmax(0,1fr))!important}.control-card .day-switch button{font-size:11px!important;padding:10px 7px!important}}
+
+/* Keep the festival map visible alongside the ticket office. */
+.pro-header-nav .pro-header-map{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:11px 14px;border:1px solid #b9cbd5;border-radius:5px;background:#edf3f6;color:#173348;font:600 12px/1.4 var(--pro-bodyfont,Inter,Arial,sans-serif);white-space:nowrap}
+.pro-header-map:hover{background:#dfeaf0}
+.zika-split-right{border-top:4px solid #176e9b;box-shadow:0 4px 20px #17334808}
+.zika-split-right .zika-map-heading{font-size:27px;line-height:1.15}
+@media(min-width:981px){.zika-split-right .zika-plan-embedded{height:min(74vh,760px);min-height:460px}}
+@media(max-width:1100px){.pro-header-nav .pro-site-link,.pro-header-nav .pro-programme-link{display:none}}
+@media(max-width:600px){
+ html body .topbar .wrap{flex-wrap:wrap;gap:10px;padding-block:10px}
+ html body .topbar .pro-brand{flex:1 1 100%;min-height:44px!important}
+ .pro-header-nav{display:grid;grid-template-columns:1fr 1fr;width:100%!important;gap:8px;margin:0!important}
+ .pro-header-nav .pro-header-map,html body .pro-header-nav .pro-ticket-link{min-height:42px;width:100%;justify-content:center;font-size:11px!important;padding:9px 10px}
+}
+
+/* Match the official home page: Anton, midnight blue, bright orange and cream. */
+:root{--pro-ink:#1d3557;--pro-muted:#53647a;--pro-blue:#168fdf;--pro-orange:#ee591e;--pro-paper:#fffaf0;--pro-line:#e5dfd2}
+html body .topbar{background:#fffaf0;border-bottom:1px solid #e9e1d2}
+html body .topbar .pro-brand strong{color:#1d3557!important}
+.pro-header-nav .pro-site-link,.pro-header-nav .pro-programme-link{font-family:Anton,Impact,sans-serif!important;font-size:16px!important;font-weight:400!important;text-transform:uppercase;color:#ee591e!important}
+html body .pro-header-nav .pro-ticket-link{background:#ea561a!important;border-color:#ea561a;border-radius:0;font-size:12px!important;text-transform:uppercase}
+.pro-header-nav .pro-header-map{background:transparent;border:1px solid #1d3557;color:#1d3557;border-radius:0;text-transform:uppercase;font-weight:700}
+.pro-header-nav .pro-header-map:hover{background:#1d3557;color:#fff}
+.hero{background-color:#fffaf0;min-height:630px}
+.hero::after{background:linear-gradient(180deg,#fffaf0c9,#fffaf062 42%,#fffaf000 69%)}
+.hero .hero-grid{min-height:630px;padding:32px 0 160px;text-align:center}
+.hero .hero-copy{max-width:900px!important;margin:0 auto}
+.pro-hero-eyebrow{justify-content:center;color:#7a5a43;font-size:10px;letter-spacing:.15em;margin-bottom:12px}
+.hero .hero-copy h1{font-size:clamp(60px,7.3vw,100px)!important;line-height:1.04!important;margin:0 0 16px;text-align:center!important;letter-spacing:-.025em!important}
+.pro-hero-dates{font:400 clamp(30px,4.1vw,56px)/1.15 Anton,Impact,sans-serif;color:#ee591e;text-transform:uppercase;margin:0 0 9px;letter-spacing:-.01em}
+.pro-hero-city{font:400 23px/1.3 Anton,Impact,sans-serif;color:#1d3557;margin-bottom:18px}
+.hero .hero-copy p{max-width:660px;margin:0 auto 18px;font-size:14px!important;line-height:1.75!important;-webkit-line-clamp:2;text-align:center!important}
+.pro-hero-link{color:#1d3557!important;border-color:#1d3557;font-size:11px;text-transform:uppercase;letter-spacing:.035em;padding-bottom:7px;gap:20px}
+.pro-hero-link span{color:#ee591e!important}
+.pro-scene-toggle{background:#fffaf0e6;border-color:#d9cdb7;border-radius:0;color:#1d3557}
+.control-card{border-radius:0;box-shadow:0 5px 22px #1d355705;border-color:#e3dacb}
+.control-card .day-switch{border-radius:0;background:#f6f0e4;border-color:#e9dfcc}
+.control-card .day-switch button{border-radius:0!important;color:#1d3557!important;font-size:11px!important}
+.control-card .day-switch button.active{background:#1d3557!important;color:#fff!important}
+.searchbox{background:#fffdf8;border-radius:0;border-color:#e3dacb}
+.filters .chip.active{background:#1d3557;color:#fff}
+.filters .chip{border-radius:0;color:#1d3557}
+.filter-tools .tool-btn{border-radius:0;border-color:#d9deE4;color:#1d3557}
+.summary .summary-top h2{font-size:34px!important;color:#1d3557!important}
+.zika-split-right{border-radius:0;border:1px solid #d5deeb;border-top:5px solid #ee591e;background:#fffdf8;box-shadow:0 4px 20px #1d35570a}
+.zika-split-right .zika-map-heading{color:#1d3557;font-size:28px}
+html body .event-card{border-radius:0!important;border-color:#e3dacb;background:#fffdf8!important}
+.event-card .event-main h3{font-size:28px!important;color:#1d3557!important}
+html body .event-card .event-actions .action-btn{border-radius:0!important;background:#1d3557!important;color:#fff!important;border-color:#1d3557}
+html body .event-card .event-actions .pro-ticket{background:#ea561a!important;border-color:#ea561a}
+.event-card .event-actions .pro-play-link{background:#1d3557;border-radius:0}
+#zikaMobileTools{background:#fffaf0f5;border-color:#e5dfd2}
+#zikaMobileTools button{border-radius:0;color:#1d3557}
+#zikaMobileTools #zikaMobileMap{background:#1d3557}
+@media(max-width:600px){
+ .hero{min-height:530px}.hero .hero-grid{min-height:530px;padding:28px 0 170px!important;width:calc(100% - 32px)}
+ .hero .hero-copy h1{font-size:clamp(45px,12vw,66px)!important;line-height:1.06!important;margin-bottom:14px}
+ .pro-hero-eyebrow{font-size:8px;letter-spacing:.1em;margin-bottom:16px}
+ .pro-hero-dates{font-size:clamp(27px,7.8vw,36px);margin-bottom:9px}
+ .pro-hero-city{font-size:18px;margin-bottom:14px}
+ .hero .hero-copy p{font-size:12px!important;line-height:1.65!important;max-width:330px;-webkit-line-clamp:3;margin-bottom:16px}
+ .hero::after{background:linear-gradient(180deg,#fffaf0f5,#fffaf0c9 42%,#fffaf000 78%)}
+ .summary .summary-top h2{font-size:28px!important}.pro-header-nav .pro-header-map{font-size:11px}
+}
+@media(max-width:600px){
+ .hero .zv-hero-photo{top:160px!important;bottom:auto!important;height:auto!important;object-fit:contain!important;object-position:50% 50%!important;transform:none!important}
+}
+html body .filters .chip.active{color:#fff!important}
+/* Keep the coloured bursts above the backdrop veil and below the readable copy. */
+.hero .pro-bridge-artists{z-index:2}
+.hero .hero-grid{z-index:3}
+.pro-scene-toggle{z-index:4}
