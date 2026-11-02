@@ -8,3 +8,6 @@ for(const p of ['all','before','samedi','dimanche'])assert(matchesProgrammePerio
 assert(!matchesProgrammePeriod({day:'samedi'},'before'));console.log('Périodes : marché hors saison, exposition en cours, samedi et accès permanent vérifiés.');
 
 assert(matchesProgrammePeriod({alwaysAvailable:true,programmePeriods:['before']},'before'));assert(!matchesProgrammePeriod({alwaysAvailable:true,programmePeriods:['before']},'samedi'));assert(matchesProgrammePeriod({startsAt:'2027-04-25T09:00',programmePeriods:['before','samedi']},'samedi'));assert(!matchesProgrammePeriod({startsAt:'2027-04-25T09:00',programmePeriods:['before','samedi']},'dimanche'));console.log('Classement manuel prioritaire et choix multiples vérifiés.');
+
+assert(matchesProgrammePeriod({...exhibition,programmePeriods:['samedi']},'before'));assert(matchesProgrammePeriod({...market,programmePeriods:['dimanche']},'before'));assert(matchesProgrammePeriod({alwaysAvailable:true,programmePeriods:['samedi']},'before'));assert(matchesProgrammePeriod({schedule:[{date:'2027-04-25'},{date:'2027-04-10'}],programmePeriods:['dimanche']},'before'));console.log('Avant le festival reste automatique malgré les choix manuels.');
+assert(matchesProgrammePeriod({startsAt:'2027-04-23T23:59'},'before'));assert(!matchesProgrammePeriod({startsAt:'2027-04-24T00:00'},'before'));

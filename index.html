@@ -750,11 +750,12 @@ function eventStamp(e){
 function minPrice(e){return Number(e.priceMin??(e.free?0:999999));}
 function matchesProgrammePeriod(e,period){
  if(period==='all')return true;
- const chosen=Array.isArray(e.programmePeriods)?e.programmePeriods.filter(p=>['before','samedi','dimanche'].includes(p)):[];if(chosen.length)return chosen.includes(period);
+ const chosen=Array.isArray(e.programmePeriods)?e.programmePeriods.filter(p=>['before','samedi','dimanche'].includes(p)):[];
+ if(period==='before'){const dates=[e.startsAt?.slice(0,10)||e.customDate,...(e.schedule||[]).map(slot=>slot.date)];return chosen.includes('before')||!!e.alwaysAvailable||dates.some(date=>/^\d{4}-\d{2}-\d{2}$/.test(date||'')&&date<'2027-04-24')}
+ if(chosen.length)return chosen.includes(period);
  if(e.alwaysAvailable)return true;
  const start=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(start||''))return period==='before'?false:(e.day===period||e.both);
- if(period==='before')return start<'2027-04-24';
  const date=period==='samedi'?'2027-04-24':'2027-04-25';
  if(!e.startsAt&&e.schedule?.length)return e.schedule.some(slot=>slot.date===date);
  let end=e.endsAt?.slice(0,10)||start;if(e.both&&start==='2027-04-24'&&end===start)end='2027-04-25';
