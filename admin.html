@@ -310,7 +310,7 @@ wixApply.onclick=()=>{
   target.value=url;
   for(const [key,value] of [['thumbnail_x',50],['thumbnail_y',50],['thumbnail_zoom',100]])form.elements[key].value=value;
   target.dispatchEvent(new Event('input',{bubbles:true}));
-  if(typeof window.zikaOpenThumbnailCrop==='function')window.zikaOpenThumbnailCrop();
+  if(typeof window.zikaAdjustSelectedMedia==='function')window.zikaAdjustSelectedMedia(url,'thumbnail_url');
   else msg('Miniature sélectionnée. Ouvre le cadrage avant enregistrement.');
   return;
  }
@@ -322,13 +322,13 @@ wixApply.onclick=()=>{
   append(form.elements.attachment_urls,others);
   if(images.length && !form.elements.image_url.value.trim()){form.elements.image_url.value=images[0];form.elements.image_url.dispatchEvent(new Event('change',{bubbles:true}));}
   if(!form.elements.video_url.value.trim()){const video=selectedFiles.find(f=>wixType(f)==='VIDEO');if(video)form.elements.video_url.value=wixDirect(video);}
-  zikaRefreshMediaList();wixClose();msg(selectedFiles.length+' média(s) ajoutés à la fiche. Clique sur Enregistrer cette fiche pour sauvegarder.');return;
+  zikaRefreshMediaList();wixClose();if(images.length && typeof window.zikaAdjustSelectedMedia==='function')window.zikaAdjustSelectedMedia(images[0], !form.elements.image_url.value.trim()?'gallery_urls':'image_url');msg(selectedFiles.length+' média(s) ajoutés à la fiche. Clique sur Enregistrer cette fiche pour sauvegarder.');return;
  }
  if(!wixTarget){wixStatus.textContent='Ouvre une fiche pour y associer ces médias.';return;}
  const chosen=selectedFiles.map(wixDirect);
  const multiple=['gallery_urls','attachment_urls'].includes(wixTarget.name);
  wixTarget.value=multiple?[...new Set([...wixTarget.value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean),...chosen])].join('\n'):chosen[0];
- wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));wixClose();
+ const fieldName=wixTarget.name;wixTarget.dispatchEvent(new Event('input',{bubbles:true}));wixTarget.dispatchEvent(new Event('change',{bubbles:true}));wixClose();if(typeof window.zikaAdjustSelectedMedia==='function' && ['image_url','logo_url','video_poster_url','thumbnail_url'].includes(fieldName))window.zikaAdjustSelectedMedia(chosen[0],fieldName);
 };
 wixUploadBtn.onclick=()=>wixUpload.click();
 // Téléversement direct Wix : flux standard ou TUS pour les grands fichiers.
@@ -1363,31 +1363,27 @@ document.getElementById('zikaClearThumbnail').addEventListener('click',()=>{inpu
 </script>
 <script>
 (function(){
- const f=document.getElementById('eventForm'),input=f?.elements?.thumbnail_url;
- if(!input)return;
- const x=f.elements.thumbnail_x,y=f.elements.thumbnail_y,z=f.elements.thumbnail_zoom;
- const dlg=document.createElement('dialog'); dlg.id='zikaCropDialog';
- dlg.style.cssText='max-width:min(94vw,740px);width:680px;border:0;border-radius:16px;padding:20px;color:#14283d;background:white;box-shadow:0 18px 70px #0007';
- dlg.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0">Ajuster la miniature</h2><button type="button" id="zikaCropClose" style="padding:9px 14px;cursor:pointer">Fermer</button></div><p>Glisse la photo pour la recentrer. Utilise le curseur pour zoomer, puis valide le cadrage.</p><div id="zikaCropArea" style="width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;background:#e5e9ee;border-radius:12px;cursor:grab;touch-action:none"><img draggable="false" alt="Miniature à recadrer" style="width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none"></div><div style="display:flex;gap:16px;align-items:center;margin-top:16px"><label for="zikaCropZoom">Zoom</label><input id="zikaCropZoom" type="range" min="100" max="250" step="1" style="flex:1"><span id="zikaCropPct">100 %</span></div><div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px"><button type="button" id="zikaCropReset" style="padding:10px">Recentrer</button><button type="button" id="zikaCropDone" style="padding:10px 18px;background:#1167aa;color:#fff;border:0;border-radius:8px;cursor:pointer">Valider le cadrage</button></div>';
- document.body.append(dlg);
- const img=dlg.querySelector('img'), area=dlg.querySelector('#zikaCropArea'), zoom=dlg.querySelector('#zikaCropZoom');
- function paint(){img.src=input.value;img.style.objectPosition=x.value+'% '+y.value+'%';img.style.transform='scale('+(Number(z.value)/100)+')';zoom.value=z.value;dlg.querySelector('#zikaCropPct').textContent=z.value+' %';for(const el of [x,y,z])el.dispatchEvent(new Event('input',{bubbles:false}));}
- zoom.oninput=()=>{z.value=zoom.value;paint()};
- dlg.querySelector('#zikaCropReset').onclick=()=>{x.value=50;y.value=50;z.value=100;paint()};
- dlg.querySelector('#zikaCropDone').onclick=()=>dlg.close();dlg.querySelector('#zikaCropClose').onclick=()=>dlg.close();
- let drag=null;area.onpointerdown=e=>{drag={px:e.clientX,py:e.clientY,x:+x.value,y:+y.value};area.setPointerCapture(e.pointerId)};
- area.onpointermove=e=>{if(!drag)return;x.value=Math.max(0,Math.min(100,drag.x-(e.clientX-drag.px)*100/area.clientWidth));y.value=Math.max(0,Math.min(100,drag.y-(e.clientY-drag.py)*100/area.clientHeight));paint()};
- area.onpointerup=area.onpointercancel=()=>drag=null;
- // Ouvrir immédiatement le cadrage après la sélection dans la médiathèque Wix.
- window.zikaOpenThumbnailCrop=()=>{
-   if(!/^https:\/\//i.test(input.value.trim()))return;
-   paint();
-   if(!dlg.open)dlg.showModal();
- };
- // Permettre de refaire le cadrage depuis l'aperçu, sans bouton intermédiaire.
- document.getElementById('zikaThumbViewport')?.addEventListener('click',()=>window.zikaOpenThumbnailCrop());
- // Un collage manuel d'URL déclenche également l'éditeur.
- input.addEventListener('change',()=>{if(/^https:\/\//i.test(input.value.trim()))window.zikaOpenThumbnailCrop()});
+ const form=document.getElementById('eventForm');if(!form)return;
+ const label={thumbnail_url:'Miniature',image_url:'Photo principale',logo_url:'Logo',video_poster_url:'Affiche vidéo',gallery_urls:'Image de galerie'};
+ let store={},current=null,initial=null;
+ const modal=document.createElement('dialog');modal.id='zikaAllMediaCrop';modal.style.cssText='width:min(700px,94vw);max-width:94vw;border:0;border-radius:18px;padding:20px;box-shadow:0 20px 80px #0008;color:#162a40;background:#fff;z-index:2147483646';
+ modal.innerHTML='<h2 id="zikaAllCropTitle" style="margin:0 0 10px">Ajuster le média</h2><p>Glisse l’image dans le cadre, ajuste le zoom, puis valide.</p><div id="zikaAllCropStage" style="width:100%;aspect-ratio:16/9;background:#e8edf2;overflow:hidden;position:relative;border-radius:12px;touch-action:none;cursor:grab"><img draggable="false" alt="Aperçu du cadrage" style="width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none;display:block"></div><div style="display:flex;align-items:center;gap:12px;margin:14px 0"><label for="zikaAllCropRange">Zoom</label><input id="zikaAllCropRange" type="range" min="100" max="250" value="100" style="flex:1"><output id="zikaAllCropValue">100 %</output></div><div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px"><button type="button" id="zikaAllCropReset">Recentrer</button><button type="button" id="zikaAllCropCancel">Annuler</button><button type="button" id="zikaAllCropConfirm" style="background:#126daf;color:white;border:0;border-radius:9px;padding:10px 18px;font-weight:700">Valider le cadrage</button></div>';
+ document.body.append(modal);
+ const area=modal.querySelector('#zikaAllCropStage'),img=area.querySelector('img'),range=modal.querySelector('#zikaAllCropRange');let value={x:50,y:50,zoom:100},drag=null;
+ function paint(){img.style.objectPosition=value.x+'% '+value.y+'%';img.style.transform='scale('+value.zoom/100+')';range.value=value.zoom;modal.querySelector('#zikaAllCropValue').textContent=value.zoom+' %'}
+ function card(){const p=form.elements.thumbnail_url?.value?.trim();const preview=document.getElementById('zikaThumbnailPreview');if(p&&preview){const c=store[p]||{x:50,y:50,zoom:100};preview.src=p;preview.style.objectPosition=c.x+'% '+c.y+'%';preview.style.transform='scale('+c.zoom/100+')'} const main=document.getElementById('photoPreview');const u=form.elements.image_url?.value?.trim();if(main&&u){const c=store[u]||{x:50,y:50,zoom:100};main.style.objectFit='cover';main.style.objectPosition=c.x+'% '+c.y+'%';main.style.transform='scale('+c.zoom/100+')'}window.zikaRefreshMediaList?.();}
+ function select(url,field){if(!/^https:\/\//i.test(url||''))return;current={url,field};initial=structuredClone(store[url]||{x:50,y:50,zoom:100});value={...initial};img.src=url;modal.querySelector('#zikaAllCropTitle').textContent='Ajuster : '+(label[field]||'Photo');paint();if(!modal.open)modal.showModal();}
+ window.zikaAdjustSelectedMedia=select;
+ window.zikaOpenThumbnailCrop=()=>select(form.elements.thumbnail_url.value,'thumbnail_url');
+ range.oninput=()=>{value.zoom=+range.value;paint()};modal.querySelector('#zikaAllCropReset').onclick=()=>{value={x:50,y:50,zoom:100};paint()};
+ modal.querySelector('#zikaAllCropCancel').onclick=()=>modal.close();modal.querySelector('#zikaAllCropConfirm').onclick=()=>{if(!current)return;store[current.url]={...value};if(current.field==='thumbnail_url'){for(const [key,val] of Object.entries({thumbnail_x:value.x,thumbnail_y:value.y,thumbnail_zoom:value.zoom}))form.elements[key].value=val;}const r=events.find(e=>e.id===selected);if(r){r.extra ||= {};r.extra.media_crops={...store};if(current.field==='image_url'){r.extra.crop_x=value.x;r.extra.crop_y=value.y;r.extra.crop_zoom=value.zoom;}}card();modal.close();msg('Cadrage validé. Enregistre la fiche pour le publier.');};
+ let down=null;area.addEventListener('pointerdown',e=>{down={px:e.clientX,py:e.clientY,x:value.x,y:value.y};area.setPointerCapture(e.pointerId)});area.addEventListener('pointermove',e=>{if(!down)return;value.x=Math.max(0,Math.min(100,down.x-(e.clientX-down.px)*100/Math.max(1,area.clientWidth)));value.y=Math.max(0,Math.min(100,down.y-(e.clientY-down.py)*100/Math.max(1,area.clientHeight)));paint()});area.addEventListener('pointerup',()=>down=null);area.addEventListener('pointercancel',()=>down=null);
+ const thumb=document.getElementById('zikaThumbViewport');thumb?.addEventListener('click',()=>select(form.elements.thumbnail_url.value,'thumbnail_url'));
+ document.getElementById('list')?.addEventListener('click',()=>setTimeout(()=>{const r=events.find(e=>e.id===selected);store={...(r?.extra?.media_crops||{})};card()},30));
+ form.addEventListener('submit',()=>{const r=events.find(e=>e.id===selected);if(r){r.extra||={};r.extra.media_crops={...store};const main=store[form.elements.image_url.value];if(main){Object.assign(r.extra,{crop_x:main.x,crop_y:main.y,crop_zoom:main.zoom});}}},true);
+ const list=document.getElementById('zikaMediaList');list?.addEventListener('click',e=>{const url=e.target.closest('[data-media-url]')?.dataset.mediaUrl;if(url&&/\.(jpe?g|png|webp|gif)(?:[?#]|$)/i.test(url))select(url,'gallery_urls')});
+ const previous=window.zikaRefreshMediaList;window.zikaRefreshMediaList=function(){previous?.();list?.querySelectorAll('span').forEach(chip=>{const url=chip.title;if(/^https:\/\//.test(url)&&(/\.(jpe?g|png|webp|gif)(?:[?#]|$)/i.test(url)||url.includes('static.wixstatic.com/media/'))){chip.dataset.mediaUrl=url;chip.style.cursor='pointer';chip.title='Cliquer pour recadrer : '+url;const c=store[url];if(c)chip.textContent+=' · cadrée';}})};
+ for(const name of ['image_url','logo_url','video_poster_url']){const field=form.elements[name];field?.addEventListener('change',()=>{if(/^https:\/\//.test(field.value.trim()))select(field.value.trim(),name)});}
 })();
 </script>
 </body></html>
