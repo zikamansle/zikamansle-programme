@@ -388,7 +388,74 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 img,video{max-width:100%;height:auto}
 .hero h1,.hero-panel h1,.zika-banner h1{font-size:clamp(27px,9vw,52px)!important;line-height:1.05!important;overflow-wrap:break-word}
 .hero p,.hero-panel p,.zika-banner p{font-size:clamp(13px,3.8vw,18px)!important;line-height:1.4!important}
-}</style></head>
+}</style><style id="zikaPhotoMobileImprovements">
+#modalMedia.has-photo{cursor:zoom-in;outline-offset:-4px}#modalMedia.has-photo:focus-visible{outline:3px solid #147fc1}#modalMedia.has-photo::after{content:'⌕ Agrandir la photo';position:absolute;right:12px;bottom:12px;padding:7px 10px;background:#102b42d9;color:white;border-radius:9px;font:700 12px system-ui;pointer-events:none}
+.zika-photo-lightbox[hidden]{display:none!important}.zika-photo-lightbox{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:#071420f2;padding:65px 15px 18px;box-sizing:border-box}.zika-photo-lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100dvh - 90px);object-fit:contain;box-shadow:0 8px 35px #0008}.zika-photo-close{position:absolute;right:14px;top:12px;z-index:2;padding:11px 17px;color:white;background:#174e74;border:1px solid #fff5;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
+@media(max-width:700px){html,body{overflow-x:clip!important}.wrap,.content,.hero-panel,.zika-split-grid,.zika-split-left,.zika-split-right,.event-card,.control-card{min-width:0;max-width:100%;box-sizing:border-box}.hero,.hero-panel,.zika-banner{min-width:0;max-width:100%;overflow-wrap:anywhere}.hero img,.hero-panel img,.zika-banner img{max-width:100%;object-fit:contain}#modal .dialog{width:100%;max-width:100%;max-height:96dvh;overscroll-behavior:contain}#modal .dialog-head h2{overflow-wrap:anywhere}#modal .dialog-actions{display:flex;flex-wrap:wrap}#modal .dialog-actions button{min-width:0;flex:1 1 180px}.zika-photo-lightbox{padding:65px 8px 18px}.zika-photo-close{right:8px;top:8px}}
+</style>
+<style id="zikaFacetsResponsiveFix">
+#modalCategory{display:flex;flex-wrap:wrap;gap:7px;background:transparent!important;padding:0!important;border:0!important;max-width:100%}
+.zika-modal-facets{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 12px}
+#modal .zika-modal-facet{appearance:none;display:inline-flex;align-items:center;justify-content:center;text-align:left;max-width:100%;min-width:0;overflow-wrap:anywhere;white-space:normal;padding:8px 11px;border:1px solid #d4e4f0;border-radius:13px;background:#eff6fd;color:#153e5c;font-size:13px;font-weight:750;line-height:1.3;cursor:pointer;box-shadow:none;transform:none}
+#modalCategory .zika-modal-facet{background:var(--facet-color,#176ba6);color:white;border-color:transparent}
+#modal .zika-modal-facet:hover{filter:brightness(.94);text-decoration:underline}
+#modal .zika-modal-facet:focus-visible{outline:3px solid #ff9c40;outline-offset:2px}
+#modal .detail-grid .zika-modal-facet{width:100%;height:100%;align-items:center;background:#f0f7fd;text-align:left}
+#modal .dialog-media img{object-fit:cover;max-width:100%}
+#zikaPhotoLightbox img{object-fit:contain!important;max-width:calc(100vw - 24px)!important;max-height:calc(100dvh - 92px)!important}
+@media(max-width:700px){#modal .dialog{width:min(100%,100vw - 12px)!important;max-height:96dvh!important;overflow-y:auto;overflow-x:hidden}#modal .dialog-head-inner{min-width:0}#modalCategory,.zika-modal-facets{gap:5px}#modal .zika-modal-facet{font-size:12px;padding:8px}#modal .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#modal .detail-grid>*{min-width:0;overflow-wrap:anywhere}#modalText{overflow-wrap:anywhere}#modal .dialog-actions{flex-wrap:wrap}}
+</style>
+
+<style id="zikaPublicMobileFullV2">
+/* Mobile adaptation of the complete public programme, not only the detail dialog. */
+@media(max-width:800px){
+ html{width:100%;max-width:100%;overflow-x:clip}body{min-width:0;width:100%;max-width:100%;overflow-x:clip}
+ *,*::before,*::after{box-sizing:border-box}
+ .wrap,.content,.hero-grid,.summary,.control-grid,.bottom-cta,.zika-split-grid,.zika-split-left,.zika-split-right{max-width:100%;min-width:0}
+ .zika-split-grid,.hero-grid,.summary,.control-grid,.bottom-cta{grid-template-columns:minmax(0,1fr)!important}
+ .zika-split-left,.zika-split-right{width:100%;max-width:100%;min-width:0}
+ .zika-split-right{position:static!important;inset:auto!important;top:auto!important}
+ .zika-split-right iframe,.zika-plan-embedded{width:100%!important;max-width:100%!important;height:clamp(320px,72dvh,570px)!important}
+ .hero-grid>* ,.summary>* ,.control-grid>* ,.zika-split-grid>*{min-width:0}
+ .topbar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+ .topbar .brand{min-width:0;flex:1 1 170px;max-width:100%}
+ .topbar .brand strong,.topbar .brand span{overflow-wrap:anywhere}
+ .top-actions{display:flex;flex-wrap:wrap;gap:7px;max-width:100%;width:auto;min-width:0}
+ .top-actions a,.top-actions button{white-space:normal;max-width:100%;overflow-wrap:anywhere;min-height:38px}
+ .hero,.hero-panel,.zika-banner{max-width:100%;min-width:0}
+ .hero-grid,.zika-banner__inner{max-width:100%;min-width:0}
+ .hero h1,.hero-panel h1,.zika-banner h1{font-size:clamp(28px,8vw,50px)!important;line-height:1.1!important;overflow-wrap:anywhere}
+ .hero p,.hero-panel p,.zika-banner p{max-width:100%;overflow-wrap:anywhere}
+ .zika-banner{min-height:0!important}
+ .zika-banner__inner{width:100%;padding:32px 16px}
+ .zika-banner__image,.zika-banner__video{max-width:100%;height:100%!important;object-fit:cover}
+ .event-card,.event-inner,.event-media,.event-body,.event-actions,.control-card,.hero-panel,.fact,.aside-card,.lead-card{max-width:100%;min-width:0}
+ .event-inner{display:grid;grid-template-columns:minmax(0,1fr)!important;gap:12px}
+ .event-inner>*{min-width:0;max-width:100%}
+ .event-media img,.event-card img{max-width:100%;height:auto;object-fit:cover}
+ .event-actions{flex-wrap:wrap}
+ .event-actions button,.event-actions a{flex:1 1 140px;max-width:100%;white-space:normal}
+ .control-grid input,.control-grid select,.control-grid button,.control-card input,.control-card select{max-width:100%;min-width:0}
+ .day-switch,.fact-grid{grid-template-columns:minmax(0,1fr)!important}
+ .zika-facets,.zika-modal-facets,.filter-row,.chips,.filters{max-width:100%;flex-wrap:wrap}
+ img,video,canvas,svg{max-width:100%}
+ .dialog,.dialog-body,.dialog-head,.dialog-head-inner{max-width:100%;min-width:0}
+ .dialog-head-inner{padding:22px 46px 20px 0}
+ .dialog-body{padding:16px}
+ .dialog-head h2{font-size:clamp(26px,7vw,42px)!important;line-height:1.06!important;overflow-wrap:anywhere}
+ .dialog-actions>*{max-width:100%;flex:1 1 160px}
+}
+@media(max-width:420px){
+ .wrap{width:calc(100% - 20px)!important}
+ .top-actions{width:100%;justify-content:flex-start}
+ .top-actions a,.top-actions button{flex:1 1 auto;text-align:center}
+ .summary-top h2{font-size:clamp(27px,8vw,36px)!important}
+ .event-actions button,.event-actions a{flex:1 1 100%}
+ .zika-banner__inner{padding:26px 12px}
+ .zika-split-right iframe,.zika-plan-embedded{height:min(66dvh,460px)!important}
+}
+</style>
+</head>
 <body>
 <header class="topbar">
   <div class="wrap">
@@ -537,6 +604,10 @@ img,video{max-width:100%;height:auto}
   </div>
 </div>
 
+<div id="zikaPhotoLightbox" class="zika-photo-lightbox" role="dialog" aria-modal="true" aria-label="Photographie en taille entière" aria-hidden="true" hidden>
+ <button type="button" id="zikaPhotoLightboxClose" class="zika-photo-close" aria-label="Fermer la photographie">✕ Fermer</button>
+ <img id="zikaPhotoFull" alt="Photographie de l’événement en entier">
+</div>
 <script src="config.js"></script>
 <script>
 let EVENTS = [
@@ -585,7 +656,7 @@ function filtered(){
  const q=norm(state.q);
  const matches=EVENTS.filter(e=>{
   const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);
-  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.mapPlace||String(e.mapMarker||'')===state.mapPlace)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.mapPlace||String(e.mapMarker||'')===state.mapPlace)&&(!state.venue||String(e.place||'')===state.venue)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
  });
  return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
 }
@@ -602,7 +673,7 @@ function renderFilters(){
     </div>`;
   $('filters').querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{state.cat=btn.dataset.cat;render()});
   $('mySelection').onclick=()=>{state.mine=!state.mine;render()};
-  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;state.mapPlace='';for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
+  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;state.mapPlace='';state.venue='';for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
 }
 function renderTimeline(rows){const h=$('zikaTimelineHost');if(!h)return;const slots=[];for(const e of rows){if(e.startsAt){slots.push({date:e.startsAt.slice(0,10),time:e.startsAt.slice(11,16),end:e.endsAt?.slice(11,16)||'',name:e.title,id:e.id,place:e.place})}else if(e.schedule?.length){for(const s of e.schedule)if(s.date&&s.start)slots.push({date:s.date,time:s.start,end:s.end||'',name:e.title,id:e.id,place:e.place})}else if(e.start){slots.push({date:e.customDate||('2027-04-'+(e.day==='dimanche'?'25':'24')),time:e.start,end:e.end||'',name:e.title,id:e.id,place:e.place})}}slots.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));h.innerHTML=slots.length?'<div class="zika-timeline"><h2 style="margin-top:0">Planning chronologique</h2><table><thead><tr><th>Date</th><th>Horaire</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>'+slots.map(s=>`<tr><td>${escapeHtml(s.date)}</td><td>${escapeHtml(s.time)}${s.end?' – '+escapeHtml(s.end):''}</td><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.place)}</td></tr>`).join('')+'</tbody></table></div>':''}
 function openDeepLink(){const slug=decodeURIComponent((location.hash.match(/fiche=([^&]+)/)||[])[1]||'');if(!slug)return;const e=EVENTS.find(x=>x.id===slug||x.shareSlug===slug);if(e)openModal(e.id)}
@@ -671,14 +742,42 @@ function openModal(id){
   currentId=id;
   $('modal').dataset.zvEvent=String(id);
   const frame=document.querySelector('.zika-plan-embedded');if(frame&&e.mapMarker){frame.src='./plan.html?lieu='+encodeURIComponent(e.mapMarker);}
-  $('modalCategory').textContent=e.cat;
+  // Métadonnées interactives : chaque pastille ouvre tous les événements associés.
+  const tags=[...new Set([e.cat,e.discipline,...(e.disciplinesExtra||[])].filter(Boolean))];
+  const publics=[...new Set([e.audience||'Tous publics',...(e.audiencesExtra||[])].filter(Boolean))];
+  const head=$('modalCategory');head.replaceChildren();
+  function pill(label,facet,value,color){
+    const b=document.createElement('button');b.type='button';b.className='zika-modal-facet';b.textContent=label;
+    b.dataset.facet=facet;b.dataset.value=value;if(color)b.style.setProperty('--facet-color',color);
+    b.addEventListener('click',()=>{
+      closeModal();state.cat='Tout';state.discipline='';state.audience='';state.price='';state.venue='';state.mapPlace='';
+      state.day='all';state.q='';state.mine=false;state.from='';state.to='';
+      const search=$('search');if(search)search.value='';
+      document.querySelectorAll('[data-day]').forEach(n=>n.classList.toggle('active',n.dataset.day==='all'));
+      for(const fid of ['filterDiscipline','filterAudience','filterPrice','filterStartDate','filterEndDate']){const f=$(fid);if(f)f.value=''}
+      if(facet==='category')state.cat=value;
+      if(facet==='audience'){state.audience=value;const f=$('filterAudience');if(f)f.value=value}
+      if(facet==='price'){state.price=value;const f=$('filterPrice');if(f)f.value=value}
+      if(facet==='venue')state.venue=value;
+      render();$('results')?.scrollIntoView({behavior:'smooth',block:'start'});
+    });return b;
+  }
+  tags.forEach(c=>head.append(pill(c,'category',c,typeof zikaCategoryColor==='function'?zikaCategoryColor(c):'#166fa5')));
+  const audiencesHost=document.createElement('div');audiencesHost.className='zika-modal-facets';
+  publics.forEach(p=>audiencesHost.append(pill('👥 '+p,'audience',p)));
+  const previousAudiences=$('modalFacetsAudience');if(previousAudiences)previousAudiences.remove();audiencesHost.id='modalFacetsAudience';head.after(audiencesHost);
   $('modalTitle').textContent=e.title;
   $('modalShort').textContent=e.short;
-  $('modalDetails').innerHTML=`<span>${escapeHtml(eventDay(e))}</span><span>${escapeHtml(e.time)}</span><span>${escapeHtml(e.place)}</span><span>${e.free?'Accès gratuit':'Accès payant'}</span>`;
+  const details=$('modalDetails');details.replaceChildren();
+  const date=document.createElement('span');date.textContent='📅 '+eventDay(e);details.append(date);
+  const time=document.createElement('span');time.textContent='🕒 '+(e.time||'Horaire communiqué ultérieurement');details.append(time);
+  details.append(pill('📍 '+(e.place||'Lieu communiqué ultérieurement'),'venue',e.place||''));
+  details.append(pill(e.free?'🎟 Accès gratuit':('🎟 '+(e.priceMin!=null?'À partir de '+Number(e.priceMin).toLocaleString('fr-FR')+' €':'Accès payant')),'price',e.free?'free':'paid'));
   // L'image principale est présentée dans une bannière fixe ; aucun HTML provenant de la fiche n'est interprété.
   const media=$('modalMedia');media.replaceChildren();media.classList.remove('has-photo');
   const heroSrc=[e.image,e.thumbnail,...(Array.isArray(e.gallery)?e.gallery:[])].find(u=>typeof u==='string'&&/^https:\/\//i.test(u));
   if(heroSrc){const photo=document.createElement('img');photo.src=heroSrc;photo.alt='Illustration de '+e.title;photo.loading='lazy';photo.onerror=()=>{media.replaceChildren();media.classList.remove('has-photo')};media.append(photo);media.classList.add('has-photo')}
+  if(heroSrc){media.setAttribute('role','button');media.setAttribute('tabindex','0');media.setAttribute('aria-label','Voir la photographie en entier')}else{media.removeAttribute('role');media.removeAttribute('tabindex');media.removeAttribute('aria-label')}
   const description=$('modalText');description.replaceChildren();
   const parts=String(e.description||'').split(/\n\s*\n|(?<=[.!?])\s*\n/).map(x=>x.trim()).filter(Boolean);
   for(const part of parts){const p=document.createElement('p');p.textContent=part;description.append(p)}
@@ -711,6 +810,13 @@ function openModal(id){
   if(typeof window.zikaApplyEventDesign==='function')window.zikaApplyEventDesign();
   $('modal').setAttribute('aria-hidden','false');
 }
+function openZikaPhoto(){const src=$('modalMedia').querySelector('img')?.src;if(!src)return;const lb=$('zikaPhotoLightbox');$('zikaPhotoFull').src=src;$('zikaPhotoFull').alt=$('modalMedia').querySelector('img')?.alt||'Photographie en entier';lb.hidden=false;lb.setAttribute('aria-hidden','false');$('zikaPhotoLightboxClose').focus()}
+function closeZikaPhoto(){const lb=$('zikaPhotoLightbox');lb.hidden=true;lb.setAttribute('aria-hidden','true');$('zikaPhotoFull').removeAttribute('src');$('modalMedia').focus()}
+$('modalMedia').addEventListener('click',openZikaPhoto);
+$('modalMedia').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openZikaPhoto()}});
+$('zikaPhotoLightboxClose').addEventListener('click',closeZikaPhoto);
+$('zikaPhotoLightbox').addEventListener('click',e=>{if(e.target===$('zikaPhotoLightbox'))closeZikaPhoto()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('zikaPhotoLightbox').hidden){e.stopImmediatePropagation();closeZikaPhoto()}},true);
 function closeModal(){ $('modal').classList.remove('show'); $('modal').setAttribute('aria-hidden','true'); currentId=null; }
 function makeCalendar(){
  const e=EVENTS.find(x=>x.id===currentId);if(!e)return;
@@ -888,7 +994,7 @@ for(const [selector,v] of Object.entries(data)){if(!(allowed.has(selector)||zvNo
 const mobile=[];
 if(v.x||v.y)mobile.push('translate:none !important');
 if(v.widthPx!==undefined||v.width!==undefined)mobile.push('width:min(100%, calc(100vw - 24px)) !important','max-width:100% !important');
-if(v.height!==undefined)mobile.push('height:auto !important','min-height:0 !important');
+if(v.height!==undefined && selector!=='.zika-banner__image' && selector!=='.zika-banner__video')mobile.push('height:auto !important','min-height:0 !important');
 if(v.fontSize){const f=Number(v.fontSize);if(Number.isFinite(f)&&f>=8)mobile.push('font-size:clamp(12px,'+(f*0.56/390*100).toFixed(3)+'vw,'+Math.max(12,Math.round(f*0.68))+'px) !important','line-height:1.12 !important')}
 if(mobile.length)css+='@media(max-width:700px){'+selector+'{'+mobile.join(';')+'}}\n';
 }return css}
