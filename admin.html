@@ -866,11 +866,12 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
   const full=`<article class="event-card">${image}<div class="event-inner" style="display:block"><h2>${title||'Sans titre'}</h2><p>${short}</p><p>${escHtml(date)} · ${escHtml(time)} · ${escHtml(place)}</p><hr><div>${desc}</div>${gallery.length?`<div class="zika-gallery">${gallery.map(u=>`<img src="${escHtml(u)}" alt="">`).join('')}</div>`:''}</div></article>`;
   el('zsPreviewTitle').textContent=view==='card'?'Aperçu réel de l’encart':'Aperçu de la fiche complète';
   const body=el('zsPreviewBody');
-  body.innerHTML='<iframe title="Aperçu visuel du programme" style="display:block;width:100%;min-height:610px;border:0;border-radius:14px;background:white" sandbox="allow-same-origin"></iframe>';
+  body.innerHTML='<iframe title="Aperçu visuel du programme" style="display:block;width:100%;min-height:610px;border:0;border-radius:14px;background:white" ></iframe>';
   const iframe=body.querySelector('iframe');
   const style=document.getElementById('zikaActualPublicStyles')?.textContent||'';
   // Charge le vrai programme public : mêmes CSS, polices, variables et réglages visuels enregistrés.
   // L'encart est ensuite présenté seul, sans reproduire sa feuille de style dans l'administration.
+  iframe.style.visibility='hidden';
   iframe.src='./index.html?zika_preview_styles='+Date.now();
   iframe.onload=()=>{
     const doc=iframe.contentDocument;
@@ -878,7 +879,7 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
     let tries=0;
     const show=()=>{
       const publicCard=doc.querySelector('#results .event-card');
-      if(!publicCard){if(tries++<35){setTimeout(show,130);return;}doc.body.textContent='Impossible de charger un encart réel du programme. Vérifie la connexion aux événements.';return;}
+      if(!publicCard){if(tries++<35){setTimeout(show,130);return;}doc.body.textContent='Impossible de charger un encart réel du programme. Vérifie la connexion aux événements.';iframe.style.visibility='visible';return;}
       // Keep precisely the public DOM and its computed visual styles: never rebuild a second card.
       const clone=publicCard.cloneNode(true);
       clone.removeAttribute('data-zv-event');
@@ -902,6 +903,7 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
       const outer=doc.createElement('main');outer.id='zikaActualCardPreview';outer.style.cssText='width:min(100%,650px);margin:24px auto;padding:0 12px;box-sizing:border-box';
       if(view==='card')outer.append(clone);else{const fullNode=doc.createElement('div');fullNode.innerHTML=full;outer.append(fullNode)}
       doc.body.replaceChildren(outer);
+      iframe.style.visibility='visible';
       iframe.style.height=Math.max(520,outer.scrollHeight+55)+'px';
     };
     show();
