@@ -2,7 +2,7 @@
 
 ## Périodes administrables
 
-Le formulaire de fiche propose un classement automatique ou des choix multiples : Avant le festival, Samedi 24 avril, Dimanche 25 avril. La liste extra.programme_periods est indépendante des dates réelles ; elle est prioritaire sur le classement automatique dans le programme public. Une sélection manuelle vide est refusée. Le mode automatique reste le défaut des fiches existantes.
+Le formulaire de fiche propose un classement automatique ou des choix multiples : Avant le festival, Samedi 24 avril, Dimanche 25 avril. La liste extra.programme_periods est indépendante des dates réelles ; elle est prioritaire pour les choix du week-end. Toute activité datée avant le 24 avril 2027 reste aussi automatiquement dans Avant le festival, même si ses choix manuels ne cochent pas cette période. Les activités en ligne permanentes y restent également. Une sélection manuelle vide est refusée. Le mode automatique reste le défaut des fiches existantes.
 
 La proposition de données contient uniquement deux modifications ciblées : concours photo avant le festival, ZikaRun avant + samedi + dimanche. Le concours photo reste en brouillon ; la remise des prix est une autre fiche et reste intacte. Aucune fiche ne doit être publiée implicitement.
 
@@ -23,3 +23,5 @@ Depuis une fiche détaillée, le lien ferme la fiche et ouvre le plan intégré 
 Tests navigateur : Médiathèque sélectionnée en repère 4, nom affiché, zoom 250 %, carte maintenue ouverte sur mobile depuis la carte événement et depuis la fiche détaillée. L’ouverture de localisation conserve les 14 cartes publiques ; fermeture de la fiche avant ouverture du plan vérifiée. Aucun nouvel envoi de données en production pendant la préparation.
 
 Contrôles : syntaxe JavaScript, tests de périodes, diff sans erreurs d’espaces ; illustration de base conservée. Modifications soumises à validation avant déploiement.
+
+Précision validée pendant le déploiement : le classement avant le 24 avril est toujours inclusif. Tests supplémentaires : exposition avant avril avec choix manuel samedi, marché hors saison avec choix dimanche, activité permanente avec choix samedi et créneaux non ordonnés.
