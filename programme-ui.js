@@ -50,7 +50,7 @@
   if(focus){const selector=focus.key==='id'?'#'+CSS.escape(focus.value):'['+focus.key+'="'+CSS.escape(focus.value)+'"]';document.querySelector(selector)?.focus({preventScroll:true})}
  }
  function showMap(marker){const host=$('zikaMapHost'),dialog=$('zikaMapDialog');if(!host||!dialog)return;lastMapFocus=document.activeElement;
-  if(marker){const frame=host.querySelector('iframe');if(frame)frame.src='plan.html?lieu='+encodeURIComponent(marker)}
+  if(marker){const frame=host.querySelector('iframe');if(frame)frame.src='plan.html?lieu='+encodeURIComponent(marker)+'&v=114fe88c9d&embedded=1'}
   if(window.matchMedia('(max-width:980px)').matches){dialog.append(host);if(!dialog.open)dialog.showModal();$('zikaMapClose').focus()}else{host.scrollIntoView({behavior:'smooth',block:'start'});host.querySelector('iframe')?.focus()}
  }
  function closeMap(){const dialog=$('zikaMapDialog');if(dialog?.open)dialog.close()}
@@ -66,6 +66,37 @@
   files.forEach((src,index)=>{const a=document.createElement('a');a.href=src;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Document associé '+(index+1)+' ↗';section.append(a)});
   $('modalText').after(section);
  }
+
+ let shareDialog,shareObjectURL='',shareGeneration=0;
+ async function shareEvent(e,opener){
+  const generation=++shareGeneration;
+  if(!shareDialog){shareDialog=document.createElement('dialog');shareDialog.id='proShareDialog';shareDialog.setAttribute('aria-labelledby','proShareTitle');document.body.append(shareDialog)}
+  if(shareObjectURL){URL.revokeObjectURL(shareObjectURL);shareObjectURL=''}
+  const url=location.origin+location.pathname+'#fiche='+encodeURIComponent(e.shareSlug||e.id),image=[e.image,e.thumbnail,...(e.gallery||[])].find(safeImage);
+  shareDialog.innerHTML=`<div class="pro-share-head"><h2 id="proShareTitle">Partager ce rendez-vous</h2><button type="button" data-share-close aria-label="Fermer le partage">×</button></div><div class="pro-share-body">${image?`<img class="pro-share-preview" src="${esc(image)}" alt="Visuel principal de ${esc(e.title)}">`:''}<h3>${esc(e.title)}</h3><label for="proShareURL">Lien direct vers la fiche</label><input id="proShareURL" readonly value="${esc(url)}"><p id="proShareStatus" role="status">${image?'Préparation du visuel…':'Cette fiche ne contient pas de visuel.'}</p><div class="pro-share-actions"><button type="button" data-native-share hidden>Partager le visuel et le lien</button><button type="button" data-copy-share>Copier le lien</button>${image?'<a data-download-share target="_blank" rel="noopener noreferrer">Ouvrir le visuel</a>':''}</div></div>`;
+  const status=shareDialog.querySelector('#proShareStatus'),native=shareDialog.querySelector('[data-native-share]'),download=shareDialog.querySelector('[data-download-share]');
+  const close=()=>shareDialog.close();shareDialog.querySelector('[data-share-close]').onclick=close;
+  shareDialog.onclose=()=>{shareGeneration++;if(shareObjectURL){URL.revokeObjectURL(shareObjectURL);shareObjectURL=''}opener?.focus({preventScroll:true})};
+  shareDialog.onclick=event=>{if(event.target===shareDialog)close()};
+  shareDialog.querySelector('[data-copy-share]').onclick=async()=>{let copied=false;try{if(navigator.clipboard){await navigator.clipboard.writeText(url);copied=true}}catch(_){}if(!copied){const input=shareDialog.querySelector('#proShareURL');input.focus();input.select();try{copied=document.execCommand('copy')}catch(_){}}status.textContent=copied?'Lien copié. Joins le visuel dans ton application pour partager les deux.':'Sélectionne et copie le lien ci-dessus.'};
+  if(download)download.href=image;
+  if(navigator.share){native.hidden=false;native.disabled=!!image;native.textContent=image?'Préparation du partage…':'Partager le lien';native.onclick=()=>navigator.share({title:e.title,url}).catch(err=>{if(err.name!=='AbortError')status.textContent='Le partage n’a pas abouti. Tu peux copier le lien.'})}
+  if(!shareDialog.open)shareDialog.showModal();shareDialog.querySelector('[data-share-close]').focus();
+  if(!image)return;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+  try{
+   const response=await fetch(image,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)throw Error('Image indisponible');let blob=await response.blob();if(!blob.type.startsWith('image/')||blob.size>15*1024*1024)throw Error('Format non compatible');
+   if(!['image/png','image/jpeg'].includes(blob.type)){const bitmap=await createImageBitmap(blob);const canvas=document.createElement('canvas'),ratio=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*ratio);canvas.height=Math.round(bitmap.height*ratio);canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Conversion impossible')}
+   if(generation!==shareGeneration)return;
+   const filename=(e.shareSlug||e.title).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9-]+/g,'-').slice(0,80)+'.'+(blob.type==='image/jpeg'?'jpg':'png');
+   shareObjectURL=URL.createObjectURL(blob);download.href=shareObjectURL;download.download=filename;download.removeAttribute('target');download.textContent='Télécharger le visuel';
+   const file=new File([blob],filename,{type:blob.type});
+   if(navigator.share&&navigator.canShare?.({files:[file]})){
+    native.hidden=false;native.disabled=false;native.textContent='Partager le visuel et le lien';native.onclick=async()=>{try{await navigator.share({files:[file],title:e.title,text:url});status.textContent='Partage envoyé à ton application.'}catch(err){if(err.name!=='AbortError')status.textContent='Le partage n’a pas abouti. Télécharge le visuel et copie le lien.'}};
+    status.textContent='Le visuel principal et le lien direct seront joints au partage.';
+   }else{if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Sur cet appareil, télécharge le visuel puis joins-le avec le lien copié dans ton application.'}
+  }catch(_){if(generation!==shareGeneration)return;if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Le visuel ne peut pas être joint automatiquement ici. Ouvre-le pour l’enregistrer, puis copie le lien.'}finally{clearTimeout(timer)}
+ }
  function init(){
   $('proHeaderMap').onclick=()=>showMap();$('filterLocationType').onchange=e=>{state.locationType=e.target.value;render()};$('filterCategory').onchange=e=>{state.cat=e.target.value||'Tout';render()};$('zikaMobileMap').onclick=()=>showMap();$('zikaMobileFavorites').onclick=()=>{state.mine=!state.mine;render();$('programme').scrollIntoView({behavior:'smooth'})};$('zikaMapClose').onclick=closeMap;$('zikaMapDialog').addEventListener('close',returnMap);
   $('zikaMapDialog').addEventListener('click',e=>{if(e.target===$('zikaMapDialog'))closeMap()});window.addEventListener('resize',()=>{if(innerWidth>980)closeMap()});
@@ -74,7 +105,7 @@
   const details=$('modal');details.addEventListener('keydown',e=>{if(e.key!=='Tab'||!details.classList.contains('show'))return;const focusable=[...details.querySelectorAll('a[href],button:not([disabled]),input,select,textarea,[tabindex="0"]')].filter(el=>el.getClientRects().length);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}});
   render();
  }
- window.zikaPro={formatDate,renderFilters,renderResults,beforeRender,afterRender,reset,announce,showMap,closeMap,modalOpened,modalClosed,detailMedia};
+ window.zikaPro={shareEvent,formatDate,renderFilters,renderResults,beforeRender,afterRender,reset,announce,showMap,closeMap,modalOpened,modalClosed,detailMedia};
  document.addEventListener('DOMContentLoaded',init,{once:true});
 })();
 

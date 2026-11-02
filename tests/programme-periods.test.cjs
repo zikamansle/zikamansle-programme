@@ -6,3 +6,5 @@ const exhibition={startsAt:'2027-04-05T00:00',endsAt:'2027-05-10T23:59'};for(con
 const saturday={startsAt:'2027-04-24T09:00',endsAt:'2027-04-24T12:30'};assert(!matchesProgrammePeriod(saturday,'before'));assert(matchesProgrammePeriod(saturday,'samedi'));assert(!matchesProgrammePeriod(saturday,'dimanche'));
 for(const p of ['all','before','samedi','dimanche'])assert(matchesProgrammePeriod({alwaysAvailable:true},p));
 assert(!matchesProgrammePeriod({day:'samedi'},'before'));console.log('Périodes : marché hors saison, exposition en cours, samedi et accès permanent vérifiés.');
+
+assert(matchesProgrammePeriod({alwaysAvailable:true,programmePeriods:['before']},'before'));assert(!matchesProgrammePeriod({alwaysAvailable:true,programmePeriods:['before']},'samedi'));assert(matchesProgrammePeriod({startsAt:'2027-04-25T09:00',programmePeriods:['before','samedi']},'samedi'));assert(!matchesProgrammePeriod({startsAt:'2027-04-25T09:00',programmePeriods:['before','samedi']},'dimanche'));console.log('Classement manuel prioritaire et choix multiples vérifiés.');
