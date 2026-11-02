@@ -1423,7 +1423,7 @@ by('zvHide').onclick=()=>{if(!selectedKey||selectedKey==='body')return;removeSel
 by('zvReset').onclick=()=>{if(!selectedKey)return;snapshot();delete draft[selectedKey];setKey(selectedKey);status('Style de cet élément réinitialisé (non publié)')};
 async function publishStudio(){const b1=by('zvSave'),b2=by('zvPreviewPublish');b1.disabled=b2.disabled=true;status('Publication en cours…');try{await setting('visual_editor',structuredClone(draft));
 // Relire l'enregistrement en base avant d'annoncer la réussite.
-const rows=await api('/rest/v1/zika_settings?key=eq.visual_editor&select=value&_check='+Date.now());
+const rows=await api('/rest/v1/zika_settings?key=eq.visual_editor&select=value');
 if(!Array.isArray(rows)||!rows.length)throw Error('Enregistrement non retrouvé dans Supabase.');
 const expected=structuredClone(draft), actual=rows[0].value;
 const canonical=value=>JSON.stringify(value, (key,val)=> val&&typeof val==='object'&&!Array.isArray(val) ? Object.fromEntries(Object.keys(val).sort().map(k=>[k,val[k]])) : val);

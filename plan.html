@@ -40,6 +40,10 @@ minus.onclick=()=>{zoom=Math.max(100,zoom-25);show();};
 reset.onclick=()=>{zoom=100;show();view.scrollLeft=0;view.scrollTop=0;};
 function parade(on){route.classList.toggle('is-visible',on);btn.setAttribute('aria-pressed',String(on));btn.textContent=on?'Masquer le parcours de la ZikaParade':'Voir le parcours de la ZikaParade';if(info)info.classList.toggle('is-visible',on);}
 btn.onclick=()=>parade(btn.getAttribute('aria-pressed')!=='true');
+// Communiquer le lieu sélectionné au programme public (iframe de même origine).
+const broadcast=id=>{if(window.parent!==window)window.parent.postMessage({type:'ZIKA_SELECTED_PLACE',id:String(id)},location.origin)};
+document.querySelectorAll('.pin[data-id]').forEach(p=>p.addEventListener('click',()=>broadcast(p.dataset.id)));
+const places=document.getElementById('list');if(places)places.addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)broadcast(b.dataset.id)});
 window.addEventListener('resize',show);show();
 if(new URLSearchParams(location.search).get('lieu')==='parade')parade(true);
 })();

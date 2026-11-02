@@ -547,7 +547,7 @@ function filtered(){
  const q=norm(state.q);
  const matches=EVENTS.filter(e=>{
   const ds=[e.discipline||e.cat,...(e.disciplinesExtra||[])];const audiences=[e.audience||'Tous publics',...(e.audiencesExtra||[])];const price=minPrice(e);const day=eventStamp(e).slice(0,10);
-  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
+  return (state.day==='all'||e.day===state.day||e.both)&&(state.cat==='Tout'||e.cat===state.cat||ds.includes(state.cat))&&(!state.mine||state.favorites.has(e.id))&&(!q||norm([e.title,e.place,e.short,e.description,...ds,...audiences].join(' ')).includes(q))&&(!state.discipline||ds.includes(state.discipline))&&(!state.audience||audiences.includes(state.audience)||audiences.includes('Tous publics'))&&(!state.from||day>=state.from)&&(!state.to||day<=state.to)&&(!state.mapPlace||String(e.mapMarker||'')===state.mapPlace)&&(!state.price||(state.price==='free'&&e.free)||(state.price==='paid'&&!e.free)||(state.price==='under10'&&price<=10)||(state.price==='under25'&&price<=25));
  });
  return matches.sort((a,b)=>state.sort==='priceAsc'?minPrice(a)-minPrice(b):state.sort==='priceDesc'?minPrice(b)-minPrice(a):state.sort==='alpha'?a.title.localeCompare(b.title,'fr'):state.sort==='discipline'?(a.discipline||a.cat).localeCompare(b.discipline||b.cat,'fr'):eventStamp(a).localeCompare(eventStamp(b))||a.sort-b.sort);
 }
@@ -564,21 +564,21 @@ function renderFilters(){
     </div>`;
   $('filters').querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{state.cat=btn.dataset.cat;render()});
   $('mySelection').onclick=()=>{state.mine=!state.mine;render()};
-  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
+  $('clearFilters').onclick=()=>{state.cat='Tout';state.day='all';state.q='';state.mine=false;state.mapPlace='';for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterSort','sort'],['filterStartDate','from'],['filterEndDate','to']]){state[key]=key==='sort'?'chrono':'';$(id).value=state[key];}$('search').value='';document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day==='all'));render()};
 }
 function renderTimeline(rows){const h=$('zikaTimelineHost');if(!h)return;const slots=[];for(const e of rows){if(e.startsAt){slots.push({date:e.startsAt.slice(0,10),time:e.startsAt.slice(11,16),end:e.endsAt?.slice(11,16)||'',name:e.title,id:e.id,place:e.place})}else if(e.schedule?.length){for(const s of e.schedule)if(s.date&&s.start)slots.push({date:s.date,time:s.start,end:s.end||'',name:e.title,id:e.id,place:e.place})}else if(e.start){slots.push({date:e.customDate||('2027-04-'+(e.day==='dimanche'?'25':'24')),time:e.start,end:e.end||'',name:e.title,id:e.id,place:e.place})}}slots.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));h.innerHTML=slots.length?'<div class="zika-timeline"><h2 style="margin-top:0">Planning chronologique</h2><table><thead><tr><th>Date</th><th>Horaire</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>'+slots.map(s=>`<tr><td>${escapeHtml(s.date)}</td><td>${escapeHtml(s.time)}${s.end?' – '+escapeHtml(s.end):''}</td><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.place)}</td></tr>`).join('')+'</tbody></table></div>':''}
 function openDeepLink(){const slug=decodeURIComponent((location.hash.match(/fiche=([^&]+)/)||[])[1]||'');if(!slug)return;const e=EVENTS.find(x=>x.id===slug||x.shareSlug===slug);if(e)openModal(e.id)}
 window.addEventListener('hashchange',openDeepLink);
 // Le clic sur un marqueur du plan affiche les événements qui s'y déroulent.
 window.addEventListener('message',event=>{
- if(event.origin!==location.origin||event.data?.type!=='ZIKA_SELECTED_PLACE')return;
- const place=String(event.data.id||'');if(!place)return;
- const hits=EVENTS.filter(e=>String(e.mapMarker||'')===place);
- if(!hits.length)return;
- state.day='all';state.cat='Tout';state.q='';state.mine=false;
- for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price']]){state[key]='';const field=document.getElementById(id);if(field)field.value=''}
- render();const first=document.querySelector('[data-open="'+CSS.escape(hits[0].id)+'"]');
- first?.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});
+ const frame=document.querySelector('#zikaPublicPlanEmbed iframe');
+ if(event.data?.type!=='ZIKA_SELECTED_PLACE'||!frame||event.source!==frame.contentWindow)return;
+ const place=String(event.data.id||'');if(!/^[1-9][0-9]*$/.test(place))return;
+ state.mapPlace=place;state.day='all';state.cat='Tout';state.q='';state.mine=false;
+ state.discipline='';state.audience='';state.price='';state.from='';state.to='';
+ for(const [id,key] of [['filterDiscipline','discipline'],['filterAudience','audience'],['filterPrice','price'],['filterStartDate','from'],['filterEndDate','to']]){const field=document.getElementById(id);if(field)field.value='';}
+ const search=document.getElementById('search');if(search)search.value='';
+ render();document.getElementById('results')?.scrollIntoView({behavior:'smooth',block:'start'});
 });
 
 const ZIKA_PALETTE={"Musique": "#f28b36", "Cinéma": "#6c63b5", "Danse": "#d65b97", "Associations": "#337ab7", "Sport": "#23a58c", "Exposition": "#a26bca", "Théâtre et spectacle": "#bb5656", "Littérature": "#8b63cc", "Jeux": "#2a9ca6", "Arts et création": "#d17e3e", "Parade": "#e4a02c", "Patrimoine": "#94754e", "Prévention et santé": "#53965e", "Environnement": "#5a9b74", "Atelier": "#457bb7", "Autre": "#607d8b"};
