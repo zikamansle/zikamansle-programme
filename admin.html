@@ -871,31 +871,40 @@ form.addEventListener('submit',e=>{if(!sync()){e.preventDefault();e.stopImmediat
   const style=document.getElementById('zikaActualPublicStyles')?.textContent||'';
   // Charge le vrai programme public : mêmes CSS, polices, variables et réglages visuels enregistrés.
   // L'encart est ensuite présenté seul, sans reproduire sa feuille de style dans l'administration.
-  const previewMarkup=view==='card'?card:full;
   iframe.src='./index.html?zika_preview_styles='+Date.now();
   iframe.onload=()=>{
     const doc=iframe.contentDocument;
     if(!doc)return;
-    let applied=false;
+    let tries=0;
     const show=()=>{
-      if(applied||!doc.body)return;
-      applied=true;
-      const custom=doc.getElementById('zvSavedStyles');
-      // Les styles du programme sont conservés dans le HEAD, y compris les polices personnalisées.
-      doc.body.innerHTML='<main id="zikaActualCardPreview" style="padding:18px;max-width:900px;margin:auto">'+previewMarkup+'</main>';
-      const customStyle=doc.createElement('style');
-      customStyle.textContent='#zikaActualCardPreview .event-card{width:100%;max-width:none;margin:0}#zikaActualCardPreview button{pointer-events:none}';
-      doc.head.appendChild(customStyle);
-      iframe.style.height=Math.max(460,doc.documentElement.scrollHeight+36)+'px';
+      const publicCard=doc.querySelector('#results .event-card');
+      if(!publicCard){if(tries++<35){setTimeout(show,130);return;}doc.body.textContent='Impossible de charger un encart réel du programme. Vérifie la connexion aux événements.';return;}
+      // Keep precisely the public DOM and its computed visual styles: never rebuild a second card.
+      const clone=publicCard.cloneNode(true);
+      clone.removeAttribute('data-zv-event');
+      clone.dataset.cat=cat;
+      const set=(selector,value)=>{const node=clone.querySelector(selector);if(node)node.textContent=value;};
+      set('.event-main h3',f.title.value||'Sans titre');
+      set('.event-main p',f.short.value||'Résumé à renseigner');
+      set('.time-big',time);
+      set('.day-badge',date);
+      const badge=clone.querySelector('.event-time .cat-badge');if(badge){badge.textContent=cat;badge.style.backgroundColor=/^#[a-f0-9]{6}$/i.test(colorTable[cat]||'')?colorTable[cat]:'#607d8b';}
+      const meta=clone.querySelector('.meta-row');
+      if(meta){meta.replaceChildren();const m=doc.createElement('span');m.className='meta';m.textContent='📍 '+place;meta.append(m);const priceLabel=doc.createElement('span');priceLabel.className='mode-badge'+(free?' free':'');priceLabel.textContent=free?'Accès gratuit':price;meta.append(priceLabel);for(const c of allCats){const span=doc.createElement('span');span.className='cat-badge';span.textContent=c;span.style.background=zikaCategoryColorPreview(c);span.style.color='#fff';meta.append(span)}for(const v of audiences){const span=doc.createElement('span');span.className='cat-badge';span.textContent=v;meta.append(span)}}
+      function zikaCategoryColorPreview(name){return /^#[a-f0-9]{6}$/i.test(colorTable[name]||'')?colorTable[name]:'#607d8b';}
+      const previousMedia=clone.querySelector('.event-band');
+      const removable=[];
+      for(let node=previousMedia?.nextElementSibling;node&&!node.classList.contains('event-inner');node=node.nextElementSibling)removable.push(node);
+      removable.forEach(n=>n.remove());
+      if(image){const slot=doc.createElement('div');slot.innerHTML=image;previousMedia?.after(slot.firstElementChild)}
+      if(/^https:\/\//.test(f.logo_url.value)){const logo=doc.createElement('img');logo.src=f.logo_url.value;logo.alt='';logo.style.cssText='position:absolute;right:25px;top:20px;max-width:70px;max-height:70px;object-fit:contain;z-index:2';previousMedia?.after(logo)}
+      // The parent layout of the public programme controls width; never force width:100%.
+      const outer=doc.createElement('main');outer.id='zikaActualCardPreview';outer.style.cssText='width:min(100%,650px);margin:24px auto;padding:0 12px;box-sizing:border-box';
+      if(view==='card')outer.append(clone);else{const fullNode=doc.createElement('div');fullNode.innerHTML=full;outer.append(fullNode)}
+      doc.body.replaceChildren(outer);
+      iframe.style.height=Math.max(520,outer.scrollHeight+55)+'px';
     };
-    // Attend la récupération des personnalisations du programme depuis Supabase.
-    let count=0;
-    const attempt=()=>{
-      if(applied)return;
-      if(doc.getElementById('zvSavedStyles')||count++>=14)show();
-      else setTimeout(attempt,100);
-    };
-    attempt();
+    show();
   };
  }
  const cardInputs=['thumbnail_url','thumbnail_x','thumbnail_y','thumbnail_zoom','image_url','title','short','logo_url','discipline','disciplines_extra','audience','audiences_extra','location','time_label'];
