@@ -1,7 +1,51 @@
 <!doctype html>
 <html lang="fr">
 <head>
+
+
 <meta charset="utf-8">
+<style id="zikaBootStyles">
+html[data-zika-loading] body{visibility:hidden!important}
+html[data-zika-loading]::before{content:"Chargement du programme…";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#f6f9fc;color:#173b58;font:600 16px system-ui,sans-serif}
+html[data-zika-load-error]::before{display:none}
+#zikaLoadError{visibility:visible!important;position:fixed;inset:0;z-index:2147483647;display:grid;place-content:center;gap:16px;padding:24px;text-align:center;background:#f6f9fc;color:#173b58;font:16px system-ui,sans-serif}
+#zikaLoadError button{padding:12px 22px;border:0;border-radius:10px;background:#168fdf;color:white;cursor:pointer;font:inherit}
+</style>
+<script>
+(()=>{
+ const root=document.documentElement;root.setAttribute('data-zika-loading','');
+ const pending=[];let settingsPromise;
+ const boot=window.zikaBoot={complete:false,track(p){pending.push(p);return p},
+  async fetch(url,options={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);try{return await fetch(url,{...options,signal:controller.signal,cache:'no-store'})}finally{clearTimeout(timer)}},
+  settings(){if(!settingsPromise)settingsPromise=(async()=>{const c=window.ZIKA_CONFIG;if(!c?.url||!c?.publishableKey)throw Error('Configuration indisponible');const r=await boot.fetch(c.url+'/rest/v1/zika_settings?select=key,value',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+c.publishableKey}});if(!r.ok)throw Error('Lecture des réglages impossible');const rows=await r.json();if(!Array.isArray(rows))throw Error('Réglages invalides');return rows})();return settingsPromise}
+ };
+ const bounded=p=>Promise.race([Promise.resolve(p).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
+ function showLoadError(errors){
+   console.warn('Chargement initial du programme interrompu',errors);
+   root.setAttribute('data-zika-load-error','');
+   const box=document.createElement('aside');box.id='zikaLoadError';box.setAttribute('role','alert');
+   const text=document.createElement('p');text.textContent='Le programme ne peut pas être chargé pour le moment.';
+   const button=document.createElement('button');button.type='button';button.textContent='Réessayer';button.onclick=()=>location.reload();box.append(text,button);document.body.append(box);
+ }
+ document.addEventListener('DOMContentLoaded',async()=>{try{
+  const results=await Promise.allSettled(pending);
+  if(results.some(r=>r.status==='rejected')){
+   showLoadError(results.filter(r=>r.status==='rejected').map(r=>r.reason));return;
+  }
+  window.zikaFinalizeInitialDesign?.();
+  // Let dynamically loaded typography and cover media settle before the first reveal.
+  const media=[...document.querySelectorAll('.hero img,.zika-banner img')].filter(el=>el.getAttribute('src')).map(el=>bounded(el.decode?.()));
+  const hero=document.querySelector('.hero');const bg=hero&&getComputedStyle(hero).backgroundImage;
+  const match=bg?.match(/url\(["']?([^"')]+)["']?\)/);
+  if(match){const img=new Image();img.src=match[1];media.push(bounded(img.decode()))}
+  await Promise.all([bounded(document.fonts?.ready),...media]);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  boot.complete=true;
+  if(new URLSearchParams(location.search).get('studio')==='1')window.dispatchEvent(new Event('zika-base-ready'));
+  else{root.removeAttribute('data-zika-loading');window.dispatchEvent(new Event('zika-public-ready'))}
+ }catch(error){showLoadError([error])}},{once:true});
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Programme interactif — ZikaMansle 2027</title>
 <meta name="description" content="Programme interactif du Festival ZikaMansle des 24 et 25 avril 2027 à Mansle-les-Fontaines.">
@@ -866,13 +910,13 @@ $('scrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 render();
 </script>
 <script>
-(async function(){
+window.zikaBoot.track((async function(){
  const c=window.ZIKA_CONFIG;if(!c?.url||!c?.publishableKey||c.publishableKey.includes('COLLER'))return;
  const h={apikey:c.publishableKey,Authorization:'Bearer '+c.publishableKey};
  try{
   const [er,sr]=await Promise.all([
-   fetch(c.url+'/rest/v1/zika_events?select=*&published=eq.true&order=display_order.asc',{headers:h}),
-   fetch(c.url+'/rest/v1/zika_settings?select=key,value',{headers:h})
+   window.zikaBoot.fetch(c.url+'/rest/v1/zika_events?select=*&published=eq.true&order=display_order.asc',{headers:h}),
+   window.zikaBoot.settings().then(rows=>({ok:true,json:async()=>rows}))
   ]);
   if(!er.ok||!sr.ok)throw Error('Lecture impossible');
   const rows=await er.json(),settings=await sr.json();
@@ -915,8 +959,8 @@ render();
   if(st.branding?.title){document.querySelector('.brand strong').textContent=st.branding.title}
   if(st.branding?.logo_url){const mark=document.querySelector('.logo-mark');mark.style.background='url("'+st.branding.logo_url.replace(/"/g,'')+'") center/contain no-repeat';}
   if(st.links?.ticket_url){document.querySelectorAll('a[href="https://www.helloasso.com"]').forEach(a=>a.href=st.links.ticket_url)}
- }catch(e){console.warn('Programme local utilisé :',e.message)}
-})();
+ }catch(e){console.warn('Chargement du programme :',e.message);throw e}
+})());
 </script>
 <script>
 (function(){
@@ -937,7 +981,7 @@ for(const el of document.querySelectorAll('[data-custom-section]'))if(!ordered.h
 }
 window.zikaApplyPublicLayout=apply;
 const config=window.ZIKA_CONFIG;if(!config?.url||!config?.publishableKey){ensureMap();return;}
-fetch(config.url+'/rest/v1/zika_settings?key=eq.public_layout&select=value',{headers:{apikey:config.publishableKey,Authorization:'Bearer '+config.publishableKey}}).then(r=>r.ok?r.json():[]).then(x=>apply(x[0]?.value||{})).catch(()=>{ensureMap()});
+window.zikaBoot.track(window.zikaBoot.settings().then(rows=>apply(rows.find(x=>x.key==='public_layout')?.value||{})));
 })();
 </script>
 <script>
@@ -967,7 +1011,7 @@ fetch(config.url+'/rest/v1/zika_settings?key=eq.public_layout&select=value',{hea
 function cropOrdinaryHero(){const data=window.__zikaVisualData;const v=data?.['.hero'];if(!v)return;const hero=document.querySelector('.hero');if(!hero)return;let image=hero.querySelector('.zv-hero-photo');let src=(v.src||'');if(!src){const match=(hero.style.backgroundImage||getComputedStyle(hero).backgroundImage).match(/url\(["']?([^"')]+)["']?\)/);src=match?.[1]||''}if(!/^https:\/\//.test(src))return;if(!image){image=document.createElement('img');image.className='zv-hero-photo';image.alt='';image.setAttribute('aria-hidden','true');hero.prepend(image)}image.src=src;hero.style.setProperty('background-image','none','important');hero.style.isolation='isolate';hero.style.overflow='hidden';image.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0;object-position:'+Number(v.bgX??50)+'% '+Number(v.bgY??50)+'%;transform:scale('+Math.max(1,Number(v.bgZoom??100)/100)+');transform-origin:'+Number(v.bgX??50)+'% '+Number(v.bgY??50)+'%';}
 const cropBanner=()=>{const d=window.__zikaVisualData;const v=d?.['.zika-banner'];const el=document.querySelector('.zika-banner__image');if(!v||!el)return;el.style.objectPosition=Number(v.bgX??50)+'% '+Number(v.bgY??50)+'%';el.style.transform='translate('+(Number(v.bgX??50)-50)+'%,'+(Number(v.bgY??50)-50)+'%) scale('+Math.max(1,Number(v.bgZoom??100)/100)+')';el.parentElement.style.overflow='hidden'};
 const cfg=window.ZIKA_CONFIG;if(!cfg?.url||!cfg?.publishableKey)return;
- fetch(cfg.url+'/rest/v1/zika_settings?key=eq.zika_banner&select=value',{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+cfg.publishableKey}}).then(r=>r.ok?r.json():[]).then(rows=>{
+ window.zikaBoot.track(window.zikaBoot.settings().then(rows=>rows.filter(x=>x.key==='zika_banner')).then(rows=>{
  const x=rows[0]?.value;if(!x||typeof x!=='object')return;
  hero.hidden=true;banner.hidden=false;banner.replaceChildren();
  const safe=s=>/^#[0-9a-f]{6}$/i.test(s||'')?s:'#113658';
@@ -976,7 +1020,7 @@ const cfg=window.ZIKA_CONFIG;if(!cfg?.url||!cfg?.publishableKey)return;
  const veil=document.createElement('div');veil.className='zika-banner__veil';veil.style.background=safe(x.Overlay);veil.style.opacity=String(Math.max(0,Math.min(100,Number(x.Opacity)||0))/100);banner.append(veil);veil.hidden=true;
  const body=document.createElement('div');body.className='zika-banner__inner';body.style.textAlign=['left','center','right'].includes(x.Align)?x.Align:'left';const title=document.createElement('h1');title.textContent=x.Title||'Festival ZikaMansle';const sub=document.createElement('p');sub.textContent=x.Subtitle||'';title.style.color=sub.style.color=safe(x.Text||'#ffffff');body.append(title,sub);
  if(x.ButtonOn){const a=document.createElement('a');a.className='zika-banner__button';a.textContent=x.ButtonLabel||'Découvrir';a.href=/^(https:\/\/|#[a-z][a-z0-9_-]*)/i.test(x.ButtonHref||'')?x.ButtonHref:'#programme';if(a.href.startsWith('https:'))a.rel='noopener';body.append(a)}banner.append(body);
- }).catch(()=>{});
+ }));
 })();
 </script><script>
 (()=>{'use strict';
@@ -1108,6 +1152,7 @@ window.zikaApplyEventDesign=()=>{
 // a missing edited target is blocking; obsolete unchanged targets cannot verify a new edit.
 let zvVerificationSelectors=null;
 try{const raw=new URLSearchParams(location.search).get('verify_selectors');if(raw!==null){const parsed=JSON.parse(raw);if(Array.isArray(parsed))zvVerificationSelectors=parsed}}catch(_){}
+window.zikaFinalizeInitialDesign=()=>{const data=window.__zikaVisualData;if(!data)return;renderCustom(data);renderContent(data);cropBanner();cropOrdinaryHero();window.zikaApplyEventDesign()};
 function zvActualDesignProblems(data){
  const problems=[];
  for(const [key,v] of Object.entries(data||{})){
@@ -1135,13 +1180,24 @@ new MutationObserver(mutations=>{
  if(zvMutationQueued)return;zvMutationQueued=true;
  requestAnimationFrame(()=>{zvMutationQueued=false;zvMarkNodes(document);if(window.__zikaVisualData){renderContent(window.__zikaVisualData);window.zikaApplyEventDesign?.()}});
 }).observe(document.body,{childList:true,subtree:true});
+function zvConfirmDesign(signature){
+ if(window.parent===window)return;
+ const send=()=>{const data=window.__zikaVisualData||{},keys=Object.keys(data);
+  const exists=key=>{try{return !!document.querySelector(key)}catch(_){return false}};
+  window.parent.postMessage({type:'zika-visual-design-confirmed',signature,
+   appliedSelectors:keys.filter(exists).length,totalSelectors:keys.length,
+   missingMainSelectors:keys.filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>data[k]?.hidden!==true&&!zvLegacySemantic[k]&&(!zvVerificationSelectors||zvVerificationSelectors.includes(k))).filter(k=>!exists(k)).length,
+   designProblems:zvActualDesignProblems(data)},location.origin);
+ };
+ if(window.zikaBoot?.complete)send();else window.addEventListener('zika-public-ready',send,{once:true});
+}
 let zvLatestDesignSignature='';
-const load=async()=>{if(new URLSearchParams(location.search).get('studio')==='1')return;let url='',key='';if(cfg){url=cfg.url||cfg.supabaseUrl||'';key=cfg.publishableKey||cfg.anonKey||cfg.supabaseAnonKey||''}if(!url||!key)return;try{const res=await fetch(url+'/rest/v1/zika_settings?key=eq.visual_editor&select=value',{cache:'no-store',headers:{apikey:key,Authorization:'Bearer '+key,'Cache-Control':'no-cache'}});if(!res.ok)return;const rows=await res.json();const rawDesign=rows[0]?.value;const data=zvRestoreSemanticKeys(zvNormalizeVisibility(structuredClone(rawDesign)));if(!data||typeof data!=='object')return;const rawDesignSignature=JSON.stringify(rawDesign,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);const signature=JSON.stringify(data);if(signature===zvLatestDesignSignature&&document.getElementById('zvSavedStyles')){window.zikaApplyEventDesign?.();if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>data[k]?.hidden!==true&&!zvLegacySemantic[k]&&(!zvVerificationSelectors||zvVerificationSelectors.includes(k))).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length,designProblems:zvActualDesignProblems(data)},location.origin);return;}window.__zikaVisualData=data;zvMarkNodes(document);const css=generate(data);renderCustom(data);renderContent(data);cropBanner();cropOrdinaryHero();const bannerNode=document.getElementById('zikaCustomBanner');if(bannerNode){const observer=new MutationObserver(()=>{renderContent(data);cropBanner()});observer.observe(bannerNode,{childList:true,subtree:true})}let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.appendChild(style)}style.textContent=css;zvLatestDesignSignature=signature;
+const load=async(initial=false)=>{if(new URLSearchParams(location.search).get('studio')==='1')return;let url='',key='';if(cfg){url=cfg.url||cfg.supabaseUrl||'';key=cfg.publishableKey||cfg.anonKey||cfg.supabaseAnonKey||''}if(!url||!key)return;try{const res=initial===true?null:await fetch(url+'/rest/v1/zika_settings?key=eq.visual_editor&select=value',{cache:'no-store',headers:{apikey:key,Authorization:'Bearer '+key,'Cache-Control':'no-cache'}});if(res&&!res.ok)throw Error('Lecture du design impossible');const rows=initial===true?(await window.zikaBoot.settings()).filter(x=>x.key==='visual_editor'):await res.json();const rawDesign=rows[0]?.value;const data=zvRestoreSemanticKeys(zvNormalizeVisibility(structuredClone(rawDesign)));if(!data||typeof data!=='object')return;const rawDesignSignature=JSON.stringify(rawDesign,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);const signature=JSON.stringify(data);if(signature===zvLatestDesignSignature&&document.getElementById('zvSavedStyles')){window.zikaApplyEventDesign?.();zvConfirmDesign(rawDesignSignature);return;}window.__zikaVisualData=data;zvMarkNodes(document);const css=generate(data);renderCustom(data);renderContent(data);cropBanner();cropOrdinaryHero();const bannerNode=document.getElementById('zikaCustomBanner');if(bannerNode){const observer=new MutationObserver(()=>{renderContent(data);cropBanner()});observer.observe(bannerNode,{childList:true,subtree:true})}let style=document.getElementById('zvSavedStyles');if(!style){style=document.createElement('style');style.id='zvSavedStyles';document.head.appendChild(style)}style.textContent=css;zvLatestDesignSignature=signature;
 // Use the same header geometry in editor and public rendering.
 let stable=document.getElementById('zvLogoStableLayout');
 if(!stable){stable=document.createElement('style');stable.id='zvLogoStableLayout';document.head.append(stable)}
 stable.textContent='.topbar .brand{position:relative!important;padding-left:56px!important;min-height:44px!important}.topbar .brand>.logo-mark{position:absolute!important;left:0!important;top:50%!important;flex:none!important;transform:translateY(-50%)!important;display:block!important;box-sizing:border-box!important;z-index:2!important}';
-const keys=Object.keys(data).filter(k=>zvNodeKey(k));const missing=keys.filter(k=>!document.querySelector(k));if(missing.length)console.warn('Éléments de mise en page non retrouvés :',missing);if(window.parent!==window)window.parent.postMessage({type:'zika-visual-design-confirmed',signature:rawDesignSignature,appliedSelectors:Object.keys(data).filter(k=>{try{return !!document.querySelector(k)}catch(_){return false}}).length,totalSelectors:Object.keys(data).length,missingMainSelectors:Object.keys(data).filter(k=>/^\[data-zv-node=/.test(k)||k.startsWith('.hero')).filter(k=>data[k]?.hidden!==true&&!zvLegacySemantic[k]&&(!zvVerificationSelectors||zvVerificationSelectors.includes(k))).filter(k=>{try{return !document.querySelector(k)}catch(_){return true}}).length,designProblems:zvActualDesignProblems(data)},location.origin)}catch(e){console.warn('Personnalisation indisponible',e)}};load();
+const keys=Object.keys(data).filter(k=>zvNodeKey(k));const missing=keys.filter(k=>!document.querySelector(k));if(missing.length)console.warn('Éléments de mise en page non retrouvés :',missing);zvConfirmDesign(rawDesignSignature)}catch(e){console.warn('Personnalisation indisponible',e);if(initial===true)throw e}};window.zikaBoot.track(load(true));
 // Actualiser les réglages sans recharger la page ni les fiches événements.
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 window.addEventListener('focus',load);
