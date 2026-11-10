@@ -12,15 +12,6 @@
         android:usesCleartextTraffic="false">
 
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
-            <meta-data
-                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
-                android:value="@string/zika_launch_url" />
-        </activity>
-
-        <activity
             android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
             android:exported="true"
             android:theme="@style/Theme.ZikaMansle">
