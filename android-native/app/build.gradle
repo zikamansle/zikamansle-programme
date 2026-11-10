@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Debug builds display the festival's verified official Wix site.
+// The actual published Work app is NOT confirmed to be hosted at app.zikamansle.fr.
+// Do not release until the final live PWA URL, branding, notifications and DAL are verified.
+def launchUrl = (project.findProperty('zikaLaunchUrl') ?: 'https://www.zikamansle.fr/').toString()
+if (!launchUrl.startsWith('https://')) {
+    throw new GradleException('ZikaMansle requires an HTTPS launch URL')
+}
+
+android {
+    namespace 'fr.zikamansle.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'fr.zikamansle.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        resValue 'string', 'zika_launch_url', launchUrl
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-test'
+        }
+        release {
+            // Release builds are deliberately unsigned. Create a private signing
+            // configuration only after Google Play App Signing is configured.
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
