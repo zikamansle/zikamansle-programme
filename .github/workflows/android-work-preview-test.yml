@@ -1,0 +1,54 @@
+name: Android ZikaMansle Work preview (test only)
+
+on:
+  push:
+    branches:
+      - prepare/google-play-android-2026
+    paths:
+      - '.github/workflows/android-work-preview-test.yml'
+      - 'android-native/**'
+  pull_request:
+    paths:
+      - '.github/workflows/android-work-preview-test.yml'
+      - 'android-native/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-work-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 16 SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          fi
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile Work preview APK
+        shell: bash
+        run: |
+          # This is a temporary preview-only origin remembered from the earlier
+          # Work app build. Do not use as a Play Store production domain.
+          gradle -p android-native :app:assembleDebug --no-daemon \
+            -PzikaLaunchUrl=https://zikamansle-application-mobile.brinymango4.chatgpt.site/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-work-preview-android-test
+          path: android-native/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
