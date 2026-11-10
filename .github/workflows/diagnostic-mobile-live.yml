@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           npm install --no-save playwright@1.58.2
-          cat > /tmp/check-mobile.mjs <<'JS'
+          cat > check-mobile.mjs <<'JS'
           import { chromium, devices } from 'playwright';
           const origin='https://app.zikamansle.fr/';
           const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
@@ -51,4 +51,4 @@ jobs:
             console.log('ERRORS:',JSON.stringify(diagnostics));
           }catch(e){console.log('FATAL:',e.toString());process.exitCode=1}finally{await browser.close()}
           JS
-          node /tmp/check-mobile.mjs
+          node check-mobile.mjs
