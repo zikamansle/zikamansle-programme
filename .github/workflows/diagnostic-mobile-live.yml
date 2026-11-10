@@ -48,6 +48,16 @@ jobs:
             console.log('MANIFEST:',JSON.stringify({status:manifest.status(),contentType:manifest.headers()['content-type'],text:(await manifest.text()).slice(0,1500)}));
             const dal=await page.request.get(new URL('/.well-known/assetlinks.json',origin).toString());
             console.log('DIGITAL_ASSET_LINKS:',JSON.stringify({status:dal.status(),text:(await dal.text()).slice(0,300)}));
+            for (const section of ['Programme','Plan','Favoris','Plus','Accueil']) {
+              try {
+                const sel=page.locator('nav a').filter({hasText:section}).first();
+                if(await sel.count()===0){ console.log('NAV_MISSING:',section);continue; }
+                await sel.click({timeout:8000});
+                await page.waitForTimeout(900);
+                const info=await page.evaluate(()=>({hash:location.hash,visibleHeading:[...document.querySelectorAll('main h1, main h2, [role=main] h1, [role=main] h2')].filter(e=>e.getBoundingClientRect().height>0).map(e=>e.innerText.slice(0,75)).slice(0,4),mainText:(document.querySelector('main')?.innerText||'').slice(0,200)}));
+                console.log('NAV_CLICK:',JSON.stringify({section,...info}));
+              } catch(e){console.log('NAV_ERROR:',section,e.message.slice(0,250));}
+            }
             console.log('ERRORS:',JSON.stringify(diagnostics));
           }catch(e){console.log('FATAL:',e.toString());process.exitCode=1}finally{await browser.close()}
           JS
