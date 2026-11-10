@@ -1,0 +1,40 @@
+name: Build ZikaMansle Android test APK
+
+on:
+  push:
+    branches:
+      - prepare/google-play-android-2026
+    paths:
+      - 'android-native/**'
+      - '.github/workflows/android-test-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 16 platform
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile unsigned-debug-test app
+        run: gradle -p android-native :app:assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-android-test-apk
+          path: android-native/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
