@@ -25,12 +25,18 @@
                 android:resource="@color/brand_navy" />
             <meta-data
                 android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
-                android:value="customtabs" />
+                android:value="webview" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Browser fallback when no compatible Trusted Web Activity provider is available. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize" />
     </application>
 </manifest>
