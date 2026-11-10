@@ -2,6 +2,14 @@
 
 Date : 10 novembre 2026. **Branche de préparation seulement ; rien n'est publié sur Google Play.**
 
+## Origine exacte : application Work distincte du programme
+
+Une **application mobile créée avec ChatGPT Work** a été déployée auparavant. Le dépôt accessible `zikamansle/zikamansle-programme` contient le programme web installable mais **n'est pas confirmé comme le code source complet** de cette application Work (qui comporte aussi les actualités, les partenaires, l'administration et les notifications).
+
+Ne pas remplacer ou publier l'application Work par ce dépôt sans avoir confronté leur contenu et leurs fonctionnalités. Les modifications `app.js` / `sw.js` proposées ici sont **expérimentales sur la branche de préparation uniquement**.
+
+L'origine cible `app.zikamansle.fr` et sa configuration DNS doivent être vérifiées et contrôlées par l'association avant toute génération TWA ; un hébergement provisoire sur un domaine tiers ne permet pas d'établir automatiquement une propriété Digital Asset Links pour ce futur sous-domaine.
+
 ## Source
 - GitHub : `zikamansle/zikamansle-programme` (PWA existante : `index.html`, `app.js`, `manifest.webmanifest`, `sw.js`).
 - Site officiel : https://www.zikamansle.fr/
