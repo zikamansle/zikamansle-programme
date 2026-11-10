@@ -1,0 +1,63 @@
+name: ZikaMansle Android App Bundle (unsigned)
+on:
+  push:
+    branches:
+      - prepare/google-play-android-2026
+    paths:
+      - '.github/workflows/android-release-aab.yml'
+      - 'android-native/app/src/release/**'
+      - 'android-native/app/build.gradle'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 16 SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          fi
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Get official 512px Zika icon from association's Wix Media Manager
+        shell: bash
+        run: |
+          mkdir -p android-native/app/src/release/res/drawable-nodpi
+          curl --fail --show-error --location --retry 3 \
+            "https://static.wixstatic.com/media/685632_388f80525cec40c2b56e806e82fd6a60~mv2.png" \
+            --output android-native/app/src/release/res/drawable-nodpi/zika_icon.png
+          file android-native/app/src/release/res/drawable-nodpi/zika_icon.png
+          python3 - <<'PY'
+          from pathlib import Path
+          data=Path('android-native/app/src/release/res/drawable-nodpi/zika_icon.png').read_bytes()
+          if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Official icon is not a PNG')
+          print('Official icon verified:',len(data),'bytes')
+          PY
+      - name: Build production-package unsigned AAB for internal testing
+        shell: bash
+        run: |
+          gradle -p android-native :app:bundleRelease --no-daemon \
+            -PzikaLaunchUrl=https://app.zikamansle.fr/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-google-play-aab-unsigned
+          path: android-native/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
