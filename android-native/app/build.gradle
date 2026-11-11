@@ -23,22 +23,33 @@ android {
         versionCode 4
         versionName '1.0.3'
         resValue 'string', 'zika_launch_url', launchUrl
-        resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID')
-        resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY')
-        resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID')
-        resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID')
-        resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL')
+
     }
 
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-test'
+            // Debug Firebase client values are public mobile identifiers, not an admin key.
+            // Keep the downloaded google-services.json and all service-account keys OUT of Git.
+            resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID') ?: '1:569737641618:android:0987a69da922b0e6eff04b'
+            resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY') ?: 'AIzaSyDDdF-KeVQFBrlptNj6dOwSRWNRgETOJm4'
+            resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID') ?: '569737641618'
+            resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID') ?: 'zikamansle-d0c4e'
+            resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe'
+            // Only the *debug* APK points at the independent Cloudflare test copy.
+            resValue 'string', 'zika_launch_url', (project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString()
         }
         release {
             // Release builds are deliberately unsigned. Create a private signing
             // configuration only after Google Play App Signing is configured.
             minifyEnabled false
+            // Production remains deliberately disconnected until the signed release is tested.
+            resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID')
+            resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY')
+            resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID')
+            resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID')
+            resValue 'string', 'zika_native_registration_url', ''
         }
     }
     compileOptions {
