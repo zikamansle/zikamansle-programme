@@ -701,7 +701,9 @@ async function saveFunctionsForm(f){
   feedback.textContent='⏳ Vérification des pôles et fonctions…';
   try{
    const d=fromForm(f),changes=rolePayload(f);
-   const saved=await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});
+   const memberId=String(d.memberId||f.querySelector('input[name="memberId"]')?.value||state.editMember||'').trim();
+   if(!/^[a-f\\d-]{36}$/i.test(memberId))throw Error('Identifiant de bénévole absent. Retourne à la liste et rouvre sa fiche.');
+   const saved=await command('member.functions.set',{memberId,roles:changes.roles,poleRoles:changes.poleRoles});
    if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
    if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
    state.editMember=null;
@@ -736,7 +738,10 @@ document.addEventListener('click',e=>{
  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.style.cssText='font-size:16px;font-weight:800;color:#17364a;padding:12px;background:#fff4d8;border:2px solid #e8932a;border-radius:10px';button.closest('.team-row')?.after(feedback)||form.append(feedback);}
  feedback.textContent='⏳ Clic reçu. Transmission de la fiche au serveur…';
  if(state.busy){feedback.textContent='⌛ Une autre opération est en cours. Réessaie.';return;}
- (form.id==='memberForm'?saveVolunteerForm(form):saveFunctionsForm(form)).catch(error=>{feedback.textContent='❌ '+(error?.message||'Erreur de traitement.');state.busy=false;});
+ const isFullSave=button.hasAttribute('data-save-member');
+ if(isFullSave&&form.id!=='memberForm'){feedback.textContent='❌ Fiche non reconnue : ouvre à nouveau ce bénévole.';return;}
+ if(!isFullSave&&form.id!=='teamMemberFunctionsForm'){feedback.textContent='❌ Formulaire de fonctions non reconnu : ouvre à nouveau ce bénévole.';return;}
+ (isFullSave?saveVolunteerForm(form):saveFunctionsForm(form)).catch(error=>{feedback.textContent='❌ '+(error?.message||'Erreur de traitement.');state.busy=false;});
 },true);
 root.addEventListener('click',async e=>{const b=e.target.closest('button[data-save-member],button[data-save-member-functions],button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.matches('[data-save-member], [data-save-member-functions]')){
