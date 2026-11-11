@@ -6,7 +6,7 @@ Work n'est pas nécessaire pour modifier ce code, exécuter ses tests ou déploy
 - GitHub : fichiers, historique, tests et publication automatisée.
 - Cloudflare : exécution de l'application, base des notifications et médias.
 - Supabase/Wix : services actuels du programme et des contenus, conservés.
-- Application : Plus → Administration pour les actualités, médias et notifications après configuration d'Access.
+- Application : Plus → Administration ouvre `/administration/notifications` après connexion Cloudflare Access. La règle Access protège uniquement `/administration/*`, pas la partie publique.
 
 GitHub Pages seul ne remplace pas le backend des notifications. Les abonnements et la clé privée ne doivent jamais être ajoutés aux fichiers du dépôt, qui est public.
 
