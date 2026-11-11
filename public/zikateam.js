@@ -702,7 +702,7 @@ async function saveFunctionsForm(f){
   try{
    const d=fromForm(f),changes=rolePayload(f);
    const memberId=String(d.memberId||f.querySelector('input[name="memberId"]')?.value||state.editMember||'').trim();
-   if(!/^[a-f\\d-]{36}$/i.test(memberId))throw Error('Identifiant de bénévole absent. Retourne à la liste et rouvre sa fiche.');
+   if(!/^[0-9a-f-]{36}$/i.test(memberId))throw Error('Identifiant de bénévole absent. Retourne à la liste et rouvre sa fiche.');
    const saved=await command('member.functions.set',{memberId,roles:changes.roles,poleRoles:changes.poleRoles});
    if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
    if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
