@@ -20,10 +20,14 @@ try{
  ensure(news.response.status===200&&Array.isArray(JSON.parse(news.body).items),'Flux d’actualités indisponible');
  const limited=await check('/api/push/selftest',{method:'POST',headers:{Origin:BASE,'Content-Type':'application/json'},body:JSON.stringify({subscription:{}})});
  ensure(limited.response.status===400,'Tests push non disponibles, ou contrôle de souscription inattendu');
+ const androidInvalid=await check('/api/native/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:'invalid',platform:'android'})});
+ ensure(androidInvalid.response.status===400,'Inscription native Android indisponible');
+ const nativeStatus=await check('/administration/api/native-status');
+ ensure([302,303,401,403].includes(nativeStatus.response.status),'Suivi Android accessible sans authentification');
  const admin=await check('/api/push/admin');
  ensure(admin.response.status===403,'Ancienne API privée non protégée');
  const protectedPage=await check('/administration/notifications');
  ensure([302,303,401,403].includes(protectedPage.response.status),'Page administrateur accessible sans authentification');
- console.log('Contrôle en ligne OK : application, actualités et clé de test valides ; accès privé refusé sans connexion.');
+ console.log('Contrôle en ligne OK : application, actualités, notifications web et inscription native Android disponibles ; accès privé protégé.');
  console.log('Aucun appareil contacté et aucune notification envoyée.');
 }catch(e){console.error('Contrôle de test échoué : '+e.message);process.exitCode=1;}
