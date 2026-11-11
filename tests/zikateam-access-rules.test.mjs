@@ -131,3 +131,20 @@ test('personnalisation de l’icône sans rechargement bloquant',()=>{
 });
 
 // Vérifications ZikaTeam réussies : publication exclusivement sur staging après approbation.
+
+test('vrai chat ZikaTeam sur ordinateur et mobile',()=>{
+ assert.ok(client.includes('team-wa-app'));
+ assert.ok(client.includes('team-wa-sidebar'));
+ assert.ok(client.includes('team-wa-roomlist'));
+ assert.ok(client.includes('team-wa-thread'));
+ assert.ok(client.includes('team-wa-timeline'));
+ assert.ok(client.includes('team-wa-composer'));
+ assert.ok(client.includes('team-wa-input'));
+ assert.ok(client.includes('team-wa-send'));
+ assert.ok(client.includes('team-wa-back'));
+ assert.ok(client.includes('data-chat-back'));
+ assert.ok(client.includes('Écrire un message…'));
+ assert.ok(client.includes('state.chatMobileOpen=true'));
+ assert.ok(client.includes("void refreshChatSummary().then("));
+ assert.ok(client.includes("Message non envoyé : "));
+});
