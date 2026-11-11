@@ -666,7 +666,7 @@ async function adminAction(db,ctx,d){
 async function getMessages(db,ctx,url){
  if(!ctx.admin&&(!ctx.member||!await requireCharter(db,ctx)))return fail('Charte à accepter avant les discussions.',403);
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
- if(ctx.pending&&(channel!=='general'||channelId))return fail('En attente d’approbation : seule la conversation générale est accessible en lecture seule.',403);
+ if(ctx.pending)return fail('Inscription en attente de validation : aucune conversation n’est accessible.',403);
  if(!['general','pole','activity','leaders'].includes(channel))return fail('Canal invalide.');
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
@@ -785,7 +785,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   }
   if(path==='/zikateam/api/manage'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getManage(db,ctx);
   if(path==='/zikateam/api/signing'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getSigning(db,ctx);
-  if(path==='/zikateam/api/messages'&&request.method==='GET')return locked?fail(notice,403):getMessages(db,ctx,url);
+  if(path==='/zikateam/api/messages'&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation : aucune conversation n’est accessible.',403):locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
    if(path==='/zikateam/api/photo')return locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
