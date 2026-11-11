@@ -42,6 +42,11 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   // La charte est déjà publiée : le bénévole non signataire ne peut pas répondre.
   assert.equal((await invoke(A,'/zikateam/api/manage')).status,403,'gestion verrouillée jusqu’à signature');
   await okay(A,{op:'charter.accept',version:'1',agree:true});
+  // Ajouter le document visuel officiel plus tard ne change pas la version signée.
+  const charterPdfId='aaaaaaaa-1111-4111-8111-111111111111';
+  db.prepare('INSERT INTO team_documents(id,kind,activity_id,name,mime,size,uploaded_by,created_at) VALUES(?,?,?,?,?,?,?,?)').run(charterPdfId,'charter',null,'charte-officielle.pdf','application/pdf',120000,A,Date.now());
+  await okay(A,{op:'charter.save',version:'1',title:'Charte',content:'Respect et engagement',documentId:charterPdfId});
+  assert.equal((await invoke(A,'/zikateam/api/me')).payload.charterAccepted,true,'joindre le PDF ne force pas une nouvelle signature');
   const lead=(await okay(A,{op:'member.save',name:'Responsable',email:L})).id;
   const member=(await okay(A,{op:'member.save',name:'Bénévole',email:B})).id;
   const other=(await okay(A,{op:'member.save',name:'Autre bénévole',email:O})).id;
