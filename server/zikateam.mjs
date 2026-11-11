@@ -78,6 +78,9 @@ async function getMine(db,ctx){
   leadPoles:[],poles:[],charter:currentCharter,charterAccepted:false,charterAcceptedAt:null,activities:[]
  });
  const poles=ctx.member?await all(db,"SELECT p.id,p.name,p.description,tm.role,(SELECT group_concat(m.name,', ') FROM team_memberships l JOIN team_members m ON m.id=l.member_id WHERE l.pole_id=p.id AND l.role='lead' AND m.active=1) AS leaders FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",ctx.member.id):[];
+ for(const p of poles){
+  p.leadersDetails=await all(db,"SELECT m.id,m.name,CASE WHEN ph.member_id IS NOT NULL THEN 1 ELSE 0 END AS has_photo FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_photos ph ON ph.member_id=m.id WHERE tm.pole_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name",p.id);
+ }
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
@@ -91,6 +94,10 @@ async function getManage(db,ctx){
  const members=ctx.admin?await all(db,'SELECT id,name,email,active FROM team_members ORDER BY name'):
   ctx.leadPoles.length?await all(db,"SELECT DISTINCT m.id,m.name,m.email,m.active FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id WHERE tm.pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead') ORDER BY m.name",ctx.member.id):
   await all(db,'SELECT id,name,active FROM team_members WHERE active=1 ORDER BY name');
+ if(ctx.admin||ctx.leadPoles.length){
+  const pictures=new Set((await all(db,'SELECT member_id FROM team_member_photos')).map(x=>x.member_id));
+  for(const member of members)member.has_photo=pictures.has(member.id);
+ }
  const memberships=ctx.admin?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):
   ctx.leadPoles.length?await all(db,"SELECT member_id,pole_id,role FROM team_memberships WHERE pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead')",ctx.member.id):[];
  const allActivities=await all(db,"SELECT * FROM team_activities ORDER BY starts_at DESC LIMIT 160"),activities=[];
@@ -328,7 +335,13 @@ async function memberAction(db,ctx,d){
  }
  if(d.op==='message.send'){
   const message=clean(d.body,1400),channel=d.channel,channelId=d.channelId||null;
-  if(!message||!['general','pole','activity'].includes(channel))return fail('Message invalide.');
+  if(!message||!['general','pole','activity','leaders'].includes(channel))return fail('Message invalide.');
+  if(channel==='leaders'){
+   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
+   const id=uuid();
+   await db.prepare('INSERT INTO team_leader_messages(id,author_id,body,created_at) VALUES(?,?,?,?)').bind(id,memberId,message,now()).run();
+   return reply({ok:true,id});
+  }
   if(channel==='general'&&channelId)return fail('Canal invalide.');
   if(channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(m=>m.pole_id===channelId)))return fail('Pôle non autorisé.',403);
   if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||(!ctx.admin&&a.status==='draft')||!await visibleActivity(db,ctx,a))return fail('Discussion non autorisée.',403);}
@@ -369,6 +382,15 @@ async function adminAction(db,ctx,d){
  }
  if(d.op==='checkin.set')return setCheckin(db,ctx,d);
  if(d.op==='message.delete'){
+  if(idok(d.id)){
+   const leaderMsg=await one(db,'SELECT id FROM team_leader_messages WHERE id=?',d.id);
+   if(leaderMsg){
+    if(!ctx.admin)return fail('Modération réservée à l’administration.',403);
+    await db.prepare('UPDATE team_leader_messages SET deleted_at=? WHERE id=?').bind(now(),d.id).run();
+    await audit(db,ctx.email,'leaders.message.delete',d.id);
+    return reply({ok:true});
+   }
+  }
   const msg=idok(d.id)?await one(db,'SELECT * FROM team_messages WHERE id=?',d.id):null;
   if(!msg)return fail('Message introuvable.',404);
   if(!ctx.admin){
@@ -400,7 +422,12 @@ async function adminAction(db,ctx,d){
 async function getMessages(db,ctx,url){
  if(!ctx.admin&&(!ctx.member||!await requireCharter(db,ctx)))return fail('Charte à accepter avant les discussions.',403);
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
- if(!['general','pole','activity'].includes(channel))return fail('Canal invalide.');
+ if(!['general','pole','activity','leaders'].includes(channel))return fail('Canal invalide.');
+ if(channel==='leaders'){
+  if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
+  const messages=await all(db,'SELECT t.id,t.body,t.created_at,m.name AS author FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80');
+  return reply({messages:messages.reverse()});
+ }
  if(!ctx.admin&&channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Accès à la discussion refusé.',403)}
  const messages=await all(db,'SELECT t.id,t.body,t.created_at,m.name AS author FROM team_messages t JOIN team_members m ON m.id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80',channel,channelId);
@@ -422,6 +449,41 @@ async function upload(request,env,ctx,url){
  await env.BUCKET.put('team/'+id,buffer,{httpMetadata:{contentType:'application/pdf'}});
  await env.DB.prepare('INSERT INTO team_documents(id,kind,activity_id,name,mime,size,uploaded_by,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(id,kind,kind==='charter'?null:activityId,name,'application/pdf',size,ctx.email,now()).run();
  await audit(env.DB,ctx.email,'document.upload',id,kind);return reply({ok:true,id,name});
+}
+async function uploadTeamPhoto(request,env,ctx,url){
+ if(!env.BUCKET)return fail('Stockage des photos indisponible.',503);
+ const memberId=url.searchParams.get('member');
+ if(!idok(memberId))return fail('Bénévole invalide.',400);
+ const subject=await one(env.DB,'SELECT id FROM team_members WHERE id=? AND active=1',memberId);
+ if(!subject)return fail('Bénévole introuvable.',404);
+ if(!ctx.admin&&ctx.member?.id!==memberId)return fail('Modification réservée à la personne ou à l’administration.',403);
+ const mime=request.headers.get('content-type');
+ if(!['image/jpeg','image/png','image/webp'].includes(mime))return fail('Choisissez une photo JPEG, PNG ou WebP.',415);
+ if(Number(request.headers.get('content-length')||0)>4194304)return fail('Photo trop volumineuse (4 Mo maximum).',413);
+ const bytes=new Uint8Array(await request.arrayBuffer());
+ if(bytes.length<16||bytes.length>4194304)return fail('Photo invalide ou trop volumineuse.',413);
+ const signature=(...a)=>a.every((x,i)=>bytes[i]===x);
+ const ascii=(offset,count)=>String.fromCharCode(...bytes.slice(offset,offset+count));
+ const valid=mime==='image/jpeg'?signature(0xff,0xd8,0xff):
+  mime==='image/png'?signature(0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a):
+  ascii(0,4)==='RIFF'&&ascii(8,4)==='WEBP';
+ if(!valid)return fail('Le fichier ne correspond pas au format annoncé.',415);
+ await env.BUCKET.put('team/photo/'+memberId,bytes,{httpMetadata:{contentType:mime}});
+ await env.DB.prepare('INSERT INTO team_member_photos(member_id,mime,size,updated_by,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET mime=excluded.mime,size=excluded.size,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(memberId,mime,bytes.length,ctx.email,now()).run();
+ await audit(env.DB,ctx.email,'photo.save',memberId);return reply({ok:true,memberId});
+}
+async function getTeamPhoto(env,ctx,id){
+ if(!idok(id))return fail('Photo introuvable.',404);
+ const photo=await one(env.DB,'SELECT mime FROM team_member_photos WHERE member_id=?',id);
+ if(!photo)return fail('Photo introuvable.',404);
+ if(!ctx.admin&&ctx.member?.id!==id){
+  if(!ctx.member)return fail('Photo non autorisée.',403);
+  const visible=await one(env.DB,'SELECT 1 FROM team_memberships current JOIN team_memberships subject ON current.pole_id=subject.pole_id WHERE current.member_id=? AND subject.member_id=? LIMIT 1',ctx.member.id,id);
+  if(!visible)return fail('Photo non autorisée.',403);
+ }
+ const obj=await env.BUCKET?.get('team/photo/'+id);
+ if(!obj)return fail('Photo indisponible.',404);
+ return new Response(obj.body,{headers:{'Content-Type':photo.mime,'Cache-Control':'private, max-age=300','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"}});
 }
 async function getDocument(env,ctx,docId){
  if(!idok(docId))return fail('Document introuvable.',404);
@@ -463,6 +525,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
   const locked=!accepted;
   const notice=currentCharter?'Charte obligatoire : veuillez la lire et l’accepter pour poursuivre.':'La charte officielle doit être publiée avant l’ouverture de ZikaTeam.';
+  if(path.startsWith('/zikateam/photo/')&&request.method==='GET')return locked?fail(notice,403):getTeamPhoto(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/document/')&&request.method==='GET'){
    if(locked&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail(notice,403);
    return getDocument(env,ctx,path.split('/').pop());
@@ -471,6 +534,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(path==='/zikateam/api/messages'&&request.method==='GET')return locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
+   if(path==='/zikateam/api/photo')return locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
    if(path==='/zikateam/api/upload'){
     if(locked&&!(ctx.admin&&!currentCharter&&url.searchParams.get('kind')==='charter'))return fail(notice,403);
     return upload(request,env,ctx,url);
