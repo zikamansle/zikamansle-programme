@@ -159,7 +159,7 @@ function secretaryTestGuide(){
  '</ol><p class="team-small">Si un bouton ne fonctionne pas ou si un accès manque, indique le nom de la rubrique et le message affiché pour que nous corrigions le problème.</p></section>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
- const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...((state.me.admin||state.me.secretariat)?[['benevoles','Bénévoles & fonctions']]:[]),...(state.me.admin?[['charte','Charte'],['journal','Historique']]:[])];
+ const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:state.me.secretariat?[['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...((state.me.admin||state.me.secretariat)?[['benevoles','Bénévoles & fonctions']]:[]),...(state.me.admin?[['charte','Charte'],['journal','Historique']]:[])];
  return secretaryTestGuide()+'<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
 }
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
@@ -198,7 +198,7 @@ function managePoles(){
   const leaders=managers.length?managers.map(m=>'<div class="team-leader-card">'+avatar(m)+'<div class="team-person-info"><strong>'+esc(m.name)+'</strong><small>Responsable de pôle</small>'+(admin?'<label class="team-photo-picker">Photo facultative<input data-photo-member="'+m.id+'" type="file" accept="image/jpeg,image/png,image/webp"></label>':'')+'</div>'+((admin||state.me.secretariat)?'<button class="team-button light" data-remove-member="'+m.id+'" data-from-pole="'+p.id+'">Retirer</button>':'')+'</div>').join(''):'<p class="team-muted">Aucun responsable désigné.</p>';
   const roster=members.length?members.map(m=>'<div class="team-member-row"><span>'+esc(m.name)+'</span>'+((admin||state.me.secretariat)?'<button type="button" class="team-button light" data-remove-member="'+m.id+'" data-from-pole="'+p.id+'">Retirer</button>':'')+'</div>').join(''):'<p class="team-muted">Pas encore de membre.</p>';
   const assignment=(admin||state.me.secretariat)&&!p.archived?'<form class="team-form" data-assignment-form="'+p.id+'"><label>Ajouter un bénévole<select name="memberId" required><option value="">Choisir une personne</option>'+d.members.filter(m=>m.active).map(m=>'<option value="'+m.id+'">'+esc(m.name)+'</option>').join('')+'</select></label><label>Sa fonction<select name="role"><option value="member">Bénévole</option><option value="lead">Responsable du pôle</option></select></label><button class="team-button orange">Ajouter au pôle</button></form>':'';
-  return '<article class="team-item team-pole-panel"><div class="team-between"><div><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'Aucune description renseignée.')+'</p></div><div class="team-row"><button type="button" class="team-button orange" data-print-team="'+p.id+'">Imprimer la liste</button>'+(admin?'<button type="button" class="team-button light" data-edit-pole="'+p.id+'">Modifier</button><button type="button" class="team-button '+(p.archived?'light':'danger')+'" data-archive-pole="'+p.id+'" data-archived="'+p.archived+'">'+(p.archived?'Réactiver':'Archiver')+'</button><button type="button" class="team-button danger" data-delete-pole="'+p.id+'" data-pole-name="'+esc(p.name)+'">Supprimer</button>':'')+'</div></div><h4>Responsables</h4><div class="team-leaders">'+leaders+'</div><details class="team-pole-members"><summary>Membres du pôle ('+members.length+')</summary>'+roster+'</details>'+assignment+'</article>';
+  return '<article class="team-item team-pole-panel"><div class="team-between"><div><h3>🎪 '+esc(p.name)+(p.archived?' · Archivé':'')+'</h3><p class="team-small"><strong>'+people.length+' bénévole(s) · '+managers.length+' responsable(s)</strong></p><p>'+esc(p.description||'Aucune description renseignée.')+'</p></div><div class="team-row"><button type="button" class="team-button orange" data-print-team="'+p.id+'">Imprimer la liste</button>'+(admin?'<button type="button" class="team-button light" data-edit-pole="'+p.id+'">Modifier</button><button type="button" class="team-button '+(p.archived?'light':'danger')+'" data-archive-pole="'+p.id+'" data-archived="'+p.archived+'">'+(p.archived?'Réactiver':'Archiver')+'</button><button type="button" class="team-button danger" data-delete-pole="'+p.id+'" data-pole-name="'+esc(p.name)+'">Supprimer</button>':'')+'</div></div><h4>Responsables</h4><div class="team-leaders">'+leaders+'</div><details class="team-pole-members"><summary>Membres du pôle ('+members.length+')</summary>'+roster+'</details>'+assignment+'</article>';
  }).join('');
  return form+'<section class="team-card team-accent-teal"><h2>'+ (admin?'Pôles et responsables':'Mes équipes — consulter et imprimer')+'</h2><p class="team-muted">'+(admin?'Gestion des responsables, équipes et affectations.':'Les responsables peuvent consulter et imprimer leur équipe. Seuls les numéros et e-mails dont le partage a été autorisé apparaissent.')+'</p>'+(d.poles.length?panels:'<p>Aucun pôle disponible.</p>')+'</section>';
 }
@@ -1032,8 +1032,21 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   finally{state.busy=false}
   return;
  }
- if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
- if(f.id==='poleForm')return perform(async()=>{const d=fromForm(f);await command('pole.save',{id:d.id||undefined,name:d.name,description:d.description});state.editPole=null});
+ if(f.hasAttribute('data-assignment-form'))return perform(async()=>{
+  const d=fromForm(f),poleId=f.dataset.assignmentForm;
+  if(!d.memberId)throw Error('Choisis un bénévole avant de l’affecter.');
+  const saved=await command('assignment.set',{poleId,memberId:d.memberId,role:d.role||'member'});
+  if(!saved.ok)throw Error('Le serveur n’a pas confirmé l’affectation.');
+  toast('✅ Affectation au pôle enregistrée.');
+ });
+ if(f.id==='poleForm')return perform(async()=>{
+  const d=fromForm(f),name=String(d.name||'').trim();
+  if(!name)throw Error('Le nom du pôle est obligatoire.');
+  const saved=await command('pole.save',{id:d.id||undefined,name,description:d.description});
+  if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé le pôle.');
+  state.editPole=null;
+  toast('✅ Pôle '+(d.id?'modifié':'créé')+' : '+name);
+ });
  if(f.id==='teamMyProfileForm')return perform(async()=>{if(!state.me.admin)throw Error('Action réservée à l’administration.');const d=fromForm(f);await command('member.save',{id:state.me.member?.id||undefined,name:d.name,email:state.me.email,active:true});state.tab='fiche';});
  if(f.hasAttribute('data-directory-form'))return perform(async()=>{
   const data=fromForm(f);
