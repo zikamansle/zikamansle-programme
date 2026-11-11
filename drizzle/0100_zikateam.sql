@@ -1,3 +1,10 @@
+-- Transition non destructive depuis le ZikaTeam historique de la migration 0004.
+-- Les anciennes tables, leurs données et leurs références restent conservées.
+-- La nouvelle application utilise un modèle relationnel distinct.
+ALTER TABLE team_messages RENAME TO team_messages_legacy;
+ALTER TABLE team_memberships RENAME TO team_memberships_legacy;
+ALTER TABLE team_members RENAME TO team_members_legacy;
+
 -- ZikaTeam: espace privé des bénévoles (base de validation D1).
 -- Aucune donnée personnelle de bénévole n'est ajoutée par cette migration.
 CREATE TABLE IF NOT EXISTS team_members (
