@@ -431,7 +431,7 @@ export async function handleZikaTeam(request,env,execution){
  if(env.TEAM_AUTH_PROVIDER==='supabase'){
   // The login shell is public. Every data operation remains server-authenticated.
   if((path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')&&request.method==='GET'){
-   const page=new URL('/zikateam.html',url);
+   const page=new URL('/zikateam',url);
    return env.ASSETS.fetch(new Request(page,request));
   }
   if(path.startsWith('/zikateam/api/auth/'))return handleTeamLogin(request,env);
@@ -449,7 +449,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const ctx=await identify(request,env,verified);if(!ctx)return new Response('Accès ZikaTeam refusé. Utilisez votre adresse de bénévole autorisée.',{status:403,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
   const url=new URL(request.url),path=url.pathname,db=env.DB;
   if(path.startsWith('/zikateam/document/')&&request.method==='GET')return getDocument(env,ctx,path.split('/').pop());
-  if(path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')return env.ASSETS.fetch(new Request(new URL('/zikateam.html',url),request));
+  if(path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')return env.ASSETS.fetch(new Request(new URL('/zikateam',url),request));
   if(path==='/zikateam/api/me'&&request.method==='GET')return getMine(db,ctx);
   if(path==='/zikateam/api/manage'&&request.method==='GET')return getManage(db,ctx);
   if(path==='/zikateam/api/messages'&&request.method==='GET')return getMessages(db,ctx,url);
