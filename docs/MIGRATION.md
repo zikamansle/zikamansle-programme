@@ -104,7 +104,7 @@ Le Supabase existant appartient déjà à un compte externe à Work et reste la 
 - Actualités et notifications : menu Plus → Administration ; ajout média, test sur un appareil, envoi, bilan et archivage de l'historique conservés.
 - À chaque changement de cache PWA, incrémenter `CACHE` dans `public/sw.js` ; garder `/sw.js` et son scope racine.
 - Sauvegarder régulièrement D1 via `wrangler d1 export`, les objets R2 et les données Supabase, séparément de Git ; conserver les secrets dans un gestionnaire de mots de passe ou coffre sécurisé.
-- Le workflow GitHub lance tests et compilation. Il ne déploie rien automatiquement. Un déploiement manuel via Wrangler reste possible sans Work.
+- Le workflow de vérification GitHub lance tests et compilation à chaque modification. La publication automatique en environnement de test n'est possible que si la variable de dépôt `ZIKA_DEPLOY_ENABLED` vaut `true`, avec les secrets de l'environnement `zikamansle-staging`. Aucun déploiement de production ni changement DNS n'est prévu. Un déploiement manuel via Wrangler reste possible sans Work.
 
 ## 7. Android
 
