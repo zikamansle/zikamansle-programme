@@ -28,7 +28,7 @@
 
 - Comparaison visuelle mobile et bureau : accueil, programme, filtres, détails, favoris, partage, calendrier, plan/parcours, partenaires, rubriques, billetterie, Plus, installation et actualisation.
 - Essai hors connexion et mise à jour du service worker sans perdre favoris ou abonnements.
-- Connexion Cloudflare Access réelle : administrateur autorisé et autre compte refusé ; API privées protégées, flux publics accessibles.
+- Connexion Cloudflare Access réelle sur `/administration/*` : administrateur autorisé et autre compte refusé ; API privées protégées, flux publics `/api/push/*` accessibles.
 - Import d'un média image/vidéo/PDF, actualité, test sur un seul appareil, accusés de réception, reprise d'un envoi et archivage.
 - Relecture et comparaison des données D1 après import distant ; copie finale au moment de basculer.
 - Vérification des objets R2, des médias Wix et des liens externes, notamment vidéos, ZikaRun, billetterie et programme.
