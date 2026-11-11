@@ -581,3 +581,16 @@ body{background:radial-gradient(circle at 10% 8%,#b4e8ff 0,transparent 31%),radi
 #teamRoot .team-agenda-alert{border:1px solid #ffca91;border-left:5px solid #fa853a;border-radius:13px;background:#fff9e9;padding:13px;margin:10px 0}
 #teamRoot .team-agenda-alert h3{color:#174f75;margin:6px 0}
 @media(prefers-reduced-motion:reduce){#teamRoot .team-tabs button{transition:none}}
+
+/* Notifications personnelles : réglages lisibles, vifs et adaptés au téléphone */
+#teamRoot .team-notifications-settings{border-top:6px solid #9153d8;background:linear-gradient(135deg,#fff,#f0e4ff 60%,#e5f8ff)!important}
+#teamRoot .team-notifications-settings h2{color:#6732a1}
+#teamRoot .team-notifications-settings h3{margin-top:20px;color:#176785}
+#teamRoot .team-notification-group{display:flex;gap:10px;align-items:center;margin:7px 0;border:1px solid #c4dceb;padding:10px 12px;background:linear-gradient(110deg,#fff,#e9f9ff);border-radius:12px;font-weight:650}
+#teamRoot .team-notification-group:nth-of-type(3n+2){background:linear-gradient(110deg,#fff,#f9ecff);border-color:#e5c6f2}
+#teamRoot .team-notification-group:nth-of-type(3n){background:linear-gradient(110deg,#fff,#fff0dc);border-color:#f4d6a1}
+#teamRoot .team-notifications-settings .team-check{cursor:pointer;min-height:36px}
+#teamRoot .team-invitation-result{background:linear-gradient(120deg,#ddf8eb,#e5f3ff);border:2px solid #37bca7;border-radius:14px;padding:15px;margin:18px 0;color:#174b65}
+#teamRoot .team-invitation-result code{display:inline-block;background:#fff;border:1px solid #8cd0c5;color:#274b6a;border-radius:9px;padding:10px;font-size:19px;letter-spacing:1px;font-weight:900}
+#teamRoot .team-invite-mail{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin:8px 10px 8px 0}
+@media(max-width:730px){#teamRoot .team-notification-group{padding:12px 10px}#teamRoot .team-invitation-result code{font-size:16px;letter-spacing:.4px}}
