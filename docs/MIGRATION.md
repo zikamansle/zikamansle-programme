@@ -55,11 +55,15 @@ La nouvelle URL workers.dev doit rester distincte de `app.zikamansle.fr` pendant
 
 ## 3. Administration sécurisée
 
-Créer une application Cloudflare Access protégeant `/admin-notifications` et `/admin-notifications.html` (y compris variantes avec barre finale), limitée à l'adresse de l'administrateur. Configurer le même domaine d'équipe et la même audience dans les variables `ACCESS_TEAM_DOMAIN` et `ACCESS_AUD`. Les appels `/api/push/*` de l'administration doivent passer par la même application Access afin que le jeton soit transmis. Les routes publiques `news`, `config`, `media`, `subscribe`, `unsubscribe`, `receipt`, `selftest`, `test-status` doivent rester utilisables sans connexion par les visiteurs en production : ne pas mettre tout `/api/push/*` derrière une politique administrateur en production. Protéger précisément `admin`, `upload`, `create`, `send`, `clear-history`.
+Sur **Cloudflare Zero Trust → Access → Applications**, créer une application de type **Self-hosted** nommée « Administration ZikaMansle (test) ». Protéger le seul chemin `/administration/*` de l'hôte `zikamansle-app-staging.zikamansle.workers.dev` (et non l'ensemble du Worker). La règle **Allow** doit viser une **adresse e-mail précise**, jamais « Everyone » ou un domaine e-mail entier. Si nécessaire, activer l'authentification par code à usage unique.
 
-Sur l'environnement de validation workers.dev, une protection Access de tout le Worker est possible pour les tests internes. La configuration effective des chemins, cookies, API et de l'authentification reste à tester sur le compte cible.
+La page `/administration/notifications` et tous les appels privés `/administration/api/admin`, `upload`, `create`, `send`, `clear-history` utilisent cette même application Access et donc le même jeton signé. L'ancienne URL `/admin-notifications.html` redirige vers le chemin protégé. Le serveur vérifie en plus la signature du jeton, son émetteur, l'audience et `ADMIN_EMAIL`.
 
-Configurer `ADMIN_EMAIL` par une saisie sécurisée : `npx wrangler secret put ADMIN_EMAIL`. Ne jamais la confondre avec une clé privée. Le backend valide lui-même signature RS256, émetteur, audience, expiration et adresse autorisée ; les anciens en-têtes d'identité ChatGPT sont ignorés.
+Dans **GitHub → Settings → Environments → zikamansle-staging**, ajouter les variables `ACCESS_TEAM_DOMAIN` (sous la forme `nom-equipe.cloudflareaccess.com`, sans `https://`) et `ACCESS_AUD` (Application Audience Tag), et ajouter le secret `ADMIN_EMAIL` égal à l'e-mail autorisé dans la politique Access. Ces valeurs doivent ensuite être déployées via un workflow GitHub explicitement déclenché : la création d'une application Access seule n'active pas l'administration.
+
+Les routes publiques `/api/push/news`, `config`, `media`, `subscribe`, `unsubscribe`, `receipt`, `selftest`, `test-status` doivent rester accessibles sans connexion aux visiteurs. Les anciennes API privées `/api/push/admin`, `upload`, `create`, `send`, `clear-history` restent protégées cryptographiquement même en l'absence de politique Access, et ne sont pas utilisées par la nouvelle interface.
+
+Ne pas activer **Protect this Worker behind Access → All traffic**, qui masquerait aussi toute l'application publique. Les fonctions d'envoi push demeurent désactivées en test tant que `PUSH_SEND_ENABLED` vaut `false` ; la clé privée VAPID n'est pas récupérée. L'authentification effective et les cookies sont à vérifier dans le navigateur, sur le compte cible.
 
 ## 4. Notifications et clé privée
 
