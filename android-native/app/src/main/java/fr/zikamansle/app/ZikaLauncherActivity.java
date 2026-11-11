@@ -67,7 +67,8 @@ public final class ZikaLauncherActivity extends Activity {
                 && origin.getHost().equals(data.getHost())
                 && data.getPort()==origin.getPort()) {
                 intent.setAction(Intent.ACTION_VIEW);
-                intent.setData(data);
+                // Preserve deep links while hiding the redundant install prompts inside Android.
+                intent.setData(data.buildUpon().appendQueryParameter("zika_native","1").build());
             }
         }
         startActivity(intent);
