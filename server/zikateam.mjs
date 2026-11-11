@@ -545,7 +545,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     const raw=await request.text();if(raw.length>35000)return fail('Requête trop longue.',413);
     let data;try{data=JSON.parse(raw)}catch{return fail('Requête JSON invalide.');}
     if(!data||typeof data.op!=='string')return fail('Action manquante.');
-    const ownProfile=ctx.admin&&!ctx.member&&data.op==='member.save'&&!data.id&&clean(data.email,254).toLowerCase()===ctx.email&&data.active!==false;
+    const ownProfile=ctx.admin&&data.op==='member.save'&&(!data.id||data.id===ctx.member?.id)&&clean(data.email,254).toLowerCase()===ctx.email&&data.active!==false;
     const firstCharter=ctx.admin&&!currentCharter&&data.op==='charter.save';
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     let result;
