@@ -29,6 +29,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Prepare official Zika launcher image for debug APK
+        shell: bash
+        run: |
+          mkdir -p android-native/app/src/debug/res/drawable-nodpi
+          curl --fail --show-error --location --retry 3 \
+            "https://static.wixstatic.com/media/685632_388f80525cec40c2b56e806e82fd6a60~mv2.png" \
+            --output android-native/app/src/debug/res/drawable-nodpi/zika_icon.png
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('android-native/app/src/debug/res/drawable-nodpi/zika_icon.png')
+          if not path.read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n'):
+              raise SystemExit('Official Zika icon could not be verified as PNG')
+          PY
       - name: Compile unsigned-debug-test app
         run: gradle -p android-native :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
