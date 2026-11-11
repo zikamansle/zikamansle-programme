@@ -144,13 +144,14 @@ async function getManage(db,ctx){
  const logs=ctx.admin?await all(db,'SELECT actor_email,action,entity_id,detail,created_at FROM team_audit ORDER BY created_at DESC LIMIT 60'):[];
  const secretariatIds=ctx.admin?(await all(db,"SELECT member_id FROM team_staff_roles WHERE role='secretariat'")).map(x=>x.member_id):[];
  const pendingRequests=ctx.admin?await all(db,"SELECT email,name,requested_at FROM team_join_requests WHERE status='pending' ORDER BY requested_at ASC LIMIT 250"):[];
+ const invitations=ctx.admin?await all(db,'SELECT id,email,name,created_at,expires_at,used_at,revoked_at FROM team_invitations ORDER BY created_at DESC LIMIT 80'):[];
  const dues=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.active,COALESCE(d.paid,0) AS paid,d.paid_on,d.payment_method,d.updated_by,d.updated_at FROM team_members m LEFT JOIN team_membership_dues d ON d.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
  const listMemberships=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):[];
  const listRoles=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,role FROM team_member_roles'):[];
  const consentsAdmin=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,kind,granted,updated_at FROM team_member_consents'):[];
  const savedLists=ctx.admin||ctx.secretariat?await all(db,'SELECT id,title,columns_json,member_ids_json,created_by,created_at,updated_at FROM team_saved_lists ORDER BY updated_at DESC LIMIT 100'):[];
  const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists});
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,invitations,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -530,6 +531,33 @@ async function signingAction(db,ctx,d){
 }
 
 async function adminAction(db,ctx,d){
+ if(d.op==='invite.create'){
+  if(!ctx.admin)return fail('Seul un administrateur peut inviter de nouveaux bénévoles.',403);
+  const email=clean(d.email,254).toLowerCase(),name=clean(d.name,110);
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||name.length<2)return fail('Indique le nom complet et une adresse e-mail valide.',400);
+  const existing=await one(db,'SELECT active FROM team_members WHERE email=?',email);
+  if(existing?.active===1)return fail('Cette personne est déjà bénévole : utilise sa fiche.',409);
+  const rejected=await one(db,'SELECT status FROM team_join_requests WHERE email=?',email);
+  if(rejected?.status==='rejected')return fail('Ce compte a été refusé : contacte l’administration avant de le réinviter.',409);
+  const num=await one(db,'SELECT COUNT(*) AS n FROM team_invitations WHERE created_by=? AND created_at>?',ctx.email,now()-3600000);
+  if((num?.n||0)>=20)return fail('Limite de 20 invitations par heure atteinte.',429);
+  const code=Array.from(crypto.getRandomValues(new Uint8Array(8)),v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
+  const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
+  const id=uuid(),created=now(),expires=created+14*86400000;
+  await db.prepare('INSERT INTO team_invitations(id,email,name,code_hash,created_by,created_at,expires_at) VALUES(?,?,?,?,?,?,?)').bind(id,email,name,hash,ctx.email,created,expires).run();
+  await audit(db,ctx.email,'invite.create',id,'Invitation créée pour '+email+' ; code jamais journalisé');
+  return reply({ok:true,id,email,name,code,expiresAt:expires});
+ }
+ if(d.op==='invite.revoke'){
+  if(!ctx.admin)return fail('Action réservée à l’administration.',403);
+  if(!idok(d.id))return fail('Invitation invalide.',400);
+  const row=await one(db,'SELECT id FROM team_invitations WHERE id=?',d.id);
+  if(!row)return fail('Invitation introuvable.',404);
+  await db.prepare('UPDATE team_invitations SET revoked_at=? WHERE id=? AND used_at IS NULL').bind(now(),d.id).run();
+  await audit(db,ctx.email,'invite.revoke',d.id);
+  return reply({ok:true});
+ }
  if(d.op==='chat.icon.set'){
   if(!ctx.admin)return fail('Seule l’administration peut modifier les icônes des discussions.',403);
   const channel=d.channel,channelId=d.channelId||null,icon=d.icon;
