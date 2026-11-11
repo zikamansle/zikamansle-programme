@@ -29,10 +29,11 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
    if(String(url).endsWith('/auth/v1/verify')){
     const data=JSON.parse(options.body);
     if(!['123456','87654321'].includes(data.token))return respond({error:'invalid'},401);
-    return respond({access_token:'token-alice',refresh_token:'refresh-alice',expires_in:3600});
+    return respond({access_token:data.email===names.outsider?'token-outsider':'token-alice',refresh_token:'refresh-alice',expires_in:3600});
    }
    if(String(url).endsWith('/auth/v1/user')){
     if(options?.headers?.Authorization==='Bearer token-admin')return respond({email:'admin@zikamansle.fr',email_confirmed_at:new Date().toISOString(),id:'user-admin'});
+     if(options?.headers?.Authorization==='Bearer token-outsider')return respond({email:names.outsider,email_confirmed_at:new Date().toISOString(),id:'user-outsider'});
     return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
    }
    if(String(url).endsWith('/auth/v1/logout'))return respond({});
@@ -49,9 +50,18 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal((await invoke('/zikateam/api/auth/status')).status,200);
   assert.equal((await invoke('/zikateam/api/me')).status,403);
   assert.equal((await invoke('/zikateam/api/auth/request',{email:names.outsider})).status,200);
-  assert.equal(requests.length,0,'no email for uninvited addresses');
+  assert.equal(requests.filter(x=>x.url.endsWith('/otp')).length,1,'les nouvelles adresses vérifient leur e-mail');
+   assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.outsider,code:'87654321'})).status,200);
+   const pending=await invoke('/zikateam/api/me',undefined,'zika_team_access=token-outsider');
+   assert.equal(pending.status,200);
+   const pendingView=await pending.json();
+   assert.equal(pendingView.pending,true,'la nouvelle personne reste en attente');
+   assert.equal(pendingView.charterAccepted,false);
+   assert.deepEqual(pendingView.activities,[],'aucune mission privée');
+   assert.equal((await invoke('/zikateam/api/manage',undefined,'zika_team_access=token-outsider')).status,403,'aucun droit de gestion');
+   assert.equal((await invoke('/zikateam/api/command',{op:'member.save',name:'Intrus',email:names.outsider},'zika_team_access=token-outsider')).status,403,'pas de self-validation');
   assert.equal((await invoke('/zikateam/api/auth/request',{email:names.alice})).status,200);
-  assert.equal(requests.filter(r=>r.url.endsWith('/otp')).length,1);
+  assert.equal(requests.filter(r=>r.url.endsWith('/otp')).length,2);
   assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'999999'})).status,401);
   assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'1234567'})).status,400,'7 chiffres refuses');
   assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'abcdefgh'})).status,400,'lettres refusees');
