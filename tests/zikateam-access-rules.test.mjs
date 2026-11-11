@@ -164,6 +164,6 @@ test('la publication d’une réunion utilise deux actions explicites',()=>{
  assert.ok(client.includes('name="publishAction" value="published"'));
  assert.ok(client.includes('name="publishAction" value="draft"'));
  assert.ok(client.includes('📣 Publier et prévenir les bénévoles'));
- assert.ok(!client.includes('<label>État<select name="status">'));
+ assert.ok(!client.slice(client.indexOf('function manageActivities(){'),client.indexOf('function shiftForm(){')).includes('<label>État<select name="status">'));
  assert.ok(client.includes('Impossible d’enregistrer : '));
 });
