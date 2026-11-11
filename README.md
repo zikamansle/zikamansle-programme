@@ -1,8 +1,8 @@
 # ZikaMansle — application autonome
 
-Migration préparée le 11 novembre 2026. **Ce dossier n'est pas une migration terminée et n'a pas été déployé.**
+Migration préparée le 11 novembre 2026. **La copie de validation est déployée sur Cloudflare, mais la migration en production n'est pas terminée.**
 
-Le runtime est un Worker Cloudflare standard avec fichiers statiques, D1 et R2. Il ne dépend pas de ChatGPT Sites, de son authentification ou de ses connecteurs. Le programme continue à lire le projet Supabase existant et les rubriques continuent à se synchroniser avec le site Wix officiel.
+La copie de test est disponible sur https://zikamansle-app-staging.zikamansle.workers.dev. Le runtime est un Worker Cloudflare standard avec fichiers statiques, D1 et R2. Il ne dépend pas de ChatGPT Sites, de son authentification ou de ses connecteurs. Le programme continue à lire le projet Supabase existant et les rubriques continuent à se synchroniser avec le site Wix officiel.
 
 ## Démarrer
 
@@ -32,7 +32,7 @@ Les envois sont désactivés par défaut. La compilation est un `--dry-run` : el
 | supabase/ | Source de la fonction wix-media et inventaire du schéma externe |
 | docs/ | Déploiement, secrets, maintenance et état de vérification |
 
-L'administration est accessible via **Plus → Administration**, à l'adresse `/administration/notifications`. Une seule application Cloudflare Access doit protéger le chemin `/administration/*` du Worker de test (sans protéger l'ensemble de l'application). Les API d'administration sont sous `/administration/api/*` ; les API publiques des visiteurs restent sous `/api/push/*`. L'accès exige un jeton Cloudflare Access signé, pour la bonne audience et l'adresse administrateur. Un simple en-tête portant une adresse e-mail ne donne aucun accès.
+L'administration est accessible via **Plus → Administration**, à l'adresse `/administration/notifications`. Une seule application Cloudflare Access doit protéger le chemin `/administration/*` du Worker de test (sans protéger l'ensemble de l'application). Les API d'administration sont sous `/administration/api/*` ; les API publiques des visiteurs restent sous `/api/push/*`. L'accès exige un jeton Cloudflare Access signé, pour la bonne audience et l'adresse administrateur. Un simple en-tête portant une adresse e-mail ne donne aucun accès. Les essais push individuels sont autorisés sur la copie staging, mais les envois généraux sont bloqués tant que `PUSH_SEND_ENABLED` vaut `false`. La paire VAPID de test est distincte de la paire de production et enregistrée uniquement dans les secrets Cloudflare.
 
 Lire [docs/MIGRATION.md](docs/MIGRATION.md) avant tout déploiement et [docs/VERIFICATION.md](docs/VERIFICATION.md) pour les limites constatées.
 
