@@ -387,3 +387,8 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
 #teamRoot .team-chat-contact-card a:hover{background:#c8f4ec}
 #teamRoot .team-chat-contact-card small{color:#627d8d}
 @media(max-width:730px){#teamRoot .team-chat-responsibles{max-width:none;width:100%;justify-content:flex-start;margin-left:0}#teamRoot .team-chat-responsibles-list{justify-content:flex-start}#teamRoot .team-chat-contact-card{right:auto;left:0}#teamRoot .team-chat-header{gap:8px}#teamRoot .team-chat-contact summary{max-width:140px}}
+
+/* Contacter un responsable sans afficher son numéro ni son e-mail */
+#teamRoot .team-direct-button{border:0;border-radius:10px;padding:10px 12px;background:linear-gradient(110deg,#d5f9ec,#ccecff);color:#095b5e;font:inherit;font-weight:800;font-size:13px;text-align:left;cursor:pointer}
+#teamRoot .team-direct-button:hover{background:#b7f2df}
+#teamRoot .team-direct-button:focus-visible{outline:3px solid #734acf;outline-offset:2px}
