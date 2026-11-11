@@ -13,6 +13,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: node --check public/admin-notifications.js
       - run: npm run build
       - name: Tester en ligne les notifications de test sans envoyer de message
         if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'Vérifier les notifications de test en ligne' }}
