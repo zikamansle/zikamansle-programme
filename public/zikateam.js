@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],listStatus:'all',listRole:'all',listPole:'',listSearch:''};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',loginName:'',codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],listStatus:'all',listRole:'all',listPole:'',listSearch:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -395,20 +395,21 @@ function loginScreen(error=''){
  const body=!first
  ?'<h2>Connexion des membres</h2><p>Tu as déjà créé ton mot de passe ? Connecte-toi directement.</p><form id="teamLoginPassword" class="team-form">'+mail+'<label>Mot de passe<input type="password" name="password" autocomplete="current-password" required></label><button class="team-button orange" type="submit">Me connecter</button></form><button type="button" class="team-button light" data-team-code-login>Première connexion ou mot de passe oublié ? Recevoir un code</button>'
  :(!state.codeSent?
- '<h2>Première inscription</h2><p>Indique ton adresse e-mail pour recevoir un code de vérification à 6 ou 8 chiffres. Ce code permet de confirmer ton identité et de créer ton mot de passe. Ton inscription sera ensuite soumise à la validation de l’administration.</p><form id="teamLoginRequest" class="team-form">'+mail+'<button class="team-button orange" type="submit">Recevoir mon code de vérification</button></form>'
+ '<h2>Première inscription</h2><p>Indique ton adresse e-mail pour recevoir un code de vérification à 6 ou 8 chiffres. Ce code permet de confirmer ton identité et de créer ton mot de passe. Ton inscription sera ensuite soumise à la validation de l’administration.</p><form id="teamLoginRequest" class="team-form"><label>Nom et prénom<input type="text" name="name" minlength="2" maxlength="110" autocomplete="name" required value="'+esc(state.loginName)+'" placeholder="Votre nom et prénom"></label>'+mail+'<button class="team-button orange" type="submit">Recevoir mon code de vérification</button></form>'
  :'<h2>Vérifier mon adresse e-mail</h2><p>Code envoyé à <strong>'+esc(state.loginEmail)+'</strong>. Vérifie aussi les courriers indésirables.</p><form id="teamLoginVerify" class="team-form"><label>Code reçu par e-mail<input type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}|[0-9]{8}" minlength="6" maxlength="8" required placeholder="6 ou 8 chiffres"></label><button class="team-button orange" type="submit">Valider mon code</button></form><button class="team-button light" type="button" data-team-reset>Changer d’adresse e-mail</button>');
  root.innerHTML='<section class="team-card team-login-card team-accent-blue"><h1>Bienvenue dans ZikaTeam</h1><p>Ton espace bénévole ZikaMansle.</p>'+choices+body+(error?'<p class="team-warning" role="alert">'+esc(error)+'</p>':'')+'<p class="team-small team-muted">Un code reçu par e-mail n’est jamais un code d’accès collectif. Chaque bénévole vérifie sa propre adresse. Les nouveaux comptes restent limités jusqu’à validation par l’administration.</p></section>';
 }
 function passwordSetupScreen(error=''){
  root.innerHTML='<section class="team-card team-login-card team-accent-orange"><span class="team-pill warn">Dernière étape de sécurisation</span><h1>'+ (state.forcePasswordSetup?'Créer un nouveau mot de passe':'Choisis ton mot de passe')+'</h1><p>Ton adresse e-mail est vérifiée. Choisis un mot de passe personnel pour te connecter ensuite directement, sans redemander de code par e-mail.</p><form id="teamSetPassword" class="team-form"><label>Nouveau mot de passe<input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required></label><label>Confirmer le mot de passe<input type="password" name="confirmation" autocomplete="new-password" minlength="12" maxlength="128" required></label><p class="team-small team-muted">12 caractères minimum avec des lettres et des chiffres. Utilise de préférence une phrase de passe facile à retenir.</p><button class="team-button orange" type="submit">Enregistrer mon mot de passe</button></form>'+(error?'<div class="team-warning" role="alert">'+esc(error)+'</div>':'')+'<p class="team-small">Les bénévoles en attente d’approbation pourront définir leur mot de passe dès maintenant ; leurs autres accès resteront limités jusqu’à validation.</p><button type="button" class="team-button light" data-team-logout>Me déconnecter</button></section>';
 }
-async function freeLoginRequest(email){
+async function freeLoginRequest(email,name){
+ const label=name.trim();if(label.length<2)throw Error('Indique ton nom et ton prénom.');
  await api('auth/request',{email});
- state.loginEmail=email.trim().toLowerCase();state.codeSent=true;loginScreen();
+ state.loginName=label;state.loginEmail=email.trim().toLowerCase();state.codeSent=true;loginScreen();
  toast('Un code de vérification a été demandé par e-mail.');
 }
 async function freeLoginVerify(code){
- await api('auth/verify',{email:state.loginEmail,code:code.trim()});
+ await api('auth/verify',{email:state.loginEmail,name:state.loginName,code:code.trim()});
  state.forcePasswordSetup=true;
  state.codeSent=false;
  await refresh();
@@ -587,7 +588,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   state.busy=true;try{await saveNewPassword(f.elements.password.value,f.elements.confirmation.value)}catch(err){passwordSetupScreen(err.message)}finally{state.busy=false}return;
  }
  if(f.id==='teamLoginRequest'){
-  state.busy=true;try{await freeLoginRequest(f.elements.email.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
+  state.busy=true;try{await freeLoginRequest(f.elements.email.value,f.elements.name.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
  }
  if(f.id==='teamLoginVerify'){
   state.busy=true;try{await freeLoginVerify(f.elements.code.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
