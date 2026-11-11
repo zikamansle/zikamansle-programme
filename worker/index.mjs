@@ -6,7 +6,7 @@ import catalog from '../public/data/site.json' with {type:'json'};
 
 const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(path);
 const isAdminPage = path => /^\/administration\/notifications\/?$/.test(path);
-const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-status|native-test)$/.test(path);
+const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-status|native-diagnostics|native-test)$/.test(path);
 
 // Static Assets normalizes .html to an extensionless URL. Fetch the canonical
 // extensionless asset directly, otherwise /administration/notifications redirects
@@ -26,7 +26,7 @@ export default {
       return Response.redirect(new URL('/administration/notifications',url),302);
     }
     let response;
-    if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-test') {
+    if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
       response = await handleNative(request,env,isAdmin);
     }
     else if (path.startsWith('/api/push/') || isAdminAPI(path)) {
