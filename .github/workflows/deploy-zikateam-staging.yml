@@ -19,8 +19,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Même verrou de consentement que l'ancien workflow Cloudflare.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # Autoriser une seule publication explicitement demandée, via le message de commit.
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[staging-deploy-approved]') }}
     runs-on: ubuntu-latest
     environment: zikamansle-staging
     env:
