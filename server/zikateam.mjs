@@ -190,6 +190,32 @@ async function saveShift(db,ctx,d){
  await db.prepare('INSERT INTO team_shifts(id,activity_id,label,starts_at,ends_at,capacity,created_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET label=excluded.label,starts_at=excluded.starts_at,ends_at=excluded.ends_at,capacity=excluded.capacity').bind(id,a.id,clean(d.label,90)||'Créneau',d.starts_at,d.ends_at,d.capacity,now()).run();
  await audit(db,ctx.email,'shift.save',id,a.id);return reply({ok:true,id});
 }
+async function saveTask(db,ctx,d){
+ if(!idok(d.activityId))return fail('Activité invalide.');
+ const a=await one(db,'SELECT * FROM team_activities WHERE id=?',d.activityId);
+ if(!a||!await allowedActivity(db,ctx,a))return fail('Gestion de cette activité refusée.',403);
+ const title=clean(d.title,160),details=clean(d.details,1500);
+ if(!title)return fail('Le titre de la tâche est obligatoire.');
+ if(d.id&&!idok(d.id))return fail('Identifiant de tâche invalide.');
+ const id=d.id||uuid(),prior=d.id?await one(db,'SELECT * FROM team_activity_tasks WHERE id=?',id):null;
+ if(d.id&&(!prior||prior.activity_id!==a.id))return fail('Tâche introuvable.',404);
+ const status=['todo','doing','done'].includes(d.status)?d.status:'todo';
+ const memberId=d.assigned_to||null;
+ if(memberId){if(!idok(memberId)||!(await audienceMembers(db,a)).includes(memberId))return fail('Ce bénévole ne fait pas partie des personnes concernées.',403);}
+ await db.prepare('INSERT INTO team_activity_tasks(id,activity_id,title,details,assigned_to,status,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,details=excluded.details,assigned_to=excluded.assigned_to,status=excluded.status,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(id,a.id,title,details,memberId,status,prior?.created_by||ctx.email,ctx.email,prior?.created_at||now(),now()).run();
+ await audit(db,ctx.email,'task.save',id,title);return reply({ok:true,id});
+}
+async function setCheckin(db,ctx,d){
+ if(!idok(d.activityId)||!idok(d.memberId))return fail('Activité ou bénévole invalide.');
+ const a=await one(db,'SELECT * FROM team_activities WHERE id=?',d.activityId);
+ if(!a||!await allowedActivity(db,ctx,a))return fail('Pointage non autorisé.',403);
+ if(!(await audienceMembers(db,a)).includes(d.memberId))return fail('Bénévole non concerné.',403);
+ if(a.status!=='published')return fail('Seule une activité publiée peut faire l’objet d’un pointage.',409);
+ const previous=await one(db,'SELECT * FROM team_activity_checkins WHERE activity_id=? AND member_id=?',a.id,d.memberId);
+ const time=d.present===true?now():null;
+ await db.prepare('INSERT INTO team_activity_checkins(activity_id,member_id,checked_in_at,checked_out_at,checked_by) VALUES(?,?,?,?,?) ON CONFLICT(activity_id,member_id) DO UPDATE SET checked_in_at=excluded.checked_in_at,checked_out_at=excluded.checked_out_at,checked_by=excluded.checked_by').bind(a.id,d.memberId,time,null,ctx.email).run();
+ await audit(db,ctx.email,'checkin.set',a.id,d.memberId+(d.present===true?' présent':' non pointé'));return reply({ok:true,previous:previous?.checked_in_at||null});
+}
 async function memberAction(db,ctx,d){
  if(!ctx.member)return fail('Fiche bénévole nécessaire.',403);
  const memberId=ctx.member.id;
@@ -227,6 +253,13 @@ async function memberAction(db,ctx,d){
   await db.prepare('INSERT INTO team_push_links(member_id,subscription_id,linked_at) VALUES (?,?,?)').bind(memberId,subscriptionId,now()).run();
   return reply({ok:true});
  }
+ if(d.op==='task.status'){
+  const t=idok(d.id)?await one(db,'SELECT t.*,a.status AS activity_status,a.audience FROM team_activity_tasks t JOIN team_activities a ON a.id=t.activity_id WHERE t.id=?',d.id):null;
+  if(!t||t.assigned_to!==memberId||t.activity_status!=='published'||!(await audienceMembers(db,{id:t.activity_id,audience:t.audience})).includes(memberId))return fail('Tâche non attribuée.',403);
+  if(!['todo','doing','done'].includes(d.status))return fail('Statut invalide.');
+  await db.prepare('UPDATE team_activity_tasks SET status=?,updated_by=?,updated_at=? WHERE id=?').bind(d.status,ctx.email,now(),t.id).run();
+  await audit(db,ctx.email,'task.status',t.id,d.status);return reply({ok:true});
+ }
  if(d.op==='message.send'){
   const message=clean(d.body,1400),channel=d.channel,channelId=d.channelId||null;
   if(!message||!['general','pole','activity'].includes(channel))return fail('Message invalide.');
@@ -248,6 +281,27 @@ async function adminAction(db,ctx,d){
  if(d.op==='assignment.set')return assign(db,ctx,d);
  if(d.op==='activity.save')return saveActivity(db,ctx,d);
  if(d.op==='shift.save')return saveShift(db,ctx,d);
+ if(d.op==='task.save')return saveTask(db,ctx,d);
+ if(d.op==='task.delete'){
+  const task=idok(d.id)?await one(db,'SELECT * FROM team_activity_tasks WHERE id=?',d.id):null;
+  const a=task?await one(db,'SELECT * FROM team_activities WHERE id=?',task.activity_id):null;
+  if(!a||!await allowedActivity(db,ctx,a))return fail('Tâche non autorisée.',403);
+  await db.prepare('DELETE FROM team_activity_tasks WHERE id=?').bind(d.id).run();await audit(db,ctx.email,'task.delete',d.id);return reply({ok:true});
+ }
+ if(d.op==='checkin.set')return setCheckin(db,ctx,d);
+ if(d.op==='message.delete'){
+  const msg=idok(d.id)?await one(db,'SELECT * FROM team_messages WHERE id=?',d.id):null;
+  if(!msg)return fail('Message introuvable.',404);
+  if(!ctx.admin){
+   if(msg.channel==='general'||(msg.channel==='pole'&&!ctx.leadPoles.includes(msg.channel_id)))return fail('Modération réservée à l’administration ou au responsable du pôle.',403);
+   if(msg.channel==='activity'){
+    const a=await one(db,'SELECT * FROM team_activities WHERE id=?',msg.channel_id);
+    if(!a||!await allowedActivity(db,ctx,a))return fail('Modération refusée.',403);
+   }
+  }
+  await db.prepare('UPDATE team_messages SET deleted_at=? WHERE id=?').bind(now(),d.id).run();
+  await audit(db,ctx.email,'message.delete',d.id);return reply({ok:true});
+ }
  if(d.op==='shift.delete'){
   const s=idok(d.id)?await one(db,'SELECT a.* FROM team_activities a JOIN team_shifts s ON s.activity_id=a.id WHERE s.id=?',d.id):null;
   if(!s||!await allowedActivity(db,ctx,s))return fail('Créneau non autorisé.',403);
@@ -322,7 +376,7 @@ export async function handleZikaTeam(request,env,execution){
     let data;try{data=JSON.parse(raw)}catch{return fail('Requête JSON invalide.');}
     if(!data||typeof data.op!=='string')return fail('Action manquante.');
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
