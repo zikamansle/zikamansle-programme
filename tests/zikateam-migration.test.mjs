@@ -36,3 +36,24 @@ test('la migration ZikaTeam préserve et reprend les anciens membres, messages e
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);
  }finally{db.close()}
 });
+
+test('migration ZikaTeam : tables historiques facultatives absentes, sans perte',()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  db.exec('PRAGMA foreign_keys=ON');
+  const files=readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort();
+  for(const f of files.filter(x=>x.startsWith('000')))db.exec(readFileSync('drizzle/'+f,'utf8'));
+  db.exec('DROP TABLE team_messages; DROP TABLE team_memberships');
+  const moment=Date.parse('2026-11-10T09:00:00Z');
+  const meeting='cd121212-2222-4222-8222-cccccccccccc';
+  db.prepare('INSERT INTO team_members(email,display_name,role,active,created_at) VALUES(?,?,?,?,?)').run('test@example.org','Bénévole déjà inscrit','volunteer',1,moment);
+  db.prepare('INSERT INTO team_meetings(id,channel_id,title,starts_at,ends_at,place,agenda,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)').run(meeting,'general','Ancienne réunion',Date.parse('2027-04-24T10:00:00Z'),Date.parse('2027-04-24T11:00:00Z'),'Mairie','Répartition','test@example.org',moment);
+  for(const f of files.filter(x=>x.startsWith('010')))db.exec(readFileSync('drizzle/'+f,'utf8'));
+  assert.equal(db.prepare("SELECT display_name FROM team_members_legacy WHERE email='test@example.org'").get().display_name,'Bénévole déjà inscrit');
+  assert.equal(db.prepare("SELECT name FROM team_members WHERE email='test@example.org'").get().name,'Bénévole déjà inscrit');
+  assert.equal(db.prepare("SELECT title FROM team_activities WHERE id=?").get(meeting).title,'Ancienne réunion');
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM team_messages_legacy').get().n,0);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM team_memberships_legacy').get().n,0);
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);
+ }finally{db.close()}
+});
