@@ -227,8 +227,9 @@ export async function notifyTeamChat(env,ctx,message){
  const db=env.DB;
  const channel=message.channel,channelId=message.channelId||null;
  const members=await all(db,"SELECT id,email FROM team_members WHERE active=1 AND id<>? LIMIT 200",ctx.member.id);
- // Les tests du staging sont strictement limités au compte administrateur
- // lié pour ne pas lancer une notification de groupe à tous les bénévoles.
+ // Les abonnements suivent les droits réels : groupe général, pôles actuels,
+ // responsables et discussions des activités publiées concernées.
+ // Le staging n'autorise que les identifiants explicitement prévus pour le test.
  let sent=0;
  for(const recipient of members){
   if(!teamPushRecipientAllowed(env,recipient.id))continue;
