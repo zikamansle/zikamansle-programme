@@ -1,0 +1,104 @@
+name: Exporter la partie publique ZikaMansle vers GitHub
+on:
+  push:
+    branches: [migration/zikamansle-independent]
+    paths: ['.github/workflows/export-independent-site.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  public-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: migration/zikamansle-independent
+          persist-credentials: true
+      - name: Fetch only publicly served assets (never cookies or private APIs)
+        run: |
+          cat > /tmp/export_zika.py <<'PY'
+          import urllib.request, urllib.parse, re, pathlib, json, hashlib
+          from html.parser import HTMLParser
+          root='https://app.zikamansle.fr/'
+          base=pathlib.Path('independent-mobile/public')
+          base.mkdir(parents=True,exist_ok=True)
+          queue=['/','/admin-notifications','/index.html','/admin-notifications.html',
+                 '/mobile.js','/model.js','/notifications.js','/admin-notifications.js',
+                 '/config.js','/manifest.webmanifest','/sw.js','/favicon.ico',
+                 '/mobile.css','/style.css','/styles.css','/icons/icon-192.png','/icons/icon-512.png']
+          seen=set()
+          saved=[]
+          class Links(HTMLParser):
+            def __init__(self):super().__init__();self.urls=[]
+            def handle_starttag(self,tag,attrs):
+              d=dict(attrs)
+              for key in ['src','href']:
+                if d.get(key):self.urls.append(d[key])
+          while queue and len(seen)<120:
+            raw=queue.pop(0)
+            url=urllib.parse.urljoin(root,raw)
+            q=urllib.parse.urlparse(url)
+            if q.netloc!='app.zikamansle.fr' or q.query or q.fragment:continue
+            relative=q.path or '/'
+            if relative in seen:continue
+            seen.add(relative)
+            if relative.startswith('/api/') or relative.startswith('/.well-known/') or '..' in relative:continue
+            ext=pathlib.PurePosixPath(relative).suffix.lower()
+            if ext not in ('','.html','.js','.css','.json','.webmanifest','.ico','.png','.jpg','.jpeg','.webp','.svg','.woff','.woff2','.gif','.mp4'):continue
+            req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'*/*'})
+            try:
+              with urllib.request.urlopen(req,timeout=12) as response:
+                if response.status!=200:continue
+                data=response.read(8_000_001)
+                if len(data)>8_000_000:continue
+                typ=response.headers.get('content-type','').lower()
+                if not any(k in typ for k in ('text/','javascript','json','manifest','image/','font/','octet-stream','video/')):continue
+                effective=urllib.parse.urlparse(response.url).path
+                dst=relative.lstrip('/') or 'index.html'
+                if not pathlib.PurePosixPath(dst).suffix:dst=dst.rstrip('/')+'/index.html'
+                f=base/dst
+                f.parent.mkdir(parents=True,exist_ok=True)
+                f.write_bytes(data)
+                saved.append({'path':dst,'size':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+                if any(z in typ for z in ('html','javascript','css')):
+                  text=data.decode('utf8','replace')
+                  if 'html' in typ:
+                    parser=Links();parser.feed(text);items=parser.urls
+                  else:
+                    items=re.findall(r"""(?:src|href)\s*=\s*['"]([^'"]+)['"]|url\(\s*['"]?([^)'"]+)""",text,re.I)
+                    items=[x or y for x,y in items]
+                  for link in items:
+                    u=urllib.parse.urljoin(url,link);v=urllib.parse.urlparse(u)
+                    if v.netloc=='app.zikamansle.fr' and v.path.startswith('/') and not v.query and not v.fragment:
+                      queue.append(v.path)
+                print('SAVED',dst,len(data))
+            except Exception as e:print('SKIP',relative,type(e).__name__,str(e)[:120])
+          (base.parent/'source-manifest.json').write_text(json.dumps({'source':root,'assets':saved},ensure_ascii=False,indent=2),encoding='utf8')
+          print('TOTAL FILES',len(saved))
+          if len(saved)<6:raise SystemExit('Too few public assets recovered; stop safely.')
+          PY
+          python3 /tmp/export_zika.py
+      - name: Add administration link in staged copy only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('independent-mobile/public/mobile.js')
+          s=p.read_text(encoding='utf8')
+          needle="menuLink('#page/partenaires','Devenir partenaire / exposant','Rejoindre l’aventure','users')"
+          target="menuLink('/admin-notifications','Administration','Espace organisateurs · connexion sécurisée','info')"
+          if target not in s and needle in s:
+            s=s.replace(needle,needle+'+'+target)
+            p.write_text(s,encoding='utf8')
+          elif target not in s:
+            print('ADMIN PATCH NOT APPLIED: current format differs; manual integration required')
+          PY
+          node --check independent-mobile/public/mobile.js
+      - name: Commit a recoverable copy to the user-owned migration branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add independent-mobile/public independent-mobile/source-manifest.json
+          if git diff --cached --quiet; then echo "No changes to commit"; exit 0; fi
+          git commit -m "Sauvegarder la partie publique de l'application ZikaMansle dans GitHub"
+          git push origin HEAD:migration/zikamansle-independent
