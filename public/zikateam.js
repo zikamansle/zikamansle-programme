@@ -72,8 +72,8 @@ function messages(){if(!state.me.member&&!state.me.admin)return '<div class="tea
  return '<div class="team-card team-accent-purple"><h2>Messagerie ZikaTeam</h2><p>Choisis une discussion : générale, celle de ton pôle, une activité ou, si tu es responsable, le salon réservé aux référents.</p><label class="team-form">Conversation <select id="teamChannel">'+choices.map(([c,id,label])=>'<option value="'+esc(c+':'+id)+'" '+(state.chatChannel===c&&state.chatId===(id||null)?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><div id="teamMessages" aria-live="polite">'+(state.messages.length?state.messages.map(m=>'<article class="team-message"><strong>'+esc(m.author)+'</strong><time>'+shortdt(m.created_at)+'</time><p>'+esc(m.body)+'</p>'+(state.me.admin||(state.me.leadPoles.length&&state.chatChannel==='pole')?'<button class="team-button danger" data-delete-message="'+m.id+'">Modérer / retirer</button>':'')+'</article>').join(''):'<p>Aucun message dans cette conversation.</p>')+'</div><form id="messageForm" class="team-composer"><label for="messageText">Votre message</label><textarea id="messageText" name="body" maxlength="1400" rows="3" required placeholder="Écrire à l’équipe…"></textarea><button class="team-button" type="submit">Envoyer le message</button></form></div>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
- const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements']]:[]),...(state.me.admin?[['benevoles','Bénévoles'],['charte','Charte'],['journal','Historique']]:[])];
- return '<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,journal:manageAudit}[state.managementTab]||manageActivities)();
+ const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['cotisations','Cotisations']]:[]),...(state.me.admin?[['benevoles','Bénévoles'],['charte','Charte'],['journal','Historique']]:[])];
+ return '<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,cotisations:manageDues,journal:manageAudit}[state.managementTab]||manageActivities)();
 }
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
 function manageActivities(){const d={...state.manage,activities:state.manage.activities.filter(x=>x.can_edit)},a=d.activities.find(x=>x.id===state.editActivity)||{};const allp=state.me.admin?d.poles.filter(p=>!p.archived):d.poles;
@@ -131,6 +131,13 @@ function manageAttendance(){
  (acts.length?acts.map(a=>'<section class="team-card"><div class="team-between"><div><h3>'+esc(a.title)+'</h3><p>'+esc(dt(a.starts_at))+' · '+esc(a.place||'Lieu à préciser')+'</p><p class="team-small">'+(a.invitedCount||0)+' bénévoles concernés · '+(a.attendance||[]).filter(m=>m.checked_in_at).length+' pointés présents</p></div><div class="team-row"><button class="team-button light" type="button" data-export-attendance="'+a.id+'">Exporter CSV</button><button class="team-button orange" type="button" data-print-attendance="'+a.id+'">Imprimer</button></div></div>'+attendanceBlock(a)+'</section>').join(''):'<section class="team-card"><p>Aucune activité publiée à émarger.</p></section>');
 }
 
+function manageDues(){
+ if(!state.me.admin&&!state.me.secretariat)return '<section class="team-card">Accès réservé au secrétariat.</section>';
+ const rows=state.manage.dues||[];
+ const paid=rows.filter(x=>Boolean(x.paid)).length;
+ return '<section class="team-card team-accent-teal"><h2>Suivi des cotisations</h2><p>Pour chaque bénévole, indique si l’adhésion est à jour et sa date. Ces informations sont réservées au secrétariat et à l’administration.</p><div class="team-dues-summary"><span><strong>'+paid+'</strong> à jour</span><span><strong>'+(rows.length-paid)+'</strong> à vérifier</span></div>'+
+ (rows.length?rows.map(d=>'<form class="team-dues-item team-form" data-dues-form="'+esc(d.member_id)+'"><div class="team-between"><strong>'+esc(d.name)+'</strong><span class="team-pill '+(d.paid?'ok':'warn')+'">'+(d.paid?'À jour':'Non à jour')+'</span></div><div class="team-split"><label>Adhésion à jour<select name="paid"><option value="0" '+(!d.paid?'selected':'')+'>Non</option><option value="1" '+(d.paid?'selected':'')+'>Oui</option></select></label><label>Date de la cotisation<input type="date" name="paidOn" value="'+esc(d.paid_on||'')+'" '+(d.paid?'required':'')+'></label></div><button class="team-button orange" type="submit">Enregistrer la cotisation</button>'+(d.updated_at?'<p class="team-small team-muted">Dernière mise à jour le '+esc(shortdt(d.updated_at))+' par '+esc(d.updated_by)+'</p>':'')+'</form>').join(''):'<p>Aucun bénévole actif pour le moment.</p>')+'</section>';
+}
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
 
 function loginScreen(error=''){
@@ -163,7 +170,7 @@ function render(){
  }
  root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)();
 }
-async function refresh(){state.me=await api('me');if(state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length)state.managementTab='emargements';render();}
+async function refresh(){state.me=await api('me');if(state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length)state.managementTab='cotisations';render();}
 async function refreshMessages(){const params=new URLSearchParams({channel:state.chatChannel});if(state.chatId)params.set('id',state.chatId);const response=await api('messages?'+params);state.messages=response.messages||[];if(state.tab==='messages')render();}
 const fromForm=f=>Object.fromEntries(new FormData(f).entries());
 async function uploadTeamPhoto(memberId,file){
@@ -216,6 +223,11 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
  if(b.dataset.removeShift){if(!confirm('Supprimer ce créneau et ses inscriptions ?'))return;await perform(async()=>command('shift.delete',{id:b.dataset.removeShift}));return;}
 });
 root.addEventListener('change',async e=>{
+ if(e.target.matches('[data-dues-form] select[name="paid"]')){
+  const f=e.target.closest('form'),input=f.querySelector('input[name="paidOn"]');
+  input.required=e.target.value==='1';
+  return;
+ }
  if(e.target.matches('input[data-photo-member]')){
   const file=e.target.files?.[0];if(!file)return;
   await perform(async()=>uploadTeamPhoto(e.target.dataset.photoMember,file));
@@ -234,6 +246,10 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
  if(f.id==='poleForm')return perform(async()=>{const d=fromForm(f);await command('pole.save',{id:d.id||undefined,name:d.name,description:d.description});state.editPole=null});
  if(f.id==='teamMyProfileForm')return perform(async()=>{if(!state.me.admin)throw Error('Action réservée à l’administration.');const d=fromForm(f);await command('member.save',{id:state.me.member?.id||undefined,name:d.name,email:state.me.email,active:true});state.tab='fiche';});
+ if(f.hasAttribute('data-dues-form'))return perform(async()=>{
+  const d=fromForm(f);
+  await command('dues.set',{memberId:f.dataset.duesForm,paid:d.paid==='1',paidOn:d.paidOn||null});
+ });
  if(f.id==='memberForm')return perform(async()=>{const d=fromForm(f);await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked});state.editMember=null});
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
  if(f.id==='shiftForm')return perform(async()=>{const d=fromForm(f);await command('shift.save',{id:d.id||undefined,activityId:d.activityId,label:d.label,starts_at:new Date(d.starts_at).toISOString(),ends_at:new Date(d.ends_at).toISOString(),capacity:Number(d.capacity)});state.editShift=null});
