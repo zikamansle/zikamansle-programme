@@ -589,6 +589,20 @@ async function adminAction(db,ctx,d){
  }
  if(d.op==='member.save')return saveMember(db,ctx,d);
  if(d.op==='pole.save')return savePole(db,ctx,d);
+ if(d.op==='pole.delete'){
+  if(!ctx.admin)return fail('Suppression réservée à l’administration.',403);
+  if(!idok(d.id))return fail('Identifiant de pôle invalide.',400);
+  const pole=await one(db,'SELECT id,name FROM team_poles WHERE id=?',d.id);
+  if(!pole)return fail('Pôle introuvable.',404);
+  const linkedMembers=await one(db,'SELECT COUNT(*) AS n FROM team_memberships WHERE pole_id=?',d.id);
+  const linkedActivities=await one(db,'SELECT COUNT(*) AS n FROM team_activity_poles WHERE pole_id=?',d.id);
+  const linkedMessages=await one(db,"SELECT COUNT(*) AS n FROM team_messages WHERE channel='pole' AND channel_id=?",d.id);
+  if(linkedMembers.n||linkedActivities.n||linkedMessages.n)
+   return fail('Ce pôle possède des bénévoles, des réunions ou des messages. Pour conserver les données, utilise « Archiver » ; retire ses éléments avant une suppression définitive.',409);
+  await db.prepare('DELETE FROM team_poles WHERE id=?').bind(d.id).run();
+  await audit(db,ctx.email,'pole.delete',d.id,pole.name);
+  return reply({ok:true,deleted:true});
+ }
  if(d.op==='pole.archive'){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const p=await one(db,'SELECT id FROM team_poles WHERE id=?',d.id);if(!p)return fail('Pôle introuvable.',404);
