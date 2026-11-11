@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',loginName:'',codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listSearch:''};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',loginName:'',codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -371,10 +371,28 @@ function listsData(){
   return !q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city,m.quality,...m.poles].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q));
  });
 }
+const listColumnLabels={name:'Nom et prénom',quality:'Qualité',poles:'Pôle(s)',paid:'Adhésion',phone:'Téléphone',email:'E-mail',address:'Adresse',postal_code:'CP',city:'Ville',paid_on:'Règlement le'};
+function listValue(m,key){return key==='poles'?m.poles.join(', '):key==='paid'?(m.paid?'À jour':'En attente'):m[key]||'';}
+function listOutputPeople(){
+ if(!state.listEditor)return listsData();
+ const all=state.manage?.contacts||[],order=new Map(state.listSelected.map((id,i)=>[id,i]));
+ const previous={status:state.listStatus,role:state.listRole,pole:state.listPole,search:state.listSearch};
+ state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';
+ try{return listsData().filter(m=>order.has(m.member_id)).sort((a,b)=>order.get(a.member_id)-order.get(b.member_id));}
+ finally{state.listStatus=previous.status;state.listRole=previous.role;state.listPole=previous.pole;state.listSearch=previous.search;}
+}
 function listsRows(){
- return [['Nom et prénom','Qualité','Pôle(s)','Adhésion','Téléphone','E-mail','Adresse','CP','Ville','Règlement le'],...listsData().map(m=>[
-  m.name,m.quality,m.poles.join(', '),m.paid?'À jour':'En attente',m.phone,m.email,m.address,m.postal_code,m.city,m.paid_on
- ])];
+ const columns=state.listEditor?state.listColumns:Object.keys(listColumnLabels);
+ return [columns.map(k=>listColumnLabels[k]),...listOutputPeople().map(m=>columns.map(k=>listValue(m,k)))];
+}
+function openSavedList(id){
+ const found=state.manage?.savedLists?.find(x=>x.id===id);if(!found)return toast('Liste introuvable.');
+ try{
+  const columns=JSON.parse(found.columns_json),ids=JSON.parse(found.member_ids_json);
+  if(!Array.isArray(columns)||!Array.isArray(ids)||!columns.length)return toast('Cette liste est invalide.');
+  state.listEditor=true;state.listId=found.id;state.listTitle=found.title;state.listColumns=columns.filter(x=>Object.hasOwn(listColumnLabels,x));state.listSelected=ids;
+  state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();
+ }catch{toast('Impossible de lire cette liste.')}
 }
 function exportListsCSV(){
  const guard=s=>{const v=String(s??'');return /^[=+\-@\t\r]/.test(v)?"'"+v:v;};
@@ -387,21 +405,24 @@ function printLists(mode){
  popup.opener=null;
  const headings=rows[0].map(v=>'<th>'+esc(v)+'</th>').join('');
  const body=rows.slice(1).map(row=>'<tr>'+row.map(v=>'<td>'+esc(v||'—')+'</td>').join('')+'</tr>').join('');
- const title='ZikaMansle — Liste des bénévoles';
+ const title='ZikaMansle — '+esc(state.listEditor?(state.listTitle||'Liste personnalisée'):'Liste des bénévoles');
  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+title+'</title><style>@page{size:A4 landscape;margin:9mm}body{font:9px Arial,sans-serif;color:#19374c}h1{font-size:18px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #b6c6d1;text-align:left;padding:5px 3px;overflow-wrap:anywhere}th{background:#eaf3f9}tr{break-inside:avoid}button{padding:10px;margin:10px 0}@media print{button,.hint{display:none}}</style></head><body><h1>'+title+'</h1><p>Liste interne confidentielle — Administration / Secrétariat · '+rows.slice(1).length+' personnes · '+new Date().toLocaleDateString('fr-FR')+'</p><p class="hint">'+(mode==='pdf'?'Choisis « Enregistrer au format PDF » dans l’impression.':'Choisis ton imprimante.')+'</p><button onclick="window.print()">Imprimer / enregistrer en PDF</button><table><thead><tr>'+headings+'</tr></thead><tbody>'+body+'</tbody></table></body></html>';
  popup.document.open();popup.document.write(html);popup.document.close();
 }
 function manageLists(){
  if(!state.me.admin&&!state.me.secretariat)return '<section class="team-card">Accès réservé à l’administration et au secrétariat.</section>';
  const d=state.manage,rows=listsData();
- return '<section class="team-card team-accent-blue"><h2>Listes et exports</h2><p>Combine les filtres pour préparer une liste des bénévoles. Les coordonnées complètes sont réservées à l’administration et au secrétariat.</p>'+
+ const saved=d.savedLists||[];
+ const selection=state.listEditor?'<section class="team-card team-accent-purple"><button type="button" class="team-button light team-back" data-list-exit>← Retour aux listes</button><h3>Éditer une liste personnalisée</h3><p>Choisis les participants, les colonnes et leur ordre. Les listes sont enregistrées pour l’administration et le secrétariat.</p><form id="teamCustomListForm" class="team-form"><label>Titre de la liste<input name="title" maxlength="110" minlength="2" required value="'+esc(state.listTitle)+'" placeholder="Ex. Permanence Super U"></label><fieldset><legend>Colonnes de la liste (dans l’ordre choisi)</legend><div class="team-column-picks">'+Object.entries(listColumnLabels).map(([key,label])=>'<label class="team-check"><input type="checkbox" name="column" value="'+key+'" '+(state.listColumns.includes(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div></fieldset><div class="team-row"><button type="submit" class="team-button orange">Enregistrer cette liste</button><button type="button" class="team-button light" data-list-exit>Annuler et revenir</button></div></form><h3>Participants sélectionnés ('+state.listSelected.length+')</h3><p class="team-small">Les flèches permettent de changer l’ordre des personnes.</p><div class="team-list-order">'+listOutputPeople().map((m,i)=>'<div class="team-order-item"><span>'+esc(m.name)+'</span><div class="team-row"><button type="button" class="team-button light" data-list-move="up" data-member="'+m.member_id+'" '+(i===0?'disabled':'')+' aria-label="Monter '+esc(m.name)+'">↑</button><button type="button" class="team-button light" data-list-move="down" data-member="'+m.member_id+'" '+(i===state.listSelected.length-1?'disabled':'')+' aria-label="Descendre '+esc(m.name)+'">↓</button><button type="button" class="team-button light" data-list-toggle="'+m.member_id+'">Retirer</button></div></div>').join('')+'</div></section>':'';
+ const saveControls='<section class="team-card team-accent-teal"><h2>Mes listes enregistrées</h2><button type="button" class="team-button orange" data-list-new>+ Créer une liste personnalisée</button>'+(saved.length?saved.map(x=>'<div class="team-member-card"><div><strong>'+esc(x.title)+'</strong><p class="team-small">Modifiée le '+esc(shortdt(x.updated_at))+'</p></div><div class="team-row"><button class="team-button light" type="button" data-list-open="'+x.id+'">Ouvrir / modifier</button><button class="team-button danger" type="button" data-list-delete="'+x.id+'">Supprimer</button></div></div>').join(''):'<p>Pas encore de liste enregistrée.</p>')+'</section>';
+ return saveControls+selection+'<section class="team-card team-accent-blue"><h2>Listes et exports</h2><p>Combine les filtres pour préparer une liste des bénévoles. Les coordonnées complètes sont réservées à l’administration et au secrétariat.</p>'+
  '<div class="team-split"><label>Adhésions<select id="teamListStatus"><option value="all" '+(state.listStatus==='all'?'selected':'')+'>Toutes</option><option value="paid" '+(state.listStatus==='paid'?'selected':'')+'>À jour</option><option value="pending" '+(state.listStatus==='pending'?'selected':'')+'>Non à jour</option></select></label>'+
  '<label>Qualité / fonction<select id="teamListRole"><option value="all" '+(state.listRole==='all'?'selected':'')+'>Tous les bénévoles</option><option value="leaders" '+(state.listRole==='leaders'?'selected':'')+'>Responsables uniquement</option><option value="director" '+(state.listRole==='director'?'selected':'')+'>Dirigeants uniquement</option><option value="bureau" '+(state.listRole==='bureau'?'selected':'')+'>Bureau uniquement</option><option value="volunteer" '+(state.listRole==='volunteer'?'selected':'')+'>Bénévoles sans fonction</option></select></label>'+
  '<label>Par pôle<select id="teamListPole"><option value="all">Tous les pôles</option>'+(d.poles||[]).filter(p=>!p.archived).map(p=>'<option value="'+p.id+'" '+(state.listPole===p.id?'selected':'')+'>'+esc(p.name)+'</option>').join('')+'</select></label>'+
  '<label>Recherche<input id="teamListSearch" type="search" placeholder="Nom, ville, coordonnées…" value="'+esc(state.listSearch)+'"></label></div>'+
  '<div class="team-export-tools"><button class="team-button light" type="button" data-list-apply>Appliquer les filtres</button><button class="team-button light" type="button" data-list-reset>Afficher tous</button><button class="team-button light" type="button" data-list-export="csv">Exporter CSV</button><button class="team-button light" type="button" data-list-export="print">Imprimer A4</button><button class="team-button orange" type="button" data-list-export="pdf">Créer un PDF</button></div><p><strong>'+rows.length+'</strong> personne(s) correspondent aux critères.</p>'+
- '<div class="team-table-wrap"><table class="team-table"><thead><tr><th>Nom et prénom</th><th>Qualité</th><th>Pôle(s)</th><th>Adhésion</th><th>Téléphone</th><th>E-mail</th></tr></thead><tbody>'+
- (rows.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+esc(m.quality)+'</td><td>'+esc(m.poles.join(', ')||'—')+'</td><td><span class="team-pill '+(m.paid?'ok':'warn')+'">'+(m.paid?'À jour':'Non à jour')+'</span></td><td>'+esc(m.phone||'—')+'</td><td>'+esc(m.email||'—')+'</td></tr>').join('')||'<tr><td colspan="6">Aucun résultat.</td></tr>')+'</tbody></table></div></section>';
+ '<div class="team-table-wrap"><table class="team-table"><thead><tr>'+(state.listEditor?'<th>Choisir</th>':'')+'<th>Nom et prénom</th><th>Qualité</th><th>Pôle(s)</th><th>Adhésion</th><th>Téléphone</th><th>E-mail</th></tr></thead><tbody>'+
+ (rows.map(m=>'<tr>'+(state.listEditor?'<td><label class="team-check"><input type="checkbox" data-list-check="'+m.member_id+'" '+(state.listSelected.includes(m.member_id)?'checked':'')+' aria-label="Ajouter '+esc(m.name)+'"></label></td>':'')+'<td>'+esc(m.name)+'</td><td>'+esc(m.quality)+'</td><td>'+esc(m.poles.join(', ')||'—')+'</td><td><span class="team-pill '+(m.paid?'ok':'warn')+'">'+(m.paid?'À jour':'Non à jour')+'</span></td><td>'+esc(m.phone||'—')+'</td><td>'+esc(m.email||'—')+'</td></tr>').join('')||'<tr><td colspan="'+(state.listEditor?'7':'6')+'">Aucun résultat.</td></tr>')+'</tbody></table></div></section>';
 }
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
 
@@ -496,12 +517,18 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.hasAttribute('data-team-password-login')){state.loginMethod='password';state.codeSent=false;loginScreen();return;}
  if(b.hasAttribute('data-team-code-login')){state.loginMethod='code';state.codeSent=false;loginScreen();return;}
  if(b.hasAttribute('data-team-reset')){state.codeSent=false;state.loginMethod='code';loginScreen();return;}
  if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;state.forcePasswordSetup=false;state.loginMethod='password';loginScreen();return;}
 
+ if(b.hasAttribute('data-list-new')){state.listEditor=true;state.listId=null;state.listTitle='';state.listSelected=[];state.listColumns=['name','quality','poles','paid','phone','email'];render();return;}
+ if(b.dataset.listOpen){openSavedList(b.dataset.listOpen);return;}
+ if(b.hasAttribute('data-list-exit')){state.listEditor=false;state.listId=null;state.listTitle='';state.listSelected=[];render();return;}
+ if(b.dataset.listDelete){if(!confirm('Supprimer définitivement cette liste enregistrée ?'))return;await perform(async()=>{await command('list.delete',{id:b.dataset.listDelete});if(state.listId===b.dataset.listDelete){state.listEditor=false;state.listId=null;}});return;}
+ if(b.dataset.listToggle){state.listSelected=state.listSelected.filter(id=>id!==b.dataset.listToggle);render();return;}
+ if(b.dataset.listMove){const i=state.listSelected.indexOf(b.dataset.member);const next=i+(b.dataset.listMove==='up'?-1:1);if(i>=0&&next>=0&&next<state.listSelected.length){[state.listSelected[i],state.listSelected[next]]=[state.listSelected[next],state.listSelected[i]];render();}return;}
  if(b.hasAttribute('data-list-apply')){state.listSearch=document.getElementById('teamListSearch')?.value||'';render();return;}
  if(b.hasAttribute('data-list-reset')){state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();return;}
  if(b.dataset.listExport){if(!state.me.admin&&!state.me.secretariat)return;b.dataset.listExport==='csv'?exportListsCSV():printLists(b.dataset.listExport);return;}
@@ -593,6 +620,7 @@ root.addEventListener('change',async e=>{
   await perform(async()=>uploadTeamPhoto(e.target.dataset.photoMember,file));
   return;
  }
+ if(e.target.matches('[data-list-check]')){if(e.target.checked){if(!state.listSelected.includes(e.target.dataset.listCheck))state.listSelected.push(e.target.dataset.listCheck);}else state.listSelected=state.listSelected.filter(x=>x!==e.target.dataset.listCheck);render();return;}
  if(e.target.id==='teamListStatus'){state.listStatus=e.target.value;render();return;}
  if(e.target.id==='teamListRole'){state.listRole=e.target.value;render();return;}
  if(e.target.id==='teamListPole'){state.listPole=e.target.value;render();return;}
@@ -645,6 +673,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   await command('signing.add',{sessionId:state.signingCurrent,memberIds:ids});
   state.signingSelection=[];
  });
+ if(f.id==='teamCustomListForm')return perform(async()=>{const d=fromForm(f);const columns=[...f.querySelectorAll('input[name="column"]:checked')].map(x=>x.value);if(!columns.length)throw Error('Choisis au moins une colonne.');const saved=await command('list.save',{id:state.listId||undefined,title:d.title,columns,memberIds:state.listSelected});state.listId=saved.id;state.listTitle=d.title;state.listColumns=columns;});
  if(f.id==='memberForm')return perform(async()=>{const d=fromForm(f);await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked,...rolePayload(f)});state.editMember=null});
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
  if(f.id==='shiftForm')return perform(async()=>{const d=fromForm(f);await command('shift.save',{id:d.id||undefined,activityId:d.activityId,label:d.label,starts_at:new Date(d.starts_at).toISOString(),ends_at:new Date(d.ends_at).toISOString(),capacity:Number(d.capacity)});state.editShift=null});
