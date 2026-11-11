@@ -423,11 +423,7 @@ async function memberAction(db,ctx,d){
  }
  if(d.op==='message.send'){
   const message=clean(d.body,1400),channel=d.channel,channelId=d.channelId||null;
-  if(!message||!['general','pole','activity','leaders','direct'].includes(channel))return fail('Message invalide.');
-  if(channel==='direct'){
-   if(!await permittedChat(db,ctx,channel,channelId))return fail('Destinataire non autorisé.',403);
-   const id=uuid();await db.prepare("INSERT INTO team_direct_messages(id,author_id,recipient_id,body,created_at) VALUES(?,?,?,?,?)").bind(id,memberId,channelId,message,now()).run();return reply({ok:true,id});
-  }
+  if(!message||!['general','pole','activity','leaders'].includes(channel))return fail('Message invalide.');
   if(channel==='leaders'){
    if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion réservée aux responsables.',403);
    const id=uuid();
@@ -709,22 +705,8 @@ async function adminAction(db,ctx,d){
  }
  return fail('Action non reconnue.',404);
 }
-async function canDirectMessage(db,ctx,toId){
- if(!ctx.member?.active||ctx.pending||!idok(toId)||toId===ctx.member.id)return false;
- const target=await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',toId);
- if(!target)return false;
- if(ctx.admin)return true;
- // A volunteer can contact a responsible they can see in one of their accessible rooms.
- const rooms=await chatRooms(db,ctx);
- for(const room of rooms)if((await chatLeaders(db,ctx,room)).some(p=>p.id===toId))return true;
- // A responsible can answer a private request from any approved volunteer.
- if(ctx.leadPoles.length&&await one(db,"SELECT 1 FROM team_direct_messages WHERE deleted_at IS NULL AND ((author_id=? AND recipient_id=?) OR (author_id=? AND recipient_id=?)) LIMIT 1",toId,ctx.member.id,ctx.member.id,toId))return true;
- // Direct exchanges already started remain accessible to both participants.
- return Boolean(await one(db,"SELECT 1 FROM team_direct_messages WHERE deleted_at IS NULL AND ((author_id=? AND recipient_id=?) OR (author_id=? AND recipient_id=?)) LIMIT 1",toId,ctx.member.id,ctx.member.id,toId));
-}
 async function permittedChat(db,ctx,channel,channelId){
  if(!ctx.member||ctx.pending||!ctx.member.active)return false;
- if(channel==='direct')return canDirectMessage(db,ctx,channelId);
  if(channel==='general')return !channelId;
  if(channel==='leaders')return !channelId&&(ctx.admin||ctx.leadPoles.length>0);
  if(channel==='pole'){
@@ -747,11 +729,6 @@ async function chatRooms(db,ctx){
  for(const p of poles)rooms.push({channel:'pole',id:p.id,title:p.name});
  const allActivities=await all(db,"SELECT * FROM team_activities WHERE status='published' ORDER BY starts_at DESC LIMIT 100");
  for(const a of allActivities)if(ctx.admin||await visibleActivity(db,ctx,a))rooms.push({channel:'activity',id:a.id,title:a.title});
- const direct=await all(db,"SELECT DISTINCT CASE WHEN author_id=? THEN recipient_id ELSE author_id END AS id FROM team_direct_messages WHERE deleted_at IS NULL AND (author_id=? OR recipient_id=?) LIMIT 100",ctx.member.id,ctx.member.id,ctx.member.id);
- for(const row of direct){
-  const contact=await one(db,'SELECT id,name FROM team_members WHERE id=? AND active=1',row.id);
-  if(contact)rooms.push({channel:'direct',id:contact.id,title:'Privé · '+contact.name});
- }
  return rooms;
 }
 async function chatLeaders(db,ctx,room){
@@ -784,15 +761,9 @@ async function chatSummary(db,ctx){
  const rooms=await chatRooms(db,ctx);
  for(const room of rooms){
   const appearance=await one(db,'SELECT icon,image_id FROM team_chat_icons WHERE channel=? AND channel_id=?',room.channel,room.id||'');
-  room.responsibles=room.channel==='direct'?[]:await chatLeaders(db,ctx,room);
+  room.responsibles=await chatLeaders(db,ctx,room);
   room.icon=appearance?.icon||({general:'💬',leaders:'⭐',pole:'🎨',activity:'📅'}[room.channel]||'💬');
   room.image_id=appearance?.image_id||null;
-  if(room.channel==='direct'){
-   const last=await one(db,"SELECT t.body,t.created_at,m.name AS author FROM team_direct_messages t JOIN team_members m ON m.id=t.author_id WHERE t.deleted_at IS NULL AND ((t.author_id=? AND t.recipient_id=?) OR (t.author_id=? AND t.recipient_id=?)) ORDER BY t.created_at DESC LIMIT 1",ctx.member.id,room.id,room.id,ctx.member.id);
-   const read=await one(db,"SELECT last_read_at FROM team_chat_reads WHERE member_id=? AND channel='direct' AND channel_id=?",ctx.member.id,room.id);
-   const count=await one(db,"SELECT COUNT(*) AS unread FROM team_direct_messages WHERE deleted_at IS NULL AND author_id=? AND recipient_id=? AND created_at>?",room.id,ctx.member.id,read?.last_read_at||0);
-   room.last=last||null;room.unread=count?.unread||0;continue;
-  }
   const leader=room.channel==='leaders',table=leader?'team_leader_messages':'team_messages';
   const filter=leader?'':' AND t.channel=? AND t.channel_id IS ?';
   const params=leader?[]:[room.channel,room.id];
@@ -808,11 +779,6 @@ async function getMessages(db,ctx,url){
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
  if(ctx.pending)return fail('Inscription en attente de validation : aucune conversation n’est accessible.',403);
  if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion non autorisée.',403);
- if(channel==='direct'){
-  const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,NULL AS media_id,NULL AS filename,NULL AS mime,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1)) THEN 1 ELSE 0 END AS has_photo FROM team_direct_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE ((t.author_id=? AND t.recipient_id=?) OR (t.author_id=? AND t.recipient_id=?)) AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.member.id,channelId,channelId,ctx.member.id);
-  await db.prepare("INSERT INTO team_chat_reads(member_id,channel,channel_id,last_read_at) VALUES(?,'direct',?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET last_read_at=MAX(last_read_at,excluded.last_read_at)").bind(ctx.member.id,channelId,now()).run();
-  return reply({messages:messages.reverse()});
- }
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
   const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,md.id AS media_id,md.filename,md.mime,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_chat_media md ON md.message_id=t.id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id);
