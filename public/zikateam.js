@@ -507,12 +507,25 @@ function render(){
  if(state.signingMember)setupSigningCanvas();
 }
 async function refresh(){
+ // Priorité à l’affichage : les modules de gestion et les salons sont chargés
+ // ensuite, et ne doivent jamais bloquer la fiche ni l'écran de connexion.
  state.me=await api('me');
- if(!state.me.passwordRequired&&state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;
- if(!state.me.passwordRequired&&state.me.charterAccepted&&(state.me.admin||state.me.secretariat))state.signing=await api('signing');else state.signing=null;
- if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length&&state.managementTab==='activites')state.managementTab='emargements';
- if(state.me.charterAccepted&&!state.me.pending&&state.me.member)try{await refreshChatSummary()}catch{state.chatRooms=[];state.chatUnread=0;}
+ const me=state.me;
+ if(me.secretariat&&!me.admin&&!me.leadPoles.length&&state.managementTab==='activites')state.managementTab='emargements';
+ if(me.passwordRequired||!me.charterAccepted){state.manage=null;state.signing=null;state.chatRooms=[];state.chatUnread=0;render();return;}
  render();
+ const tasks=[];
+ if(me.admin||me.leadPoles.length||me.secretariat){
+  tasks.push(api('manage').then(data=>{if(state.me===me){state.manage=data;if(state.tab==='gestion')render();}}).catch(e=>toast('Gestion : '+e.message)));
+ }else state.manage=null;
+ if(me.admin||me.secretariat){
+  tasks.push(api('signing').then(data=>{if(state.me===me){state.signing=data;if(state.tab==='gestion')render();}}).catch(e=>toast('Émargements : '+e.message)));
+ }else state.signing=null;
+ if(!me.pending&&me.member){
+  tasks.push(refreshChatSummary().then(()=>{if(state.me===me&&state.tab==='messages')render();}).catch(()=>{}));
+ }
+ // Toutes les données secondaires arrivent ensuite ; la navigation est déjà disponible.
+ await Promise.allSettled(tasks);
 }
 async function refreshChatSummary(){
  if(!state.me?.charterAccepted||state.me.pending||!state.me.member){state.chatRooms=[];state.chatUnread=0;return;}
@@ -727,7 +740,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
 });
 async function init(){
  try{
-  const status=await fetch('/zikateam/api/auth/status',{cache:'no-store',credentials:'same-origin'});
+  const status=await fetch('/zikateam/api/auth/status',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(8500)});
   if(status.ok){state.freeLogin=true;}
   else if(status.status===503){root.innerHTML='<section class="team-card"><h2>Connexion ZikaTeam en cours de configuration</h2><p>Le service de connexion gratuit doit être configuré par l’administration.</p></section>';return;}
  }catch{}
