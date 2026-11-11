@@ -186,7 +186,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal(secView.payload.activities[0].can_edit,false);
   assert.equal(secView.payload.activities[0].agenda,undefined);
   assert.equal(secView.payload.activities[0].tasks,undefined);
-  assert.equal(secView.payload.members[0].email,undefined);
+  assert.equal(secView.payload.members[0].email,A,'le secrétariat voit les fiches nécessaires pour désigner responsables et dirigeants');
   assert.equal((await api(S,{op:'member.save',name:'Inconnu',email:'x@example.org'})).status,403);
   assert.equal((await api(S,{op:'pole.save',name:'Pôle non autorisé'})).status,403);
   assert.equal((await api(S,{op:'activity.save',title:'Interdit'})).status,403);
