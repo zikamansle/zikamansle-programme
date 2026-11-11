@@ -221,3 +221,17 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
 .team-login-card [role="alert"]{border-radius:12px;font-weight:650}
 .team-item button[data-delete-pole]{background:#fff0f1;border:1px solid #eebfc5;color:#9c2436}
 .team-item button[data-delete-pole]:hover{background:#ffe3e6}
+
+/* ZikaTeam : accueil plus lisible et coloré, sans toucher au programme public. */
+.team-login-card{border-top:6px solid #1487c7;background:linear-gradient(155deg,#fff 65%,#edf8ff)}
+.team-login-card h1{color:#102c45}
+.team-login-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0 23px}
+.team-login-choices .team-button{min-height:52px;font-size:15px}
+.team-login-choices .team-button[aria-pressed="true"]{background:#fa8b2c;color:#172a3a;border-color:#fa8b2c;box-shadow:0 4px 12px #fa8b2c35}
+.team-login-choices .team-button[aria-pressed="false"]{background:#eaf5fd;color:#215575;border-color:#bfdff3}
+.team-login-card h2{color:#1676af}
+.team-accent-purple{border-top:5px solid #8465c8}
+.team-accent-teal{border-top:5px solid #159c94}
+.team-accent-orange{border-top:5px solid #fa8b2c}
+.team-accent-blue{border-top:5px solid #1487c7}
+@media(max-width:500px){.team-login-choices{grid-template-columns:1fr}.team-login-choices .team-button{width:100%}}
