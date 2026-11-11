@@ -159,3 +159,11 @@ test('Entrée envoie un message et Maj + Entrée garde un saut de ligne',()=>{
  assert.ok(client.includes('form.requestSubmit()'));
  assert.ok(client.includes('Entrée pour envoyer, Maj + Entrée'));
 });
+
+test('la publication d’une réunion utilise deux actions explicites',()=>{
+ assert.ok(client.includes('name="publishAction" value="published"'));
+ assert.ok(client.includes('name="publishAction" value="draft"'));
+ assert.ok(client.includes('📣 Publier et prévenir les bénévoles'));
+ assert.ok(!client.includes('<label>État<select name="status">'));
+ assert.ok(client.includes('Impossible d’enregistrer : '));
+});
