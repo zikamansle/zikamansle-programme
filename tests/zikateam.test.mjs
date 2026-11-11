@@ -217,6 +217,20 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   await okay(S,{op:'signing.close',sessionId:signatureSession});
   assert.equal((await api(S,{op:'signing.add',sessionId:signatureSession,memberIds:[secretary]})).status,409,'feuille clôturée en lecture seule');
   assert.equal((await api(S,{op:'signing.sign',sessionId:signatureSession,memberId:other,strokes:trace})).status,409);
+  // Les feuilles sont conservées et consultables ; suppression auditable et protégée.
+  assert.equal((await invoke(A,'/zikateam/api/signing')).payload.sessions.some(x=>x.id===signatureSession),true,'la feuille signée reste sauvegardée');
+  assert.equal((await api(B,{op:'signing.delete',sessionId:signatureSession,confirm:true,confirmTitle:'Réunion des bénévoles'})).status,403,'un bénévole ne supprime jamais un émargement');
+  assert.equal((await api(S,{op:'signing.delete',sessionId:signatureSession,confirm:true,confirmTitle:'Réunion des bénévoles'})).status,403,'le secrétariat ne détruit pas des signatures validées');
+  assert.equal((await api(A,{op:'signing.delete',sessionId:signatureSession,confirm:true})).status,409,'la suppression des signatures demande le titre exact');
+  assert.equal((await api(A,{op:'signing.delete',sessionId:signatureSession,confirm:true,confirmTitle:'Titre incorrect'})).status,409);
+  await okay(A,{op:'signing.delete',sessionId:signatureSession,confirm:true,confirmTitle:'Réunion des bénévoles'});
+  assert.equal((await invoke(A,'/zikateam/api/signing')).payload.sessions.some(x=>x.id===signatureSession),false,'la feuille supprimée disparaît');
+  assert.equal((await api(A,{op:'signing.delete',sessionId:signatureSession,confirm:true})).status,404,'une feuille supprimée ne peut pas être supprimée deux fois');
+  const unsignedSession=(await okay(S,{op:'signing.create',title:'Feuille brouillon',place:'Salle de réunion',startsAt:'2027-04-24T16:00:00.000Z'})).id;
+  await okay(S,{op:'signing.delete',sessionId:unsignedSession,confirm:true});
+  assert.equal((await invoke(S,'/zikateam/api/signing')).payload.sessions.some(x=>x.id===unsignedSession),false,'le secrétariat peut supprimer une feuille non signée');
+  assert.ok((await invoke(A,'/zikateam/api/manage')).payload.audit.some(x=>x.action==='signing.delete'),'une trace de suppression est conservée');
+
   await okay(A,{op:'secretariat.set',memberId:secretary,enabled:false});
   assert.equal((await invoke(S,'/zikateam/api/manage')).status,403);
   assert.equal((await invoke(S,'/zikateam/api/signing')).status,403,'droit révoqué immédiatement');
