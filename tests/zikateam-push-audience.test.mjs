@@ -18,6 +18,7 @@ test('staging cible seulement les membres volontaires',()=>{
  assert.equal(teamPushConfigured(env),true);
  assert.equal(teamPushRecipientAllowed(env,'membre-a'),true);
  assert.equal(teamPushRecipientAllowed(env,'membre-c'),false);
+ assert.equal(teamPushRecipientAllowed(env,'membre-b'),true);
 });
 test('production notifie tout membre abonné éligible quand activé',()=>{
  const env={...base,APP_ENV:'production'};
