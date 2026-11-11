@@ -131,7 +131,8 @@ async function getManage(db,ctx){
  const logs=ctx.admin?await all(db,'SELECT actor_email,action,entity_id,detail,created_at FROM team_audit ORDER BY created_at DESC LIMIT 60'):[];
  const secretariatIds=ctx.admin?(await all(db,"SELECT member_id FROM team_staff_roles WHERE role='secretariat'")).map(x=>x.member_id):[];
  const pendingRequests=ctx.admin?await all(db,"SELECT email,name,requested_at FROM team_join_requests WHERE status='pending' ORDER BY requested_at ASC LIMIT 250"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests});
+ const dues=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.active,COALESCE(d.paid,0) AS paid,d.paid_on,d.updated_by,d.updated_at FROM team_members m LEFT JOIN team_membership_dues d ON d.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -390,6 +391,22 @@ async function memberAction(db,ctx,d){
  return fail('Action non reconnue.',404);
 }
 async function adminAction(db,ctx,d){
+ if(d.op==='dues.set'){
+  if(!ctx.admin&&!ctx.secretariat)return fail('Suivi des adhésions réservé au secrétariat.',403);
+  if(!idok(d.memberId)||typeof d.paid!=='boolean')return fail('Adhésion ou bénévole invalide.',400);
+  const member=await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',d.memberId);
+  if(!member)return fail('Bénévole actif introuvable.',404);
+  let paidOn=null;
+  if(d.paid){
+   paidOn=typeof d.paidOn==='string'?d.paidOn.trim():'';
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(paidOn)||new Date(paidOn+'T00:00:00Z').toISOString().slice(0,10)!==paidOn)return fail('Indique une date de cotisation valide.',400);
+   if(paidOn>new Date().toISOString().slice(0,10))return fail('La date de cotisation ne peut pas être dans le futur.',400);
+  }
+  await db.prepare('INSERT INTO team_membership_dues(member_id,paid,paid_on,updated_at,updated_by) VALUES(?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET paid=excluded.paid,paid_on=excluded.paid_on,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(d.memberId,d.paid?1:0,paidOn,now(),ctx.email).run();
+  await audit(db,ctx.email,'dues.set',d.memberId,d.paid?'à jour '+paidOn:'non à jour');
+  return reply({ok:true});
+ }
+
  if(d.op==='member.review'){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const email=clean(d.email,254).toLowerCase(),approve=d.approve===true;
