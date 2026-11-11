@@ -1,0 +1,49 @@
+# ZikaTeam — matrice de recette avant ouverture
+
+État du code : branche `feat/zikateam-fiches-notifications`, développement isolé de la production.
+
+Cette matrice distingue **fonction codée** et **test utilisateur réel**. Une case non validée interdit de prétendre que la fonctionnalité fonctionne sur le téléphone.
+
+| Fonction demandée | Code | Vérification réelle obligatoire |
+| --- | --- | --- |
+| Déjà membre : e-mail + mot de passe | Présent | Connexion à deux appareils et session persistante |
+| Première inscription : nom, prénom, e-mail, OTP | Présent | Réception code e-mail, invalidation du code erroné |
+| Mot de passe personnel après OTP | Présent | Première connexion, oubli du mot de passe, reconnexion |
+| Mise en attente et approbation admin | Présent | Deux comptes fictifs : accepter / refuser |
+| Aucun accès interne avant approbation | Présent | Messages, annuaire, photos, PDF et API refusés |
+| Charte et acceptation horodatée par version | Présent | Signature de la charte, changement de version |
+| Consentements séparés : image, téléphone, e-mail | Présent | Oui/Non, modification, retrait effectif |
+| Téléphone modifiable sur Ma fiche | Présent | Un bénévole approuvé modifie son propre numéro |
+| Partage e-mail/téléphone aux responsables uniquement | Présent | Responsable de deux pôles / autre bénévole |
+| Photos internes soumises au droit à l'image | Présent | Oui/Non, suppression de consentement, cache |
+| Création, modification, suppression ou archivage des pôles | Présent | Pôle vide et pôle contenant des données |
+| Affectation des membres et responsables | Présent | Ajouter, déplacer, retirer une personne |
+| Fiche bénévole : rôles, pôles, responsables, prochaines missions | Présent | Comparaison des droits par rôle |
+| Réunion / stand / permanence / mission | Présent | Créer, publier, modifier, annuler |
+| Destinataires : tous, responsables, bureau, pôles choisis | Présent | Vérifier que seules les bonnes personnes reçoivent la convocation |
+| Ordre du jour, informations pratiques, PDF | Présent | Téléversement et refus d'accès hors public |
+| Réponse présent / absent / à confirmer | Présent | Choix et mise à jour |
+| Créneaux et inscriptions limitées par capacité | Présent | Deux bénévoles sur dernier créneau |
+| Tâches assignées / progression | Présent | Modification par destinataire et interdiction hors rôle |
+| Discussions générale, par pôle, par mission et responsables | Présent | Aucun accès hors public et aux demandes en attente |
+| Secrétariat dédié, sans droits administrateur | Présent | Nominations, suppression de rôle, annuaire et adhésions |
+| Émargement : objet, date/heure, lieu, qualité | Présent | Création, affichage, modification du groupe des présents |
+| Ajout ultérieur des présents | Présent | Ajout après création de la feuille |
+| Signature manuscrite directement sur écran | Présent | Doigt sur téléphone et souris sur ordinateur |
+| Conservation, consultation, clôture des émargements | Présent | Signature retrouvée après reconnexion |
+| Impression/PDF avec signatures tracées | Présent | Contrôle de rendu A4 et PDF imprimé |
+| Export CSV listes, adhésions, émargements | Présent | Tableur et accents français |
+| Couleurs et ergonomie mobile ZikaTeam | Présent | Contrôle visuel Redmi + ordinateur |
+| Push ciblés et rappels de réunions | Présent, envoi désactivé | Test volontaire isolé avant toute diffusion |
+
+## Contrôles déjà réalisés sans publier
+
+- Vérification de syntaxe JavaScript des sources serveur et interface : **OK**.
+- Vérification statique des nouveaux garde-fous d'accès, consentement et signatures : **OK**.
+- Mise à jour des tests SQL et authentification pour les règles actuelles ; **exécution complète npm test non confirmée**.
+- Base de données D1 de staging : migrations jusqu'à `0113` présentes ; ne pas la réinitialiser.
+- Le Worker staging visible dans le navigateur sert une ancienne interface ; **le code actuel n'est pas déployé**.
+
+## Sécurité de déploiement
+
+Ne pas déployer, fusionner vers `main`, modifier `app.zikamansle.fr`, modifier les DNS ou activer les notifications de groupe avant la recette complète. Ne jamais utiliser de données personnelles de bénévoles pour les tests automatiques.
