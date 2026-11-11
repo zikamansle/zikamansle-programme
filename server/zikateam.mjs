@@ -425,12 +425,12 @@ async function memberAction(db,ctx,d){
   const message=clean(d.body,1400),channel=d.channel,channelId=d.channelId||null;
   if(!message||!['general','pole','activity','leaders'].includes(channel))return fail('Message invalide.');
   if(channel==='leaders'){
-   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
+   if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion réservée aux responsables.',403);
    const id=uuid();
    await db.prepare('INSERT INTO team_leader_messages(id,author_id,body,created_at) VALUES(?,?,?,?)').bind(id,memberId,message,now()).run();
    return reply({ok:true,id});
   }
-  if(channel==='general'&&channelId)return fail('Canal invalide.');
+  if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion non autorisée.',403);
   if(channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(m=>m.pole_id===channelId)))return fail('Pôle non autorisé.',403);
   if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||(!ctx.admin&&a.status==='draft')||!await visibleActivity(db,ctx,a))return fail('Discussion non autorisée.',403);}
   const id=uuid();await db.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id,body,created_at) VALUES(?,?,?,?,?,?)').bind(id,memberId,channel,channelId,message,now()).run();return reply({ok:true,id});
@@ -696,19 +696,61 @@ async function adminAction(db,ctx,d){
  }
  return fail('Action non reconnue.',404);
 }
+async function permittedChat(db,ctx,channel,channelId){
+ if(!ctx.member||ctx.pending||!ctx.member.active)return false;
+ if(channel==='general')return !channelId;
+ if(channel==='leaders')return !channelId&&(ctx.admin||ctx.leadPoles.length>0);
+ if(channel==='pole'){
+  if(!idok(channelId))return false;
+  const pole=await one(db,'SELECT id FROM team_poles WHERE id=? AND archived=0',channelId);
+  return Boolean(pole&&(ctx.admin||ctx.memberships.some(m=>m.pole_id===channelId)));
+ }
+ if(channel==='activity'){
+  const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;
+  return Boolean(a&&a.status==='published'&&(ctx.admin||await visibleActivity(db,ctx,a)));
+ }
+ return false;
+}
+async function chatRooms(db,ctx){
+ if(!ctx.member||ctx.pending||!ctx.member.active)return [];
+ const rooms=[{channel:'general',id:null,title:'Discussion générale'}];
+ if(ctx.admin||ctx.leadPoles.length)rooms.push({channel:'leaders',id:null,title:'Entre responsables'});
+ const poles=ctx.admin?await all(db,'SELECT id,name FROM team_poles WHERE archived=0 ORDER BY name'):
+  await all(db,'SELECT p.id,p.name FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name',ctx.member.id);
+ for(const p of poles)rooms.push({channel:'pole',id:p.id,title:p.name});
+ const allActivities=await all(db,"SELECT * FROM team_activities WHERE status='published' ORDER BY starts_at DESC LIMIT 100");
+ for(const a of allActivities)if(ctx.admin||await visibleActivity(db,ctx,a))rooms.push({channel:'activity',id:a.id,title:a.title});
+ return rooms;
+}
+async function chatSummary(db,ctx){
+ if(!await requireCharter(db,ctx)||ctx.pending||!ctx.member?.active)return fail('Accès aux discussions refusé.',403);
+ const rooms=await chatRooms(db,ctx);
+ for(const room of rooms){
+  const leader=room.channel==='leaders',table=leader?'team_leader_messages':'team_messages';
+  const filter=leader?'':' AND t.channel=? AND t.channel_id IS ?';
+  const params=leader?[]:[room.channel,room.id];
+  const read=await one(db,'SELECT last_read_at FROM team_chat_reads WHERE member_id=? AND channel=? AND channel_id=?',ctx.member.id,room.channel,room.id||'');
+  const last=await one(db,'SELECT t.body,t.created_at,m.name AS author FROM '+table+' t JOIN team_members m ON m.id=t.author_id WHERE t.deleted_at IS NULL'+filter+' ORDER BY t.created_at DESC LIMIT 1',...params);
+  const cnt=await one(db,'SELECT COUNT(*) AS unread FROM '+table+' t WHERE t.deleted_at IS NULL'+filter+' AND t.author_id<>? AND t.created_at>?',...params,ctx.member.id,read?.last_read_at||0);
+  room.last=last||null;room.unread=cnt?.unread||0;
+ }
+ return reply({rooms,total:rooms.reduce((n,x)=>n+x.unread,0)});
+}
 async function getMessages(db,ctx,url){
  if(!ctx.admin&&(!ctx.member||!await requireCharter(db,ctx)))return fail('Charte à accepter avant les discussions.',403);
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
  if(ctx.pending)return fail('Inscription en attente de validation : aucune conversation n’est accessible.',403);
- if(!['general','pole','activity','leaders'].includes(channel))return fail('Canal invalide.');
+ if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion non autorisée.',403);
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
   const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id);
+  await db.prepare('INSERT INTO team_chat_reads(member_id,channel,channel_id,last_read_at) VALUES(?,?,?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET last_read_at=MAX(last_read_at,excluded.last_read_at)').bind(ctx.member.id,channel,'',now()).run();
   return reply({messages:messages.reverse()});
  }
  if(!ctx.admin&&channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Accès à la discussion refusé.',403)}
  const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id,channel,channelId);
+ await db.prepare('INSERT INTO team_chat_reads(member_id,channel,channel_id,last_read_at) VALUES(?,?,?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET last_read_at=MAX(last_read_at,excluded.last_read_at)').bind(ctx.member.id,channel,channelId||'',now()).run();
  return reply({messages:messages.reverse()});
 }
 async function upload(request,env,ctx,url){
@@ -822,6 +864,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(path==='/zikateam/api/manage'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getManage(db,ctx);
   if(path==='/zikateam/api/signing'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getSigning(db,ctx);
   if(path==='/zikateam/api/messages'&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation : aucune conversation n’est accessible.',403):locked?fail(notice,403):getMessages(db,ctx,url);
+  if(path==='/zikateam/api/chat-summary'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):chatSummary(db,ctx);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
    if(path==='/zikateam/api/photo')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
