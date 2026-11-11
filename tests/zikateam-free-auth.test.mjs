@@ -26,12 +26,22 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
    requests.push({url:String(url),method:options?.method||'GET'});
    const respond=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json'}});
    if(String(url).endsWith('/auth/v1/otp'))return respond({});
+   if(String(url).includes('/auth/v1/token?grant_type=password')){
+    const req=JSON.parse(options.body);
+    if(req.password!=='Example-phrase-secure-2026')return respond({error:'bad password'},400);
+    return respond({access_token:req.email===names.outsider?'token-outsider':'token-alice',refresh_token:'refresh-pass',expires_in:3600});
+   }
    if(String(url).endsWith('/auth/v1/verify')){
     const data=JSON.parse(options.body);
     if(!['123456','87654321'].includes(data.token))return respond({error:'invalid'},401);
     return respond({access_token:data.email===names.outsider?'token-outsider':'token-alice',refresh_token:'refresh-alice',expires_in:3600});
    }
    if(String(url).endsWith('/auth/v1/user')){
+    if(options?.method==='PUT'){
+     const pwd=JSON.parse(options.body||'{}').password;
+     if(typeof pwd!=='string'||pwd.length<12)return respond({error:'weak password'},422);
+     return respond({ok:true});
+    }
     if(options?.headers?.Authorization==='Bearer token-admin')return respond({email:'admin@zikamansle.fr',email_confirmed_at:new Date().toISOString(),id:'user-admin'});
      if(options?.headers?.Authorization==='Bearer token-outsider')return respond({email:names.outsider,email_confirmed_at:new Date().toISOString(),id:'user-outsider'});
     return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
@@ -55,8 +65,13 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
    const pending=await invoke('/zikateam/api/me',undefined,'zika_team_access=token-outsider');
    assert.equal(pending.status,200);
    const pendingView=await pending.json();
-   assert.equal(pendingView.pending,true,'la nouvelle personne reste en attente');
-   assert.equal(pendingView.charterAccepted,false);
+   assert.equal(pendingView.passwordRequired,true,'un code valide impose la création du mot de passe');
+   assert.equal((await invoke('/zikateam/api/manage',undefined,'zika_team_access=token-outsider')).status,403,'pas de données privées sans mot de passe');
+   assert.equal((await invoke('/zikateam/api/auth/set-password',{password:'court'},'zika_team_access=token-outsider')).status,400,'mot de passe trop faible interdit');
+   assert.equal((await invoke('/zikateam/api/auth/set-password',{password:'Example-phrase-secure-2026'},'zika_team_access=token-outsider')).status,200,'la personne vérifiée définit un mot de passe');
+   const pendingAfterPassword=(await (await invoke('/zikateam/api/me',undefined,'zika_team_access=token-outsider')).json());
+   assert.equal(pendingAfterPassword.pending,true,'la nouvelle personne reste en attente malgré son mot de passe');
+   assert.equal(pendingAfterPassword.charterAccepted,false);
    assert.deepEqual(pendingView.activities,[],'aucune mission privée');
    assert.equal((await invoke('/zikateam/api/manage',undefined,'zika_team_access=token-outsider')).status,403,'aucun droit de gestion');
    assert.equal((await invoke('/zikateam/api/command',{op:'member.save',name:'Intrus',email:names.outsider},'zika_team_access=token-outsider')).status,403,'pas de self-validation');
@@ -71,6 +86,15 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal(auth.status,200);
   const cookies=auth.headers.getSetCookie();
   assert.equal(cookies.length,2);
+  const notReady=(await (await invoke('/zikateam/api/me',undefined,'zika_team_access=token-alice')).json());
+  assert.equal(notReady.passwordRequired,true,'la connexion par code ne suffit pas pour ouvrir le site');
+  assert.equal((await invoke('/zikateam/api/auth/password',{email:names.alice,password:'bad-password'})).status,401);
+  assert.equal((await invoke('/zikateam/api/auth/set-password',{password:'Example-phrase-secure-2026'})).status,401,'aucun réglage de mot de passe sans identité vérifiée');
+  assert.equal((await invoke('/zikateam/api/auth/set-password',{password:'Example-phrase-secure-2026'},'zika_team_access=token-alice')).status,200);
+  const direct=await invoke('/zikateam/api/auth/password',{email:names.alice,password:'Example-phrase-secure-2026'});
+  assert.equal(direct.status,200,'connexion sans OTP désormais possible');
+  assert.equal(direct.headers.getSetCookie().length,2,'la session par mot de passe utilise des cookies HttpOnly');
+  assert.ok(db.prepare('SELECT set_at FROM team_auth_password_setup WHERE email=?').get(names.alice).set_at>0);
   assert.ok(cookies.every(c=>c.includes('HttpOnly')&&c.includes('Secure')&&c.includes('SameSite=Lax')));
   const jar=cookies.map(c=>c.split(';')[0]).join('; ');
   const me=await invoke('/zikateam/api/me',undefined,jar);
@@ -81,6 +105,9 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal(logout.status,200);
   assert.ok(logout.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
   const adminCookie='zika_team_access=token-admin';
+  const adminNeedsPassword=(await (await invoke('/zikateam/api/me',undefined,adminCookie)).json());
+  assert.equal(adminNeedsPassword.passwordRequired,true);
+  assert.equal((await invoke('/zikateam/api/auth/set-password',{password:'Example-phrase-secure-2026'},adminCookie)).status,200,'l’administration peut définir son mot de passe avec son identité vérifiée');
   const before=await invoke('/zikateam/api/me',undefined,adminCookie);
   assert.equal(before.status,200);
   const beforeBody=await before.json();
@@ -133,6 +160,14 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
  }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
 });
 
+test('connexion par mot de passe après premier code e-mail et récupération par code',()=>{
+ const ui=readFileSync('public/zikateam.js','utf8');
+ assert.ok(ui.includes('teamLoginPassword'));
+ assert.ok(ui.includes('teamSetPassword'));
+ assert.ok(ui.includes('Mot de passe oublié ?'));
+ assert.ok(ui.includes('freeLoginPassword('));
+ assert.ok(ui.includes('freeLoginVerify('));
+});
 test('le formulaire ZikaTeam accepte les codes a 8 chiffres',()=>{
  const ui=readFileSync('public/zikateam.js','utf8');
  assert.ok(ui.includes('pattern="[0-9]{6}|[0-9]{8}"'));
