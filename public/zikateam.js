@@ -237,7 +237,7 @@ function manageMembers(){
   const member=d.members.find(m=>m.email===r.email)||{name:r.name,email:r.email};
   return '<form class="team-card team-accent-orange team-form" data-member-review="'+esc(r.email)+'"><div class="team-between"><h3>Demande de '+esc(member.name||r.email)+'</h3><span class="team-pill warn">À valider</span></div><p class="team-small">'+esc(r.email)+' · Demande du '+esc(shortdt(r.requested_at))+'</p><label>Nom et prénom<input name="name" maxlength="110" required value="'+esc(member.name||r.name)+'"></label>'+roleAssignmentFields(member)+'<div class="team-row"><button class="team-button orange" type="submit">Approuver et enregistrer les fonctions</button><button class="team-button danger" type="button" data-reject-member="'+esc(r.email)+'">Refuser la demande</button></div></form>';
  }).join(''):'<section class="team-card team-accent-teal"><p>Aucune nouvelle demande pour le moment.</p></section>';
- const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form"><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange">Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
+ const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form" novalidate><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange">Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
  const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="submit" class="team-button orange">Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
  const cards=members.map(m=>{
   const list=d.memberships.filter(x=>x.member_id===m.id),byPole=list.map(x=>(d.poles.find(p=>p.id===x.pole_id)?.name||'')+(x.role==='lead'?' (responsable)':'')).filter(Boolean);
@@ -962,22 +962,35 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   const button=f.querySelector('button[type="submit"]');
   let feedback=f.querySelector('[data-member-save-feedback]');
   if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');f.append(feedback);}
-  const d=fromForm(f);
+  const d=fromForm(f),name=String(d.name||'').trim(),email=String(d.email||'').trim().toLowerCase();
+  const report=(message,ok=false)=>{
+   feedback.textContent=(ok?'✅ ':'❌ ')+message;
+   feedback.style.color=ok?'#116b49':'#ad2034';feedback.style.fontWeight='700';
+   feedback.scrollIntoView({block:'center',behavior:'smooth'});
+  };
+  if(name.length<2)return report('Indique le nom et le prénom du bénévole.');
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return report('Vérifie l’adresse e-mail de connexion.');
+  const active=f.querySelector('input[name="active"]');
+  if(!active)return report('Champ fiche active introuvable. Recharge ZikaTeam.');
+  const changes=rolePayload(f);
+  if(!state.me?.admin)return report('Seul l’administrateur peut enregistrer une fiche complète. Le secrétariat utilise « Modifier les fonctions ».');
   state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
   feedback.textContent='Enregistrement de la fiche et des fonctions…';
   try{
-   const saved=await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked,...rolePayload(f)});
-   if(!saved.ok)throw Error('Enregistrement non confirmé.');
-   state.editMember=null;
-   await refresh();
-   toast('Fiche, fonctions et pôles enregistrés pour '+d.name+'.');
-   const heading=[...root.querySelectorAll('h2')].find(x=>x.textContent.includes('Fiches bénévoles actives'));
-   heading?.scrollIntoView({block:'start',behavior:'smooth'});
-  }catch(error){
-   feedback.textContent='❌ Enregistrement non effectué : '+(error.message||'Erreur de service.');
-   feedback.style.color='#ad2034';feedback.style.fontWeight='700';
-   feedback.scrollIntoView({block:'center',behavior:'smooth'});
-  }finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
+   const saved=await command('member.save',{id:d.id||undefined,name,email,active:active.checked,...changes});
+   if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé la sauvegarde de cette fiche.');
+   const data=await api('manage');
+   const verified=data.members?.find(x=>x.id===saved.id);
+   if(!verified||verified.name!==name||verified.email?.toLowerCase()!==email)throw Error('L’enregistrement doit être revérifié : la fiche ne correspond pas aux informations saisies.');
+   const expected=new Map(changes.poleRoles.map(x=>[x.poleId,x.role]));
+   const actual=new Map((data.memberships||[]).filter(x=>x.member_id===saved.id&&!data.poles?.find(p=>p.id===x.pole_id)?.archived).map(x=>[x.pole_id,x.role]));
+   if(expected.size!==actual.size||[...expected].some(([id,role])=>actual.get(id)!==role))throw Error('La fiche est enregistrée, mais certaines affectations aux pôles n’ont pas été confirmées.');
+   if(changes.roles.some(x=>!verified.roles?.includes(x))||(verified.roles||[]).some(x=>!changes.roles.includes(x)))throw Error('La fiche est enregistrée, mais les fonctions générales n’ont pas été confirmées.');
+   state.manage=data;state.editMember=null;
+   render();toast('Fiche, fonctions et pôles enregistrés pour '+name+'.');
+   root.querySelector('[data-edit-member="'+saved.id+'"]')?.scrollIntoView({block:'center',behavior:'smooth'});
+  }catch(error){report('Enregistrement non confirmé : '+(error.message||'Erreur de service.'));}
+  finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
   return;
  }
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
