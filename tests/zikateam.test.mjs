@@ -170,6 +170,10 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(O,'/zikateam/api/me')).payload.activities.some(x=>x.id===meetingBureau.id),false);
   assert.deepEqual(await drainTeamPush(env),{sent:0,disabled:true});
   assert.deepEqual(await scheduleTeamReminders(env),{sent:0,disabled:true});
+  const stagingEnv={...env,APP_ENV:'staging',TEAM_PUSH_ENABLED:'true',VAPID_PRIVATE_JWK:'test-private',VAPID_PUBLIC_KEY:'test-public'};
+  assert.deepEqual(await drainTeamPush(stagingEnv),{sent:0,disabled:true},'aucune notification collective ne part du staging');
+  assert.deepEqual(await scheduleTeamReminders(stagingEnv),{sent:0,disabled:true},'aucun rappel ne part du staging');
+
   db.close();
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
