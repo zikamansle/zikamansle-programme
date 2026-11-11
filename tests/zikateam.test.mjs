@@ -12,6 +12,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
  const dir=mkdtempSync(join(tmpdir(),'zika-team-'));
  try{
   writeFileSync(join(dir,'zikateam.mjs'),readFileSync('server/zikateam.mjs'));
+  writeFileSync(join(dir,'zikateam-login.mjs'),readFileSync('server/zikateam-login.mjs'));
   writeFileSync(join(dir,'admin-auth.mjs'),"export async function verifyAccessIdentity(token,env){return token&&env.ACCESS_AUD==='team-test'?{email:token.toLowerCase()}:null}");
   writeFileSync(join(dir,'webpush.mjs'),"export const enc=s=>new TextEncoder().encode(s); export const b64=b=>Buffer.from(b).toString('base64url'); export async function sendPush(){return 201}");
   const {handleZikaTeam,drainTeamPush,scheduleTeamReminders}=await import(pathToFileURL(join(dir,'zikateam.mjs')));
