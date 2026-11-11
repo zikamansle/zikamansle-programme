@@ -16,3 +16,6 @@
 
 /* Inside the Play Store Android wrapper there is no secondary install prompt. */
 .native-android #installBanner,.native-android [data-install],.native-android .install-panel{display:none!important}
+
+.footer-note .footer-admin-link{display:inline-block;margin-top:12px;font-size:11px;color:inherit;text-decoration:underline;text-underline-offset:3px;opacity:.85}
+.footer-note .footer-admin-link:hover,.footer-note .footer-admin-link:focus-visible{opacity:1;color:#087cbe}
