@@ -109,3 +109,5 @@ body{margin:0;background:#f4f8fb;color:var(--team-ink);font:15px/1.55 Inter,syst
 .team-consent-notice{padding:14px;border-radius:13px;background:#eef8fe;border:1px solid #c3e5f2}
 .team-consents-saved{margin-top:18px;border-top:1px solid #dce7ed;padding-top:15px}
 @media(max-width:600px){.team-consent-choice .team-row{flex-direction:column;align-items:stretch}.team-consent-choice .team-check{width:100%}}
+
+/* Publication staging du module émargements tactiles et consentements, après tests verts. */
