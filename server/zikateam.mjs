@@ -328,21 +328,33 @@ async function saveMember(db,ctx,d,approving=false){
  if(labels&&(labels.length>2||new Set(labels).size!==labels.length||labels.some(x=>!['director','bureau'].includes(x))))return fail('Fonction générale invalide.');
  if(d.secretariat!==undefined&&typeof d.secretariat!=='boolean')return fail('Secrétariat invalide.');
  const active=d.active!==false?1:0;
- try{await db.prepare('INSERT INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,active=excluded.active,updated_at=excluded.updated_at').bind(id,name,email,active,previous?.created_at||now(),now()).run()}
- catch{return fail('Cette adresse e-mail est déjà utilisée.');}
+ // D1 batch executes all statements in one transaction. A rejected role or
+ // membership must never leave a half-updated volunteer record behind.
+ const statements=[db.prepare('INSERT INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,active=excluded.active,updated_at=excluded.updated_at').bind(id,name,email,active,previous?.created_at||now(),now())];
  if(labels){
-  await db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(id).run();
-  for(const role of labels)await db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(id,role,now()).run();
+  statements.push(db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(id));
+  for(const role of labels)statements.push(db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(id,role,now()));
  }
  if(poleRoles){
-  await db.prepare("DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)").bind(id).run();
-  for(const item of poleRoles)await db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(id,item.poleId,item.role,now()).run();
+  statements.push(db.prepare('DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)').bind(id));
+  for(const item of poleRoles)statements.push(db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(id,item.poleId,item.role,now()));
  }
  if(typeof d.secretariat==='boolean'){
-  if(d.secretariat)await db.prepare("INSERT OR IGNORE INTO team_staff_roles(member_id,role,granted_by,granted_at) VALUES(?,'secretariat',?,?)").bind(id,ctx.email,now()).run();
-  else await db.prepare("DELETE FROM team_staff_roles WHERE member_id=? AND role='secretariat'").bind(id).run();
+  statements.push(d.secretariat?
+   db.prepare("INSERT OR IGNORE INTO team_staff_roles(member_id,role,granted_by,granted_at) VALUES(?,'secretariat',?,?)").bind(id,ctx.email,now()):
+   db.prepare("DELETE FROM team_staff_roles WHERE member_id=? AND role='secretariat'").bind(id));
  }
- await audit(db,ctx.email,'member.save',id,name);return reply({ok:true,id});
+ try{await db.batch(statements)}catch(error){
+  console.error('ZikaTeam member.save failed',error?.message);
+  const conflict=String(error?.message||'').includes('UNIQUE constraint failed');
+  return fail(conflict?'Cette adresse e-mail est déjà utilisée.':'Impossible d’enregistrer la fiche et ses affectations. Aucun changement partiel n’a été appliqué.',conflict?409:500);
+ }
+ // Confirm the persisted roles before returning success to the interface.
+ const stored=await one(db,'SELECT id,name,email,active FROM team_members WHERE id=?',id);
+ if(!stored||stored.name!==name||stored.email!==email||stored.active!==active)return fail('Enregistrement non confirmé : informations différentes en base.',500);
+ if(labels){const actual=await all(db,'SELECT role FROM team_member_roles WHERE member_id=?',id);if(actual.length!==labels.length||actual.some(x=>!labels.includes(x.role)))return fail('Enregistrement des fonctions non confirmé.',500);}
+ if(poleRoles){const actual=await all(db,'SELECT tm.pole_id,tm.role FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0',id);if(actual.length!==poleRoles.length||actual.some(x=>!poleRoles.some(p=>p.poleId===x.pole_id&&p.role===x.role)))return fail('Enregistrement des pôles non confirmé.',500);}
+ await audit(db,ctx.email,'member.save',id,name);return reply({ok:true,id,rolesSaved:labels?.length??null,polesSaved:poleRoles?.length??null});
 }
 async function savePole(db,ctx,d){
  if(!ctx.admin)return fail('Seule l’administration peut modifier les pôles.',403);
