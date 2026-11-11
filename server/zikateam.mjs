@@ -457,7 +457,7 @@ async function setCheckin(db,ctx,d){
  await db.prepare('INSERT INTO team_activity_checkins(activity_id,member_id,checked_in_at,checked_out_at,checked_by) VALUES(?,?,?,?,?) ON CONFLICT(activity_id,member_id) DO UPDATE SET checked_in_at=excluded.checked_in_at,checked_out_at=excluded.checked_out_at,checked_by=excluded.checked_by').bind(a.id,d.memberId,time,null,ctx.email).run();
  await audit(db,ctx.email,'checkin.set',a.id,d.memberId+(d.present===true?' présent':' non pointé'));return reply({ok:true,previous:previous?.checked_in_at||null});
 }
-async function memberAction(db,ctx,d){
+async function memberAction(db,ctx,d,env){
  if(!ctx.member)return fail('Fiche bénévole nécessaire.',403);
  if(d.op==='notice.read'){
   if(ctx.pending||!ctx.member.active||!await requireCharter(db,ctx))return fail('Accès aux notifications refusé.',403);
@@ -530,6 +530,23 @@ async function memberAction(db,ctx,d){
   if(!r.meta.changes&&!(await one(db,'SELECT shift_id FROM team_shift_signups WHERE shift_id=? AND member_id=?',s.id,memberId)))return fail('Ce créneau est complet.',409);
   await db.prepare('INSERT INTO team_activity_rsvps(activity_id,member_id,answer,updated_at) VALUES(?,?,?,?) ON CONFLICT(activity_id,member_id) DO UPDATE SET answer=excluded.answer,updated_at=excluded.updated_at').bind(s.event_id,memberId,'yes',now()).run();
   return reply({ok:true});
+ }
+ if(d.op==='push.test'){
+  // Strictly a personal test on staging; never send to another member.
+  if(!env||env.APP_ENV!=='staging'||!teamPushRecipientAllowed(env,memberId))return fail('Test push réservé aux comptes de test autorisés.',403);
+  if(ctx.pending||!ctx.member.active||!await requireCharter(db,ctx))return fail('Compte non autorisé.',403);
+  const recent=await one(db,"SELECT created_at FROM team_audit WHERE actor_email=? AND action='push.selftest' ORDER BY created_at DESC LIMIT 1",ctx.email);
+  if(recent&&now()-recent.created_at<30000)return fail('Attends 30 secondes avant de refaire un test.',429);
+  const links=await all(db,'SELECT ps.endpoint,ps.p256dh,ps.auth FROM team_push_links l JOIN push_subscriptions ps ON ps.id=l.subscription_id WHERE l.member_id=? LIMIT 5',memberId);
+  if(!links.length)return fail('Aucun téléphone associé à ce compte. Autorise les notifications sur cet appareil.',409);
+  let accepted=0,failed=0;
+  for(const sub of links){
+   let code=0;
+   try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}}, {title:'ZikaTeam · TEST de notification',body:'Test réussi côté serveur : les notifications ZikaTeam peuvent être reçues sur cet appareil.',url:'/zikateam#fiche',groupId:'zikateam-selftest'},env);}catch(error){console.error('ZikaTeam push test',error?.message);}
+   if(code>=200&&code<300)accepted++;else failed++;
+  }
+  await audit(db,ctx.email,'push.selftest',memberId,accepted+' acceptés, '+failed+' refusés');
+  return reply({ok:accepted>0,accepted,failed,message:accepted>0?'Service push a accepté le test. Vérifie la notification sur le téléphone.':'Le service push a refusé le test.'},accepted?200:502);
  }
  if(d.op==='push.link'){
   const sub=d.subscription;if(typeof sub?.endpoint!=='string'||typeof sub?.keys?.auth!=='string'||sub.endpoint.length>4000)return fail('Abonnement invalide.');
@@ -1164,7 +1181,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','push.test','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data,env);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
