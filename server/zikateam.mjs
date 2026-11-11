@@ -106,6 +106,10 @@ async function getManage(db,ctx){
   const pictures=new Set((await all(db,'SELECT member_id FROM team_member_photos')).map(x=>x.member_id));
   for(const member of members)member.has_photo=pictures.has(member.id);
  }
+ if(ctx.admin){
+  const allRoles=await all(db,'SELECT member_id,role FROM team_member_roles');
+  for(const member of members)member.roles=allRoles.filter(x=>x.member_id===member.id).map(x=>x.role);
+ }
  const memberships=ctx.admin?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):
   ctx.leadPoles.length?await all(db,"SELECT member_id,pole_id,role FROM team_memberships WHERE pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead')",ctx.member.id):[];
  const allActivities=await all(db,"SELECT * FROM team_activities ORDER BY starts_at DESC LIMIT 160"),activities=[];
@@ -199,7 +203,7 @@ export async function scheduleTeamReminders(env,maximum=40){
  }
  return {sent,disabled:false};
 }
-async function saveMember(db,ctx,d){
+async function saveMember(db,ctx,d,approving=false){
  if(!ctx.admin)return fail('Réservé à l’administration.',403);
  const name=clean(d.name,110),email=clean(d.email,254).toLowerCase();
  if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return fail('Nom ou adresse e-mail invalide.');
@@ -207,9 +211,35 @@ async function saveMember(db,ctx,d){
  const id=d.id||uuid(),previous=d.id?await one(db,'SELECT * FROM team_members WHERE id=?',id):null;
  if(d.id&&!previous)return fail('Bénévole introuvable.',404);
  if(previous&&previous.email===ctx.email&&d.active===false)return fail('Impossible de désactiver votre propre fiche.');
+ const pending=await one(db,"SELECT status FROM team_join_requests WHERE email=?",email);
+ if(pending?.status==='pending'&&!approving)return fail('Cette demande doit être validée dans « Bénévoles à valider ».',409);
+ const poleRoles=Array.isArray(d.poleRoles)?d.poleRoles:null,labels=Array.isArray(d.roles)?d.roles:null;
+ if(poleRoles){
+  if(poleRoles.length>100)return fail('Trop de pôles.');
+  const seen=new Set();
+  for(const item of poleRoles){
+   if(!item||!idok(item.poleId)||!['member','lead'].includes(item.role)||seen.has(item.poleId))return fail('Pôle ou fonction invalide.');
+   seen.add(item.poleId);
+   if(!await one(db,'SELECT id FROM team_poles WHERE id=? AND archived=0',item.poleId))return fail('Pôle inconnu ou archivé.');
+  }
+ }
+ if(labels&&(labels.length>2||new Set(labels).size!==labels.length||labels.some(x=>!['director','bureau'].includes(x))))return fail('Fonction générale invalide.');
+ if(d.secretariat!==undefined&&typeof d.secretariat!=='boolean')return fail('Secrétariat invalide.');
  const active=d.active!==false?1:0;
  try{await db.prepare('INSERT INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,active=excluded.active,updated_at=excluded.updated_at').bind(id,name,email,active,previous?.created_at||now(),now()).run()}
  catch{return fail('Cette adresse e-mail est déjà utilisée.');}
+ if(labels){
+  await db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(id).run();
+  for(const role of labels)await db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(id,role,now()).run();
+ }
+ if(poleRoles){
+  await db.prepare("DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)").bind(id).run();
+  for(const item of poleRoles)await db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(id,item.poleId,item.role,now()).run();
+ }
+ if(typeof d.secretariat==='boolean'){
+  if(d.secretariat)await db.prepare("INSERT OR IGNORE INTO team_staff_roles(member_id,role,granted_by,granted_at) VALUES(?,'secretariat',?,?)").bind(id,ctx.email,now()).run();
+  else await db.prepare("DELETE FROM team_staff_roles WHERE member_id=? AND role='secretariat'").bind(id).run();
+ }
  await audit(db,ctx.email,'member.save',id,name);return reply({ok:true,id});
 }
 async function savePole(db,ctx,d){
@@ -363,7 +393,7 @@ async function adminAction(db,ctx,d){
  if(d.op==='member.review'){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const email=clean(d.email,254).toLowerCase(),approve=d.approve===true;
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||typeof d.approve!=='boolean')return fail('Demande ou décision invalide.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||typeof d.approve!=='boolean')return fail('Demande ou décision invalide.');
   const application=await one(db,"SELECT status FROM team_join_requests WHERE email=?",email);
   if(application?.status!=='pending')return fail('Cette demande n’est plus en attente.',409);
   const member=await one(db,'SELECT id FROM team_members WHERE email=? AND active=0',email);
@@ -557,7 +587,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
    if(locked&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail(notice,403);
    return getDocument(env,ctx,path.split('/').pop());
   }
-  if(path==='/zikateam/api/manage'&&request.method==='GET')return locked?fail(notice,403):getManage(db,ctx);
+  if(path==='/zikateam/api/manage'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getManage(db,ctx);
   if(path==='/zikateam/api/messages'&&request.method==='GET')return locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
@@ -575,6 +605,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     const ownProfile=ctx.admin&&data.op==='member.save'&&(!data.id||data.id===ctx.member?.id)&&clean(data.email,254).toLowerCase()===ctx.email&&data.active!==false;
     const firstCharter=ctx.admin&&!currentCharter&&data.op==='charter.save';
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
+    if(ctx.pending&&data.op!=='charter.accept')return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
     if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
