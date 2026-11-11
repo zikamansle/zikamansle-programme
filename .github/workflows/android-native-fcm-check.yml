@@ -39,6 +39,11 @@ jobs:
         run: gradle -p android-native :app:assembleDebug --no-daemon
       - name: Vérifier la génération de l'APK
         run: test -s android-native/app/build/outputs/apk/debug/app-debug.apk
+      - name: Activer l’accélération KVM de l’émulateur Android
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - name: Valider le démarrage sur émulateur Android avant livraison
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -46,6 +51,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_3a
+          emulator-boot-timeout: 300
           disable-animations: true
           script: |
             set -e
