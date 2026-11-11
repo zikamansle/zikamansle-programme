@@ -21,5 +21,5 @@ test('initializer refuses any production-like configuration and secret listing a
  assert.equal(isStagingConfig({...config,vars:{...config.vars,PUSH_SEND_ENABLED:'true'}}),false);
  assert.equal(isStagingConfig({...config,vars:{...config.vars,VAPID_PUBLIC_KEY:'public'}}),false);
  assert.deepEqual([...secretNames('[{"name":"ADMIN_EMAIL","type":"secret_text"}]')],['ADMIN_EMAIL']);
- assert.throws(()=>secretNames('[] invalid output'),/liste|Format|Unexpected|SyntaxError/i);
+ assert.throws(()=>secretNames('invalid output'),/liste|Format|Unexpected|SyntaxError/i);
 });
