@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # A single explicit push-test setup is permitted; all subsequent pushes are gated.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Activer les tests push isolés ZikaMansle') }}
+    # Deploy only when explicitly enabled by the repository owner.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
