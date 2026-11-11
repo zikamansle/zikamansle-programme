@@ -93,6 +93,7 @@ async function getMine(db,ctx){
  const poles=ctx.member?await all(db,"SELECT p.id,p.name,p.description,tm.role,(SELECT group_concat(m.name,', ') FROM team_memberships l JOIN team_members m ON m.id=l.member_id WHERE l.pole_id=p.id AND l.role='lead' AND m.active=1) AS leaders FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",ctx.member.id):[];
  for(const p of poles){
   p.leadersDetails=await all(db,"SELECT m.id,m.name,CASE WHEN ph.member_id IS NOT NULL THEN 1 ELSE 0 END AS has_photo FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_photos ph ON ph.member_id=m.id WHERE tm.pole_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name",p.id);
+  p.membersDetails=await all(db,"SELECT m.id,m.name,tm.role,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(cn.phone,'') ELSE '' END AS phone FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_contacts cn ON cn.member_id=m.id WHERE tm.pole_id=? AND m.active=1 ORDER BY tm.role DESC,m.name",p.id);
  }
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
