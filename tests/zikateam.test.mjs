@@ -17,9 +17,11 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const {handleZikaTeam,drainTeamPush,scheduleTeamReminders}=await import(pathToFileURL(join(dir,'zikateam.mjs')));
   const db=new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys=ON');
-  db.exec(readFileSync('drizzle/0100_zikateam.sql','utf8'));
-  db.exec(readFileSync('drizzle/0101_team_operations.sql','utf8'));
-  db.exec('CREATE TABLE push_subscriptions(id TEXT PRIMARY KEY,endpoint TEXT,p256dh TEXT,auth TEXT)');
+  // Rejouer toutes les migrations, comme le test historique et le Worker D1.
+  const {readdirSync}=await import('node:fs');
+  for(const name of readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort()){
+   db.exec(readFileSync('drizzle/'+name,'utf8'));
+  }
   const DB={prepare(q){const stmt=db.prepare(q);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
   const env={DB,TEAM_ACCESS_AUD:'team-test',ACCESS_TEAM_DOMAIN:'example.cloudflareaccess.com',ADMIN_EMAIL:'admin@example.org',TEAM_PUSH_ENABLED:'false',BUCKET:{get:async()=>null}};
   async function invoke(email,path,data){
