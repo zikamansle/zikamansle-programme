@@ -73,3 +73,26 @@ body{margin:0;background:#f4f8fb;color:var(--team-ink);font:15px/1.55 Inter,syst
  .team-leader-card{align-items:flex-start}.team-leader-card .team-button{width:100%}
  .team-avatar{width:46px;height:46px}
 }
+
+
+/* Émargement tactile : écran clair, grand tracé au doigt et feuilles facilement imprimables */
+.team-signing-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;max-height:360px;overflow:auto;border:1px solid #cbdfe9;border-radius:14px;padding:12px;background:#f8fcfe}
+.team-signing-choices label{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #d9e8ee;padding:12px;border-radius:12px;min-height:53px}
+.team-signing-choices input{width:21px;height:21px;flex:none;accent-color:#1479a5}
+.team-signing-choices small{display:block;color:#667c90;font-weight:500;margin-left:auto;font-size:11px}
+.team-signing-rows{display:grid;gap:4px}
+.team-signing-overlay{position:fixed;inset:0;z-index:2000;overflow:auto;background:#102b43f5;display:flex;justify-content:center;align-items:center;padding:12px;box-sizing:border-box}
+.team-signing-panel{width:min(850px,100%);background:white;border-radius:22px;padding:24px;box-shadow:0 16px 64px #06172c60}
+.team-signing-panel h2{font-size:clamp(27px,6vw,38px);color:#132e49;margin:4px 0}
+.team-signing-eyebrow{color:#a26013;text-transform:uppercase;font-weight:800;letter-spacing:.05em;font-size:12px}
+.team-signing-pad{border:3px solid #1a769b;background:#fff;border-radius:15px;overflow:hidden;box-shadow:inset 0 0 0 1px #dae7ec}
+.team-signing-pad canvas{display:block;width:100%;height:auto;aspect-ratio:5/2;touch-action:none;cursor:crosshair;background:linear-gradient(0deg,#f6fafc,white)}
+.team-signing-panel .team-row{margin-top:15px}
+.team-signing-panel button{min-height:49px}
+@media(max-width:700px){
+ .team-signing-overlay{align-items:flex-start}
+ .team-signing-panel{padding:14px;border-radius:15px}
+ .team-signing-panel button{width:100%}
+ .team-signing-choices{max-height:300px;grid-template-columns:1fr}
+ .team-signing-choices label{min-height:48px}
+}
