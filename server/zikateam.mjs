@@ -64,6 +64,8 @@ async function requireCharter(db,ctx){
 }
 async function enrichActivities(db,activities,memberId=null){
  for(const a of activities){
+  const custom=await one(db,'SELECT label FROM team_activity_custom_kinds WHERE activity_id=?',a.id);
+  a.custom_kind=custom?.label||null;
   a.poles=await selectedPoles(db,a.id);
   a.shifts=await all(db,'SELECT s.*, (SELECT COUNT(*) FROM team_shift_signups z WHERE z.shift_id=s.id) AS signed_count FROM team_shifts s WHERE s.activity_id=? ORDER BY s.starts_at',a.id);
   a.tasks=await all(db,"SELECT id,activity_id,title,details,assigned_to,status,created_at,updated_at FROM team_activity_tasks WHERE activity_id=? ORDER BY created_at",a.id);
@@ -103,8 +105,11 @@ async function getMine(db,ctx){
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
+ const notices=ctx.member?await all(db,"SELECT n.id,n.activity_id,n.reason,n.created_at,n.seen_at,a.title,a.starts_at,a.place,a.status,COALESCE(c.label,'') AS custom_kind FROM team_activity_notices n JOIN team_activities a ON a.id=n.activity_id LEFT JOIN team_activity_custom_kinds c ON c.activity_id=a.id WHERE n.member_id=? AND n.created_at>? ORDER BY n.created_at DESC LIMIT 70",ctx.member.id,now()-45*86400000):[];
+ const allowedIds=new Set(mine.map(a=>a.id));
+ const visibleNotices=notices.filter(n=>allowedIds.has(n.activity_id)).slice(0,25);
  for(const item of mine)if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
- return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email,has_photo:Boolean(selfPhoto)}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email,has_photo:Boolean(selfPhoto)}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine,notices:visibleNotices});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -156,6 +161,7 @@ async function getManage(db,ctx){
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
  for(const memberId of memberIds){
+  await db.prepare("INSERT INTO team_activity_notices(id,activity_id,member_id,reason,created_at,seen_at) VALUES(?,?,?,?,?,NULL) ON CONFLICT(activity_id,member_id,reason) DO UPDATE SET created_at=excluded.created_at,seen_at=NULL").bind(uuid(),a.id,memberId,reason,now()).run();
   const links=await all(db,'SELECT subscription_id FROM team_push_links WHERE member_id=?',memberId);
   for(const l of links){await db.prepare("INSERT INTO team_push_jobs(id,activity_id,member_id,subscription_id,reason,status,created_at) VALUES (?,?,?,?,?,'pending',?) ON CONFLICT(activity_id,subscription_id,reason) DO UPDATE SET status='pending',code=NULL,created_at=excluded.created_at")
    .bind(uuid(),a.id,memberId,l.subscription_id,reason,now()).run();}
@@ -289,7 +295,9 @@ async function assign(db,ctx,d){
 }
 async function saveActivity(db,ctx,d){
  if(!ctx.admin&&!ctx.leadPoles.length)return fail('Réservé aux responsables.',403);
- if(!validKind(d.kind)||!validAudience(d.audience)||!clean(d.title,120)||!dateok(d.starts_at)||!dateok(d.ends_at)||Date.parse(d.ends_at)<=Date.parse(d.starts_at)||Date.parse(d.ends_at)-Date.parse(d.starts_at)>90*86400000)return fail('Titre, type, public ou dates invalides.');
+ if(!(validKind(d.kind)||d.kind==='other')||!validAudience(d.audience)||!clean(d.title,120)||!dateok(d.starts_at)||!dateok(d.ends_at)||Date.parse(d.ends_at)<=Date.parse(d.starts_at)||Date.parse(d.ends_at)-Date.parse(d.starts_at)>90*86400000)return fail('Titre, type, public ou dates invalides.');
+ const customKind=d.kind==='other'?clean(d.customKind,90):'';
+ if(d.kind==='other'&&customKind.length<3)return fail('Indique l’objet de cette activité (3 caractères minimum).',400);
  const selected=[...new Set(Array.isArray(d.poles)?d.poles:[])];
  if(d.audience==='poles'&&!selected.length)return fail('Sélectionnez au moins un pôle.');
  for(const p of selected){if(!idok(p)||!(await one(db,'SELECT id FROM team_poles WHERE id=? AND archived=0',p)))return fail('Un pôle est inconnu ou archivé.');}
@@ -301,7 +309,9 @@ async function saveActivity(db,ctx,d){
  const wasBureau=previous?Boolean(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',id)):false;
  const documentId=d.agenda_document_id||null;
  if(documentId){const doc=await one(db,'SELECT * FROM team_documents WHERE id=? AND kind IN (\'agenda\',\'instructions\')',documentId);if(!doc||doc.activity_id!==id)return fail('Ce document ne concerne pas cette activité.');}
- await db.prepare('INSERT INTO team_activities(id,kind,title,starts_at,ends_at,place,details,agenda,agenda_document_id,audience,status,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,starts_at=excluded.starts_at,ends_at=excluded.ends_at,place=excluded.place,details=excluded.details,agenda=excluded.agenda,agenda_document_id=excluded.agenda_document_id,audience=excluded.audience,status=excluded.status,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(id,d.kind,clean(d.title,120),d.starts_at,d.ends_at,clean(d.place,190),clean(d.details,3000),clean(d.agenda,8000),documentId,d.audience==='bureau'?'leaders':d.audience,status,previous?.created_by||ctx.email,ctx.email,previous?.created_at||now(),now()).run();
+ await db.prepare('INSERT INTO team_activities(id,kind,title,starts_at,ends_at,place,details,agenda,agenda_document_id,audience,status,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,starts_at=excluded.starts_at,ends_at=excluded.ends_at,place=excluded.place,details=excluded.details,agenda=excluded.agenda,agenda_document_id=excluded.agenda_document_id,audience=excluded.audience,status=excluded.status,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(id,d.kind==='other'?'mission':d.kind,clean(d.title,120),d.starts_at,d.ends_at,clean(d.place,190),clean(d.details,3000),clean(d.agenda,8000),documentId,d.audience==='bureau'?'leaders':d.audience,status,previous?.created_by||ctx.email,ctx.email,previous?.created_at||now(),now()).run();
+ if(customKind)await db.prepare('INSERT INTO team_activity_custom_kinds(activity_id,label) VALUES(?,?) ON CONFLICT(activity_id) DO UPDATE SET label=excluded.label').bind(id,customKind).run();
+ else await db.prepare('DELETE FROM team_activity_custom_kinds WHERE activity_id=?').bind(id).run();
  if(d.audience==='bureau')await db.prepare('INSERT OR IGNORE INTO team_activity_bureau_audience(activity_id,added_at) VALUES(?,?)').bind(id,now()).run();
  else await db.prepare('DELETE FROM team_activity_bureau_audience WHERE activity_id=?').bind(id).run();
  await db.prepare('DELETE FROM team_activity_poles WHERE activity_id=?').bind(id).run();
@@ -353,6 +363,12 @@ async function setCheckin(db,ctx,d){
 }
 async function memberAction(db,ctx,d){
  if(!ctx.member)return fail('Fiche bénévole nécessaire.',403);
+ if(d.op==='notice.read'){
+  if(ctx.pending||!ctx.member.active||!await requireCharter(db,ctx))return fail('Accès aux notifications refusé.',403);
+  if(!idok(d.id))return fail('Notification invalide.',400);
+  await db.prepare('UPDATE team_activity_notices SET seen_at=? WHERE id=? AND member_id=? AND seen_at IS NULL').bind(now(),d.id,ctx.member.id).run();
+  return reply({ok:true});
+ }
  const memberId=ctx.member.id;
  if(d.op==='contact.self'){
   if(ctx.pending||!ctx.member.active)return fail('Seuls les bénévoles validés peuvent renseigner leur téléphone.',403);
@@ -1025,7 +1041,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
