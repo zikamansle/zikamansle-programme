@@ -373,3 +373,17 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
  #teamRoot .team-chat-input textarea{min-height:46px}
  #teamRoot .team-chat-send{min-height:46px;padding:9px 11px}
 }
+
+/* Responsables de groupe : noms accessibles à droite du titre, cartes de contact privées. */
+#teamRoot .team-chat-responsibles{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0;max-width:52%}
+#teamRoot .team-chat-responsibles-label{font-size:12px;font-weight:800;color:#67439a;white-space:nowrap}
+#teamRoot .team-chat-responsibles-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+#teamRoot .team-chat-contact{position:relative;min-width:0}
+#teamRoot .team-chat-contact summary{list-style:none;cursor:pointer;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:99px;padding:8px 11px;color:#12567a;background:#d8f1ff;border:1px solid #a7d8ed;font-weight:750;font-size:12px}
+#teamRoot .team-chat-contact summary::-webkit-details-marker{display:none}
+#teamRoot .team-chat-contact summary:hover,#teamRoot .team-chat-contact summary:focus-visible{background:#bde5fb;outline:2px solid #704ac9;outline-offset:2px}
+#teamRoot .team-chat-contact-card{position:absolute;z-index:12;right:0;top:calc(100% + 5px);min-width:215px;max-width:min(300px,80vw);background:#fff;border:1px solid #c7ddec;border-radius:14px;box-shadow:0 9px 25px #17496a35;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:#16384e}
+#teamRoot .team-chat-contact-card a{display:block;background:#e7f9f7;padding:9px;border-radius:9px;color:#066c70;font-weight:800;text-decoration:none}
+#teamRoot .team-chat-contact-card a:hover{background:#c8f4ec}
+#teamRoot .team-chat-contact-card small{color:#627d8d}
+@media(max-width:730px){#teamRoot .team-chat-responsibles{max-width:none;width:100%;justify-content:flex-start;margin-left:0}#teamRoot .team-chat-responsibles-list{justify-content:flex-start}#teamRoot .team-chat-contact-card{right:auto;left:0}#teamRoot .team-chat-header{gap:8px}#teamRoot .team-chat-contact summary{max-width:140px}}
