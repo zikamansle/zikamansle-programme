@@ -21,3 +21,55 @@ body{margin:0;background:#f4f8fb;color:var(--team-ink);font:15px/1.55 Inter,syst
 .team-table-wrap{overflow-x:auto}.team-table{border-collapse:collapse;width:100%;font-size:13px}.team-table th,.team-table td{border-bottom:1px solid var(--team-border);padding:11px 8px;text-align:left;vertical-align:top}.team-table th{color:#587184}.team-toast{position:fixed;bottom:17px;left:50%;transform:translateX(-50%);background:#15344c;color:white;border-radius:14px;padding:13px 17px;box-shadow:0 10px 26px #0004;max-width:min(95vw,500px);z-index:500}.team-toast[hidden]{display:none}
 .team-edit-card{background:#f6fafc;border-radius:17px;padding:16px;border:1px solid #deebf4}.team-split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.team-link{color:#147db7;text-decoration:underline}
 @media(max-width:700px){.team-top{padding:12px}.team-return{font-size:12px}.team-top small{font-size:10px}.team-card{padding:16px;border-radius:15px}.team-split{grid-template-columns:1fr}.team-row .team-button{flex:1 1 auto}.team-wrap{padding:17px 10px 70px}.team-tabs button{flex:1 1 auto}.team-table{min-width:490px}}
+
+/* ZikaTeam — lecture facile, hiérarchie visuelle et accueil accessible sur mobile */
+.team-accent-orange{border-left:5px solid #f18a23;background:linear-gradient(90deg,#fffaf2,white 38%)}
+.team-accent-blue{border-left:5px solid #1686bc;background:linear-gradient(90deg,#f5faff,white 38%)}
+.team-accent-teal{border-left:5px solid #099789;background:linear-gradient(90deg,#f3fbf9,white 38%)}
+.team-accent-purple{border-left:5px solid #8453ac;background:linear-gradient(90deg,#fcf7ff,white 38%)}
+.team-step{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#9c5b10}
+.team-gate{max-width:940px;margin:0 auto}.team-gate .team-card{margin-bottom:16px}
+.team-charter-required{border:2px solid #dfa354}.team-charter-signed{border-left:4px solid #16826e}
+.team-charter-details summary{font-weight:750;cursor:pointer;padding:9px 0}.team-charter-details[open] summary{margin-bottom:10px}
+.team-consent,.team-check{display:flex!important;gap:10px!important;align-items:center!important;font-size:15px!important}
+.team-consent input,.team-check input{width:20px!important;height:20px!important;flex:none;accent-color:#16826e}
+.team-shortcuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin:0 0 18px}
+.team-shortcut{display:flex;align-items:center;gap:12px;text-align:left;background:#fff;color:var(--team-ink);border:1px solid #d9e8f0;border-left:5px solid #2e94bd;border-radius:16px;padding:15px;cursor:pointer;min-height:90px;box-shadow:0 4px 15px #12345708}
+.team-shortcut strong,.team-shortcut small{display:block}.team-shortcut small{font-size:12px;color:#536c7e;line-height:1.4;margin-top:4px}
+.team-shortcut-symbol{background:#eff8fc;color:#145a83;border-radius:12px;width:40px;height:40px;display:grid;place-items:center;font-size:21px;flex:none}
+.team-shortcut-equipe{border-left-color:#8d58b4}.team-shortcut-admin{border-left-color:#e7952f}
+.team-shortcut>span:last-child{font-size:25px;margin-left:auto}
+.team-role-options{border:1px solid #d3e4ed;border-radius:14px;padding:15px;display:grid;gap:10px;background:#f8fbfe}
+.team-role-options legend{font-weight:800;color:#183d58;padding:0 6px}
+.team-role-line{display:flex!important;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 0;border-bottom:1px solid #dce8ee}
+.team-role-line select{width:min(100%,320px)}
+.team-member-card{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #e0e9f0}
+.team-member-card .team-small{margin:2px 0;color:#607789;overflow-wrap:anywhere}
+.team-leaders{display:flex;flex-wrap:wrap;gap:10px}
+.team-person,.team-leader-card{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 11px;border:1px solid #dce8ee;border-radius:14px;background:#fff}
+.team-leader-card{width:100%;flex-wrap:wrap}.team-person-info{display:grid;gap:3px;flex:1}
+.team-person-info small{font-size:12px;color:#607789}
+.team-avatar{width:52px;height:52px;object-fit:cover;border-radius:50%;border:2px solid #dce8f0;flex:none}
+.team-avatar-empty{display:grid;place-items:center;background:#eaf5fa;font-weight:800;color:#286788}
+.team-photo-picker{font-weight:650;font-size:12px!important;color:#1673ad!important;cursor:pointer}
+.team-photo-picker input{font-size:11px;padding:3px!important}
+.team-pole-panel{background:#f8fbfd}
+.team-pole-members summary{font-weight:700;cursor:pointer;padding:8px 0}
+.team-member-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #dae8ef;padding:7px 0}
+.team-export-tools{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
+.team-export-tools label{display:grid;gap:4px;font-size:13px;font-weight:700;color:#345a71}
+.team-export-tools select,.team-directory-search input{padding:12px;border:1px solid #cbdde7;border-radius:12px;background:white;color:#183c53;min-height:45px;font:inherit}
+.team-dues-summary{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+.team-dues-summary span{background:#f0f7fb;padding:10px 17px;border:1px solid #d3e7ef;border-radius:12px}
+.team-dues-summary strong{font-size:22px;color:#135474}
+.team-dues-item,.team-directory-card{background:#fff;border:1px solid #dbe8f0;padding:16px;border-radius:15px;margin:14px 0}
+.team-directory-search{display:grid;gap:6px;font-size:14px;font-weight:700}
+.team-directory-search input{width:100%;box-sizing:border-box}
+.team-form input:focus-visible,.team-form select:focus-visible,.team-form textarea:focus-visible,.team-button:focus-visible,.team-tabs button:focus-visible,.team-shortcut:focus-visible,.team-export-tools select:focus-visible{outline:3px solid #f6a947;outline-offset:2px}
+@media(max-width:700px){
+ .team-shortcuts{grid-template-columns:1fr}.team-export-tools .team-button{flex:1 1 140px}
+ .team-role-line{align-items:stretch}.team-role-line select{width:100%}
+ .team-directory-card,.team-dues-item{padding:12px}
+ .team-leader-card{align-items:flex-start}.team-leader-card .team-button{width:100%}
+ .team-avatar{width:46px;height:46px}
+}
