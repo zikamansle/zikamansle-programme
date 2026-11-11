@@ -29,6 +29,6 @@
     "PUSH_SEND_ENABLED": "false",
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
-    "VAPID_PUBLIC_KEY": ""
+    "PUSH_TEST_ENABLED": "true"
   }
 }
