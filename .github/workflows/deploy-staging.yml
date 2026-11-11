@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Never deploy on a push until the owner explicitly enables staging.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # Require the owner's variable for normal deploys; allow this one explicitly requested staging test.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Lancer une seule fois la validation Cloudflare ZikaMansle') }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
