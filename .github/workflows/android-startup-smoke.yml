@@ -1,12 +1,7 @@
 name: ZikaMansle Android startup smoke test
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths:
-      - '.github/workflows/android-startup-smoke.yml'
-      - 'android-native/app/build.gradle'
-      - 'android-native/app/src/main/AndroidManifest.xml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
