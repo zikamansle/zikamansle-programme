@@ -83,8 +83,32 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   await okay(S,{op:'checkin.set',activityId:act.id,memberId:member,present:true});
   assert.equal((await invoke(S,'/zikateam/api/manage')).payload.activities[0].attendance.filter(m=>m.checked_in_at).length,1);
   assert.ok((await invoke(A,'/zikateam/api/manage')).payload.audit.some(x=>x.action==='checkin.set'&&x.actor_email===S));
+
+  // Une vraie feuille indépendante des simples pointages : création puis ajout des présents.
+  assert.equal((await api(L,{op:'signing.create',title:'Réunion secrétariat',startsAt:'2027-04-24T15:00:00.000Z',place:'Salle Gautier'})).status,403);
+  const signatureSession=(await okay(S,{op:'signing.create',title:'Réunion des bénévoles',startsAt:'2027-04-24T15:00:00.000Z',place:'Salle Gautier Capuçon'})).id;
+  assert.equal((await api(B,{op:'signing.add',sessionId:signatureSession,memberIds:[member]})).status,403,'aucune création de présents par un bénévole');
+  await okay(S,{op:'signing.add',sessionId:signatureSession,memberIds:[member,lead]});
+  const beforeSignature=(await invoke(S,'/zikateam/api/signing')).payload.sessions.find(x=>x.id===signatureSession);
+  assert.equal(beforeSignature.attendees.length,2);
+  assert.equal(beforeSignature.attendees.filter(x=>x.signed_at).length,0);
+  const trace=[[[50,70],[80,120],[150,150],[240,95]],[[310,250],[400,180],[470,130]]];
+  assert.equal((await api(L,{op:'signing.sign',sessionId:signatureSession,memberId:member,strokes:trace})).status,403);
+  assert.equal((await api(S,{op:'signing.sign',sessionId:signatureSession,memberId:member,strokes:[[[5,6],[5,6]]]})).status,400);
+  await okay(S,{op:'signing.sign',sessionId:signatureSession,memberId:member,strokes:trace});
+  assert.equal((await api(S,{op:'signing.sign',sessionId:signatureSession,memberId:member,strokes:trace})).status,409,'signature validée non modifiable');
+  // Le secrétariat peut ajouter un présent même après une première signature.
+  await okay(S,{op:'signing.add',sessionId:signatureSession,memberIds:[other]});
+  const signedSession=(await invoke(A,'/zikateam/api/signing')).payload.sessions.find(x=>x.id===signatureSession);
+  assert.equal(signedSession.attendees.length,3);
+  assert.deepEqual(JSON.parse(signedSession.attendees.find(x=>x.member_id===member).signature_points),trace,'le tracé exact est sauvegardé pour impression PDF');
+  assert.equal((await api(S,{op:'signing.remove',sessionId:signatureSession,memberId:member})).status,409);
+  await okay(S,{op:'signing.close',sessionId:signatureSession});
+  assert.equal((await api(S,{op:'signing.add',sessionId:signatureSession,memberIds:[secretary]})).status,409,'feuille clôturée en lecture seule');
+  assert.equal((await api(S,{op:'signing.sign',sessionId:signatureSession,memberId:other,strokes:trace})).status,409);
   await okay(A,{op:'secretariat.set',memberId:secretary,enabled:false});
   assert.equal((await invoke(S,'/zikateam/api/manage')).status,403);
+  assert.equal((await invoke(S,'/zikateam/api/signing')).status,403,'droit révoqué immédiatement');
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities.length,1);
   assert.equal((await invoke(O,'/zikateam/api/me')).payload.activities.length,0);
   assert.equal((await api(O,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403);
