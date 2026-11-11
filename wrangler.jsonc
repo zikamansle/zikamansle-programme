@@ -28,11 +28,8 @@
   "vars": {
     "APP_ENV": "staging",
     "PUSH_SEND_ENABLED": "false",
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
     "PUSH_TEST_ENABLED": "true",
     "TEAM_PUSH_ENABLED": "false",
-    "TEAM_ACCESS_AUD": "",
     "TEAM_AUTH_PROVIDER": "supabase",
     "TEAM_SUPABASE_URL": "https://kuipdwzqamiduhosofjb.supabase.co",
     "TEAM_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_22bY8y3TXUNg_h6xrBztEw_g2nzc2d3"
