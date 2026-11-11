@@ -168,3 +168,5 @@ test('la publication d’une réunion utilise deux actions explicites',()=>{
  assert.ok(!client.slice(client.indexOf('function manageActivities(){'),client.indexOf('function shiftForm(){')).includes('<label>État<select name="status">'));
  assert.ok(client.includes('Impossible d’enregistrer : '));
 });
+
+// Staging : publication directe des réunions, notifications implicites après enregistrement.
