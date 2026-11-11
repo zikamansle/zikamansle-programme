@@ -72,16 +72,19 @@ async function getMine(db,ctx){
  const c=await charter(db);
  const versions=ctx.member?await all(db,'SELECT version,accepted_at FROM team_charter_acceptances WHERE member_id=? ORDER BY accepted_at DESC',ctx.member.id):[];
  const accepted=charterAccepted(c,versions);
+ const consentRows=ctx.member?await all(db,'SELECT kind,granted,updated_at FROM team_member_consents WHERE member_id=?',ctx.member.id):[];
+ const consents={image:null,phone:null,email:null};
+ for(const item of consentRows)if(Object.prototype.hasOwnProperty.call(consents,item.kind))consents[item.kind]=Boolean(item.granted);
  const currentCharter=c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null;
  // Une identité vérifiée sans charte acceptée ne reçoit ni équipes ni convocations.
  if(!accepted)return reply({
   email:ctx.email,admin:ctx.admin,pending:ctx.pending,secretariat:false,
-  member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,
+  member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,consents,
   leadPoles:[],poles:[],charter:currentCharter,charterAccepted:false,charterAcceptedAt:null,activities:[]
  });
  if(ctx.pending)return reply({
   email:ctx.email,admin:false,pending:true,secretariat:false,
-  member:{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email},
+  member:{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email},consents,
   leadPoles:[],poles:[],charter:currentCharter,charterAccepted:true,
   charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:[]
  });
@@ -92,7 +95,7 @@ async function getMine(db,ctx){
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
- return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -100,7 +103,7 @@ async function getManage(db,ctx){
   ctx.leadPoles.length?(await all(db,'SELECT * FROM team_poles WHERE archived=0 ORDER BY name')).filter(p=>ctx.leadPoles.includes(p.id)):
   await all(db,'SELECT id,name,archived FROM team_poles WHERE archived=0 ORDER BY name');
  const members=ctx.admin?await all(db,'SELECT id,name,email,active FROM team_members ORDER BY name'):
-  ctx.leadPoles.length?await all(db,"SELECT DISTINCT m.id,m.name,m.email,m.active FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id WHERE tm.pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead') ORDER BY m.name",ctx.member.id):
+  ctx.leadPoles.length?await all(db,"SELECT DISTINCT m.id,m.name,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(contacts.phone,'') ELSE '' END AS phone,m.active FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id LEFT JOIN team_member_contacts contacts ON contacts.member_id=m.id WHERE tm.pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead') ORDER BY m.name",ctx.member.id):
   await all(db,'SELECT id,name,active FROM team_members WHERE active=1 ORDER BY name');
  if(ctx.admin||ctx.leadPoles.length){
   const pictures=new Set((await all(db,'SELECT member_id FROM team_member_photos')).map(x=>x.member_id));
@@ -132,8 +135,11 @@ async function getManage(db,ctx){
  const secretariatIds=ctx.admin?(await all(db,"SELECT member_id FROM team_staff_roles WHERE role='secretariat'")).map(x=>x.member_id):[];
  const pendingRequests=ctx.admin?await all(db,"SELECT email,name,requested_at FROM team_join_requests WHERE status='pending' ORDER BY requested_at ASC LIMIT 250"):[];
  const dues=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.active,COALESCE(d.paid,0) AS paid,d.paid_on,d.payment_method,d.updated_by,d.updated_at FROM team_members m LEFT JOIN team_membership_dues d ON d.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
+ const listMemberships=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):[];
+ const listRoles=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,role FROM team_member_roles'):[];
+ const consentsAdmin=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,kind,granted,updated_at FROM team_member_consents'):[];
  const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts});
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts,listMemberships,listRoles,consentsAdmin});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -331,10 +337,26 @@ async function setCheckin(db,ctx,d){
 async function memberAction(db,ctx,d){
  if(!ctx.member)return fail('Fiche bénévole nécessaire.',403);
  const memberId=ctx.member.id;
+ if(d.op==='consents.save'){
+  const values=d.consents;
+  if(!values||typeof values!=='object'||['image','phone','email'].some(k=>typeof values[k]!=='boolean'))return fail('Choisis explicitement Oui ou Non pour chacune des trois autorisations.',400);
+  for(const kind of ['image','phone','email']){
+   await db.prepare('INSERT INTO team_member_consents(member_id,kind,granted,version,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id,kind) DO UPDATE SET granted=excluded.granted,version=excluded.version,updated_at=excluded.updated_at').bind(memberId,kind,values[kind]?1:0,'2026-11-11',now()).run();
+  }
+  await audit(db,ctx.email,'consents.update',memberId,'Autorisations image, téléphone et e-mail');
+  return reply({ok:true});
+ }
  if(d.op==='charter.accept'){
   const c=await charter(db);if(!c)return fail('La charte officielle n’a pas encore été publiée.',409);
   if(d.version!==c.version)return fail('La charte a été actualisée, relisez sa nouvelle version.',409);
   if(d.agree!==true)return fail('Vous devez confirmer explicitement la lecture et l’acceptation.',400);
+  if(d.consents!==undefined){
+   if(!d.consents||typeof d.consents!=='object'||['image','phone','email'].some(k=>typeof d.consents[k]!=='boolean'))return fail('Réponds Oui ou Non aux trois autorisations.',400);
+   for(const kind of ['image','phone','email']){
+    await db.prepare('INSERT INTO team_member_consents(member_id,kind,granted,version,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id,kind) DO UPDATE SET granted=excluded.granted,version=excluded.version,updated_at=excluded.updated_at').bind(memberId,kind,d.consents[kind]?1:0,'2026-11-11',now()).run();
+   }
+   await audit(db,ctx.email,'consents.first',memberId);
+  }
   const saved=await db.prepare('INSERT OR IGNORE INTO team_charter_acceptances(member_id,version,accepted_at) VALUES(?,?,?)').bind(memberId,c.version,now()).run();
   if(saved.meta.changes)await audit(db,ctx.email,'charter.accept',memberId,c.version);
   return reply({ok:true});
@@ -739,9 +761,9 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     const ownProfile=ctx.admin&&data.op==='member.save'&&(!data.id||data.id===ctx.member?.id)&&clean(data.email,254).toLowerCase()===ctx.email&&data.active!==false;
     const firstCharter=ctx.admin&&!currentCharter&&data.op==='charter.save';
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
-    if(ctx.pending&&data.op!=='charter.accept')return fail('Ton inscription attend l’accord de l’administration.',403);
+    if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
