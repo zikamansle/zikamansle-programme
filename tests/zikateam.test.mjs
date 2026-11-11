@@ -38,6 +38,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(B,'/zikateam/api/me')).status,403);
   // L'administrateur crée sa fiche puis publie la charte avant toute gestion.
   await okay(A,{op:'member.save',name:'Administration',email:A});
+  await okay(A,{op:'charter.save',version:'1',title:'Charte',content:'Respect et engagement'});
   // La charte est déjà publiée : le bénévole non signataire ne peut pas répondre.
   assert.equal((await invoke(A,'/zikateam/api/manage')).status,403,'gestion verrouillée jusqu’à signature');
   await okay(A,{op:'charter.accept',version:'1',agree:true});
