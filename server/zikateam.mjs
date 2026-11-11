@@ -737,12 +737,12 @@ async function getTeamPhoto(env,ctx,id){
   if(!ctx.member)return fail('Photo non autorisée.',403);
   const consent=await one(env.DB,"SELECT 1 FROM team_member_consents WHERE member_id=? AND kind='image' AND granted=1",id);
   if(!consent)return fail('Droit à l’image non accordé.',403);
-  const visible=await one(env.DB,'SELECT 1 FROM team_memberships current JOIN team_memberships subject ON current.pole_id=subject.pole_id WHERE current.member_id=? AND subject.member_id=? LIMIT 1',ctx.member.id,id);
+  const visible=await one(env.DB,'SELECT 1 FROM team_memberships current JOIN team_memberships subject ON current.pole_id=subject.pole_id JOIN team_poles p ON p.id=current.pole_id WHERE current.member_id=? AND subject.member_id=? AND p.archived=0 LIMIT 1',ctx.member.id,id);
   if(!visible)return fail('Photo non autorisée.',403);
  }
  const obj=await env.BUCKET?.get('team/photo/'+id);
  if(!obj)return fail('Photo indisponible.',404);
- return new Response(obj.body,{headers:{'Content-Type':photo.mime,'Cache-Control':'private, max-age=300','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"}});
+ return new Response(obj.body,{headers:{'Content-Type':photo.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"}});
 }
 async function getDocument(env,ctx,docId){
  if(!idok(docId))return fail('Document introuvable.',404);
