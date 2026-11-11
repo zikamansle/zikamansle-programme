@@ -102,3 +102,24 @@ test('admin media upload, attachment and history clearing preserve subscribers',
  const state=await(await handle(request('admin',null,'owner'),env)).json();assert.equal(state.history.length,0);assert.equal(state.subscribers,1);
  assert.equal((await handle(request('send',{id:draft.id},'owner'),env)).status,404);
 });
+
+test('staging permits a single-device push test but blocks all broadcasts',async()=>{
+ const env=environment();env.PUSH_SEND_ENABLED='false';env.PUSH_TEST_ENABLED='true';
+ assert.equal((await handle(request('subscribe',{subscription:sub}),env)).status,200);
+ const broadcast={id:crypto.randomUUID(),title:'Interdit en staging',body:'Pas de diffusion',url:'/index.html#actualites'};
+ assert.equal((await handle(request('create',broadcast,'owner'),env)).status,200);
+ assert.equal((await handle(request('send',{id:broadcast.id},'owner'),env)).status,503);
+ const single={...broadcast,id:crypto.randomUUID(),title:'Un seul téléphone',test:true,subscription:sub};
+ assert.equal((await handle(request('create',single,'owner'),env)).status,200);
+ const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return new Response(null,{status:201})};
+ try{
+  const sent=await handle(request('send',{id:single.id},'owner'),env);
+  assert.equal(sent.status,200);
+  assert.equal((await sent.json()).pending,0);
+  assert.equal(calls,1);
+  assert.equal((await handle(request('send',{id:broadcast.id},'owner'),env)).status,503);
+ }finally{globalThis.fetch=original}
+ const news=await(await handle(request('news'),env)).json();
+ assert.equal(news.items.length,1);
+ assert.equal(news.items[0].id,broadcast.id);
+});
