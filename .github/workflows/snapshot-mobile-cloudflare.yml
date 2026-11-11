@@ -1,8 +1,5 @@
 name: Capture public mobile source for safe admin menu patch
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths: ['.github/workflows/snapshot-mobile-cloudflare.yml']
   workflow_dispatch:
 permissions:
   contents: read
