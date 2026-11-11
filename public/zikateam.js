@@ -19,8 +19,8 @@ const pills=arr=>arr.map(t=>'<span class="team-pill">'+esc(t)+'</span>').join(''
 function header(){const m=state.me;return '<header class="team-heading"><span>Espace privé · '+(m.pending?'Inscription en attente':m.admin?'Administration et bénévoles':m.leadPoles.length?'Responsable et bénévoles':m.secretariat?'Secrétariat':'Bénévoles')+'</span><h1>Bonjour '+esc(m.member?.name||'ZikaTeam')+' !</h1><p class="team-muted">Vos équipes, vos rendez-vous et vos informations au même endroit.</p>'+(state.freeLogin?'<button type="button" class="team-button light" data-team-logout>Me déconnecter</button>':'')+'</header>';
 }
 function menu(){return '<nav class="team-tabs" aria-label="Rubriques ZikaTeam">'+(state.me.pending?[['fiche','Mon accueil']]:[
- ['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'+(state.chatUnread?' · '+(state.chatUnread>99?'99+':state.chatUnread):'')],...((state.me.admin||state.me.leadPoles.length||state.me.secretariat)?[['gestion',state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length?'Secrétariat':'Gestion des équipes']]:[])
- ]).map(([id,title])=>'<button type="button" data-tab="'+id+'" aria-current="'+(state.tab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav>'}
+ ['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'],...((state.me.admin||state.me.leadPoles.length||state.me.secretariat)?[['gestion',state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length?'Secrétariat':'Gestion des équipes']]:[])
+ ]).map(([id,title])=>'<button type="button" data-tab="'+id+'" aria-current="'+(state.tab===id?'page':'false')+'">'+title+(id==='messages'&&state.chatUnread?'<span class="team-unread team-tab-unread" aria-label="'+state.chatUnread+' messages non lus">'+(state.chatUnread>99?'99+':state.chatUnread)+'</span>':'')+'</button>').join('')+'</nav>'}
 function consentQuestions(consents={}){
  const items=[
   ['image','Droit à l’image','J’autorise ZikaMansle à utiliser les photos et vidéos sur lesquelles je suis reconnaissable, réalisées lors des activités de l’association, pour communiquer sur ses événements (site, réseaux sociaux, affiches et publications).'],
@@ -752,7 +752,7 @@ setInterval(async()=>{
    const field=document.querySelector('#messageForm textarea[name="body"]');if(field)field.value=draft;
   }else if(state.chatUnread!==previous){
    const tab=root.querySelector('button[data-tab="messages"]');
-   if(tab)tab.textContent='Discussions'+(state.chatUnread?' · '+(state.chatUnread>99?'99+':state.chatUnread):'');
+   if(tab){tab.textContent='Discussions';if(state.chatUnread){const badge=document.createElement('span');badge.className='team-unread team-tab-unread';badge.setAttribute('aria-label',state.chatUnread+' messages non lus');badge.textContent=state.chatUnread>99?'99+':String(state.chatUnread);tab.append(badge);}}
   }
  }catch{}
 },20000);
