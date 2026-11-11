@@ -7,6 +7,15 @@ const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(p
 const isAdminPage = path => /^\/administration\/notifications\/?$/.test(path);
 const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history)$/.test(path);
 
+// Static Assets normalizes .html to an extensionless URL. Fetch the canonical
+// extensionless asset directly, otherwise /administration/notifications redirects
+// to /admin-notifications and back forever.
+export function adminAssetRequest(request) {
+  const url=new URL(request.url);
+  url.pathname='/admin-notifications';
+  return new Request(url,request);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -24,8 +33,7 @@ export default {
     else if (path === '/healthz') response = Response.json({app:'ZikaMansle',environment:env.APP_ENV || 'staging'});
     else if (isAdminPage(path)) {
       if (!await isAdmin(request,env)) return new Response('Accès administrateur requis. Connectez-vous via Cloudflare Access.',{status:403,headers:{'Cache-Control':'no-store','Content-Type':'text/plain; charset=utf-8'}});
-      url.pathname='/admin-notifications.html';
-      response = await env.ASSETS.fetch(new Request(url,request));
+      response = await env.ASSETS.fetch(adminAssetRequest(request));
     } else response = await env.ASSETS.fetch(request);
     response = new Response(response.body,response);
     response.headers.set('X-Content-Type-Options','nosniff');
