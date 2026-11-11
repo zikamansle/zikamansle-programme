@@ -633,7 +633,23 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-ch
  if(b.hasAttribute('data-reset-activity')){state.editActivity=null;render();return;}
  if(b.hasAttribute('data-reset-pole')){state.editPole=null;render();return;}
  if(b.hasAttribute('data-reset-member')){state.editMember=null;render();return;}
- if(b.dataset.chatIcon){if(!state.me.admin)return;await perform(async()=>command('chat.icon.set',{channel:state.chatChannel,channelId:state.chatId,icon:b.dataset.chatIcon}));await refreshChatSummary();render();return;}
+ if(b.dataset.chatIcon){
+  if(!state.me?.admin||state.busy)return;
+  const channel=state.chatChannel,channelId=state.chatId,icon=b.dataset.chatIcon;
+  state.busy=true;b.disabled=true;
+  try{
+   await command('chat.icon.set',{channel,channelId,icon});
+   // Conserver le salon ouvert et actualiser immédiatement l'icône,
+   // même si les autres données de gestion prennent du temps à charger.
+   const room=state.chatRooms.find(x=>x.channel===channel&&(x.id||null)===(channelId||null));
+   if(room){room.icon=icon;room.image_id=null;}
+   render();
+   toast('Icône du groupe enregistrée.');
+   try{await refreshChatSummary();render();}catch{}
+  }catch(err){toast('Changement d’icône impossible : '+(err.message||'erreur de connexion'))}
+  finally{state.busy=false}
+  return;
+ }
  if(b.dataset.chatRoom){const [channel,id]=b.dataset.chatRoom.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}return;}
  if(b.dataset.deleteMessage){if(!confirm('Masquer ce message de la conversation ?'))return;await perform(async()=>command('message.delete',{id:b.dataset.deleteMessage}));try{await refreshMessages()}catch{}return;}
  if(b.dataset.checkin){await perform(async()=>command('checkin.set',{activityId:b.dataset.checkin,memberId:b.dataset.member,present:b.dataset.present==='1'}));return;}
@@ -660,8 +676,17 @@ root.addEventListener('change',async e=>{
   const file=e.target.files?.[0];if(!file)return;
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Image JPEG, PNG ou WebP de moins de 2 Mo nécessaire.');
   const query=new URLSearchParams({channel:state.chatChannel});if(state.chatId)query.set('id',state.chatId);
-  await perform(async()=>{const response=await fetch('/zikateam/api/chat-icon?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file});const data=await response.json();if(!response.ok)throw Error(data.error||'Impossible de changer l’icône.');});
-  await refreshChatSummary();render();return;
+  if(state.busy)return;state.busy=true;
+  try{
+   const response=await fetch('/zikateam/api/chat-icon?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file});
+   const data=await response.json();if(!response.ok)throw Error(data.error||'Impossible de changer l’icône.');
+   const room=state.chatRooms.find(x=>x.channel===state.chatChannel&&(x.id||null)===(state.chatId||null));
+   if(room){room.image_id=data.id;room.icon='💬';}
+   render();toast('Image du groupe enregistrée.');
+   try{await refreshChatSummary();render();}catch{}
+  }catch(err){toast(err.message||'Impossible de changer l’icône.')}
+  finally{state.busy=false}
+  return;
  }
  if(e.target.id==='teamChatAttachment'){
   const file=e.target.files?.[0];if(!file)return;
