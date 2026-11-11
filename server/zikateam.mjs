@@ -489,6 +489,18 @@ function validSignature(strokes){
 }
 async function signingAction(db,ctx,d){
  if(!ctx.admin&&!ctx.secretariat)return fail('Émargements réservés à l’administration et au secrétariat.',403);
+ if(d.op==='signing.delete'){
+  if(!idok(d.sessionId))return fail('Identifiant de feuille invalide.',400);
+  const session=await one(db,'SELECT id,title,closed_at FROM team_signing_sessions WHERE id=?',d.sessionId);
+  if(!session)return fail('Feuille introuvable.',404);
+  const signatures=await one(db,'SELECT COUNT(*) AS n FROM team_signing_attendees WHERE session_id=? AND signed_at IS NOT NULL',d.sessionId);
+  if((signatures?.n||0)>0&&!ctx.admin)return fail('Seul un administrateur peut supprimer une feuille contenant des signatures.',403);
+  if(d.confirm!==true||((signatures?.n||0)>0&&d.confirmTitle!==session.title))return fail('Confirmation explicite nécessaire pour supprimer cette feuille.',409);
+  await db.prepare('DELETE FROM team_signing_attendees WHERE session_id=?').bind(d.sessionId).run();
+  await db.prepare('DELETE FROM team_signing_sessions WHERE id=?').bind(d.sessionId).run();
+  await audit(db,ctx.email,'signing.delete',d.sessionId,session.title+' · '+(signatures?.n||0)+' signature(s) supprimée(s)');
+  return reply({ok:true,deleted:true});
+ }
  if(d.op==='signing.create'){
   const title=clean(d.title,180),place=clean(d.place,180),startsAt=d.startsAt;
   if(!title||!place||!dateok(startsAt))return fail('Renseignez l’objet, la date, l’heure et le lieu.',400);
