@@ -70,6 +70,12 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
 
   await okay(A,{op:'assignment.set',memberId:other,poleId:outsidePole,role:'member'});
   // Les conversations et les compteurs restent personnels aux groupes autorisés.
+  assert.equal((await api(B,{op:'chat.icon.set',channel:'general',icon:'🎵'})).status,403,'un bénévole ne peut pas changer les icônes');
+  await okay(A,{op:'chat.icon.set',channel:'general',icon:'🎵'});
+  assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='general').icon,'🎵','icône enregistrée visible pour tous les membres');
+  assert.equal((await api(A,{op:'chat.icon.set',channel:'general',icon:'<script>'})).status,400,'pas de caractères arbitraires injectés');
+  assert.equal((await api(A,{op:'chat.icon.set',channel:'pole',channelId:outsidePole,icon:'🎪'})).status,200);
+  assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.some(x=>x.id===outsidePole),false,'icône du groupe extérieur non divulguée');
   const roomsB=(await invoke(B,'/zikateam/api/chat-summary')).payload.rooms;
   assert.ok(roomsB.some(x=>x.channel==='general'));
   assert.ok(roomsB.some(x=>x.channel==='pole'&&x.id===pole));
