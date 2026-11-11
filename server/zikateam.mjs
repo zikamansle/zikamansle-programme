@@ -34,7 +34,8 @@ async function identify(request,env,verified){
  if(!admin&&!member?.active&&!pending)return null;
  const memberships=await roles(env.DB,member?.id);
  const secretariat=Boolean(member&&await one(env.DB,"SELECT member_id FROM team_staff_roles WHERE member_id=? AND role='secretariat'",member.id));
- return {email,admin,member,pending,secretariat:pending?false:secretariat,memberships:pending?[]:memberships,leadPoles:pending?[]:memberships.filter(m=>m.role==='lead').map(m=>m.pole_id)};
+ const passwordReady=env.TEAM_AUTH_PROVIDER!=='supabase'||Boolean(await one(env.DB,'SELECT set_at FROM team_auth_password_setup WHERE email=?',email));
+ return {email,admin,member,pending,passwordReady,secretariat:pending?false:secretariat,memberships:pending?[]:memberships,leadPoles:pending?[]:memberships.filter(m=>m.role==='lead').map(m=>m.pole_id)};
 }
 async function selectedPoles(db,activityId){return (await all(db,'SELECT pole_id FROM team_activity_poles WHERE activity_id=?',activityId)).map(x=>x.pole_id)}
 async function audienceMembers(db,activity){
@@ -764,7 +765,15 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const ctx=await identify(request,env,verified);if(!ctx)return new Response('Accès ZikaTeam refusé. Utilisez votre adresse de bénévole autorisée.',{status:403,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
   const url=new URL(request.url),path=url.pathname,db=env.DB;
   if(path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')return env.ASSETS.fetch(new Request(new URL('/zikateam',url),request));
-  if(path==='/zikateam/api/me'&&request.method==='GET')return getMine(db,ctx);
+  if(path==='/zikateam/api/me'&&request.method==='GET'){
+   if(!ctx.passwordReady)return reply({
+    email:ctx.email,admin:ctx.admin,pending:ctx.pending,passwordRequired:true,
+    member:ctx.member?{id:ctx.member.id,name:ctx.member.name}:null,
+    charterAccepted:false,leadPoles:[],poles:[],activities:[]
+   });
+   return getMine(db,ctx);
+  }
+  if(!ctx.passwordReady)return fail('Définis ton mot de passe personnel pour ouvrir ZikaTeam.',403);
   const currentCharter=await charter(db);
   const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
   const locked=!accepted;
