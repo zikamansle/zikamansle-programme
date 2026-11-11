@@ -1,4 +1,5 @@
 import {verifyAccessIdentity} from './admin-auth.mjs';
+import {getTeamSupabaseIdentity,handleTeamLogin} from './zikateam-login.mjs';
 import {sendPush, b64, enc} from './webpush.mjs';
 
 const reply=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
@@ -16,10 +17,14 @@ const validAudience=a=>['all','leaders','poles'].includes(a);
 const roles=async(db,mid)=>mid?all(db,"SELECT tm.pole_id,p.name AS pole_name,tm.role FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",mid):[];
 const charter=async db=>one(db,'SELECT * FROM team_charter WHERE id=1');
 
-async function identify(request,env){
- // A distinct Access audience protects the private team site (and its API).
- if(!env.TEAM_ACCESS_AUD||!env.ACCESS_TEAM_DOMAIN||!env.ADMIN_EMAIL)return null;
- const identity=await verifyAccessIdentity(request.headers.get('Cf-Access-Jwt-Assertion'),{...env,ACCESS_AUD:env.TEAM_ACCESS_AUD});
+async function identify(request,env,verified){
+ // Supabase Auth provides a free login without consuming Cloudflare Access seats.
+ if(!env.ADMIN_EMAIL)return null;
+ const identity=env.TEAM_AUTH_PROVIDER==='supabase'
+  ? verified?.identity
+  : env.TEAM_ACCESS_AUD&&env.ACCESS_TEAM_DOMAIN
+   ? await verifyAccessIdentity(request.headers.get('Cf-Access-Jwt-Assertion'),{...env,ACCESS_AUD:env.TEAM_ACCESS_AUD})
+   : null;
  if(!identity)return null;
  const email=identity.email;
  const admin=email===env.ADMIN_EMAIL.toLowerCase().trim();
@@ -422,9 +427,26 @@ async function getDocument(env,ctx,docId){
  return new Response(object.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':`inline; filename="document-${d.id}.pdf"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
 }
 export async function handleZikaTeam(request,env,execution){
+ const url=new URL(request.url),path=url.pathname;
+ if(env.TEAM_AUTH_PROVIDER==='supabase'){
+  // The login shell is public. Every data operation remains server-authenticated.
+  if((path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')&&request.method==='GET'){
+   const page=new URL('/zikateam.html',url);
+   return env.ASSETS.fetch(new Request(page,request));
+  }
+  if(path.startsWith('/zikateam/api/auth/'))return handleTeamLogin(request,env);
+ }
+ const verified=env.TEAM_AUTH_PROVIDER==='supabase'?await getTeamSupabaseIdentity(request,env):null;
+ const result=await handleProtectedZikaTeam(request,env,execution,verified);
+ if(!verified?.setCookies?.length)return result;
+ const response=new Response(result.body,result);
+ for(const header of verified.setCookies)response.headers.append('Set-Cookie',header);
+ return response;
+}
+async function handleProtectedZikaTeam(request,env,execution,verified){
  if(!env.DB)return fail('Espace ZikaTeam non configuré.',503);
  try{
-  const ctx=await identify(request,env);if(!ctx)return new Response('Accès ZikaTeam refusé. Utilisez votre adresse de bénévole autorisée.',{status:403,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
+  const ctx=await identify(request,env,verified);if(!ctx)return new Response('Accès ZikaTeam refusé. Utilisez votre adresse de bénévole autorisée.',{status:403,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
   const url=new URL(request.url),path=url.pathname,db=env.DB;
   if(path.startsWith('/zikateam/document/')&&request.method==='GET')return getDocument(env,ctx,path.split('/').pop());
   if(path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')return env.ASSETS.fetch(new Request(new URL('/zikateam.html',url),request));
