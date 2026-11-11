@@ -28,3 +28,26 @@ test('production notifie tout membre abonné éligible quand activé',()=>{
 test('absence de clé VAPID coupe les envois',()=>{
  assert.equal(teamPushConfigured({...base,VAPID_PRIVATE_JWK:''}),false);
 });
+
+import {readFileSync} from 'node:fs';
+const serverSource=readFileSync(new URL('../server/zikateam.mjs',import.meta.url),'utf8');
+const clientSource=readFileSync(new URL('../public/zikateam.js',import.meta.url),'utf8');
+test('les nouveaux messages suivent les appartenances et fonctions, pas une liste manuelle',()=>{
+ assert.match(serverSource,/permittedChat\(db,recipientCtx,channel,channelId\)/);
+ assert.match(serverSource,/ctx\.memberships\.some\(m=>m\.pole_id===channelId\)/);
+ assert.match(serverSource,/ctx\.admin\|\|ctx\.leadPoles\.length>0/);
+ assert.match(serverSource,/recipient\.id\)\)continue/);
+});
+test('un appareil déjà autorisé est lié automatiquement au compte actif',()=>{
+ assert.match(clientSource,/async function autoLinkTeamPush\(me\)/);
+ assert.match(clientSource,/void autoLinkTeamPush\(me\)/);
+ assert.match(clientSource,/Notification\.permission!=='granted'/);
+ assert.match(clientSource,/command\('push\.link',\{subscription:sub\.toJSON\(\)\}\)/);
+});
+test('les réunions destinées aux pôles restent ciblées et la publication avertit les abonnés',()=>{
+ assert.match(serverSource,/if\(activity\.audience==='all'\)/);
+ assert.match(serverSource,/activity\.audience==='leaders'/);
+ assert.match(serverSource,/activity\.audience==='poles'/);
+ assert.match(serverSource,/enqueue\(db,result,'created'\)/);
+ assert.match(clientSource,/activitySaveFeedback/);
+});
