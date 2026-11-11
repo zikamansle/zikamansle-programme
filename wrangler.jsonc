@@ -29,6 +29,13 @@
     "PUSH_SEND_ENABLED": "false",
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
-    "PUSH_TEST_ENABLED": "true"
+    "PUSH_TEST_ENABLED": "true",
+    "TEAM_PUSH_ENABLED": "false",
+    "TEAM_ACCESS_AUD": ""
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
   }
 }
