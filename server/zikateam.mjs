@@ -13,7 +13,7 @@ const all=async(db,sql,...values)=>(await db.prepare(sql).bind(...values).all())
 const one=async(db,sql,...values)=>db.prepare(sql).bind(...values).first();
 const audit=async(db,actor,action,entity,detail='')=>db.prepare('INSERT INTO team_audit (id,actor_email,action,entity_id,detail,created_at) VALUES (?,?,?,?,?,?)').bind(uuid(),actor,action,entity,clean(detail,500),now()).run();
 const validKind=k=>['meeting','stand','mission','setup'].includes(k);
-const validAudience=a=>['all','leaders','poles'].includes(a);
+const validAudience=a=>['all','leaders','poles','bureau'].includes(a);
 const roles=async(db,mid)=>mid?all(db,"SELECT tm.pole_id,p.name AS pole_name,tm.role FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",mid):[];
 const charter=async db=>one(db,'SELECT * FROM team_charter WHERE id=1');
 
@@ -39,6 +39,8 @@ async function identify(request,env,verified){
 async function selectedPoles(db,activityId){return (await all(db,'SELECT pole_id FROM team_activity_poles WHERE activity_id=?',activityId)).map(x=>x.pole_id)}
 async function audienceMembers(db,activity){
  if(activity.audience==='all')return (await all(db,'SELECT id FROM team_members WHERE active=1')).map(x=>x.id);
+ if(activity.audience==='bureau'||activity.audience==='leaders'&&await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',activity.id))
+  return (await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_member_roles r ON r.member_id=m.id WHERE m.active=1 AND r.role='bureau'")).map(x=>x.id);
  if(activity.audience==='leaders')return (await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_poles p ON p.id=tm.pole_id WHERE m.active=1 AND tm.role='lead' AND p.archived=0")).map(x=>x.id);
  return (await all(db,'SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id JOIN team_poles p ON p.id=tm.pole_id WHERE m.active=1 AND p.archived=0 AND ap.activity_id=?',activity.id)).map(x=>x.id);
 }
@@ -95,6 +97,7 @@ async function getMine(db,ctx){
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
+ for(const item of mine)if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
  return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
@@ -117,6 +120,7 @@ async function getManage(db,ctx){
   ctx.leadPoles.length?await all(db,"SELECT member_id,pole_id,role FROM team_memberships WHERE pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead')",ctx.member.id):[];
  const allActivities=await all(db,"SELECT * FROM team_activities ORDER BY starts_at DESC LIMIT 160"),activities=[];
  for(const item of allActivities){
+  if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
   const canEdit=await allowedActivity(db,ctx,item);
   if(canEdit)activities.push({...item,can_edit:true});
   else if(ctx.secretariat&&item.status==='published')activities.push({
@@ -284,16 +288,19 @@ async function saveActivity(db,ctx,d){
  if(d.id&&!previous)return fail('Activité introuvable.',404);
  if(previous&&!await allowedActivity(db,ctx,previous))return fail('Gestion de cette activité refusée.',403);
  const status=['draft','published','cancelled'].includes(d.status)?d.status:'draft';
+ const wasBureau=previous?Boolean(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',id)):false;
  const documentId=d.agenda_document_id||null;
  if(documentId){const doc=await one(db,'SELECT * FROM team_documents WHERE id=? AND kind IN (\'agenda\',\'instructions\')',documentId);if(!doc||doc.activity_id!==id)return fail('Ce document ne concerne pas cette activité.');}
- await db.prepare('INSERT INTO team_activities(id,kind,title,starts_at,ends_at,place,details,agenda,agenda_document_id,audience,status,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,starts_at=excluded.starts_at,ends_at=excluded.ends_at,place=excluded.place,details=excluded.details,agenda=excluded.agenda,agenda_document_id=excluded.agenda_document_id,audience=excluded.audience,status=excluded.status,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(id,d.kind,clean(d.title,120),d.starts_at,d.ends_at,clean(d.place,190),clean(d.details,3000),clean(d.agenda,8000),documentId,d.audience,status,previous?.created_by||ctx.email,ctx.email,previous?.created_at||now(),now()).run();
+ await db.prepare('INSERT INTO team_activities(id,kind,title,starts_at,ends_at,place,details,agenda,agenda_document_id,audience,status,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,starts_at=excluded.starts_at,ends_at=excluded.ends_at,place=excluded.place,details=excluded.details,agenda=excluded.agenda,agenda_document_id=excluded.agenda_document_id,audience=excluded.audience,status=excluded.status,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(id,d.kind,clean(d.title,120),d.starts_at,d.ends_at,clean(d.place,190),clean(d.details,3000),clean(d.agenda,8000),documentId,d.audience==='bureau'?'leaders':d.audience,status,previous?.created_by||ctx.email,ctx.email,previous?.created_at||now(),now()).run();
+ if(d.audience==='bureau')await db.prepare('INSERT OR IGNORE INTO team_activity_bureau_audience(activity_id,added_at) VALUES(?,?)').bind(id,now()).run();
+ else await db.prepare('DELETE FROM team_activity_bureau_audience WHERE activity_id=?').bind(id).run();
  await db.prepare('DELETE FROM team_activity_poles WHERE activity_id=?').bind(id).run();
  if(d.audience==='poles')for(const pole of selected)await db.prepare('INSERT INTO team_activity_poles(activity_id,pole_id) VALUES (?,?)').bind(id,pole).run();
  const result=await one(db,'SELECT * FROM team_activities WHERE id=?',id);
  let invites=0;
  if(status==='published'&&previous?.status!=='published')invites=await enqueue(db,result,'created');
  else if(previous?.status==='published'&&status==='cancelled')invites=await enqueue(db,result,'cancelled');
- else if(previous?.status==='published'&&status==='published'&&[previous.title,previous.starts_at,previous.ends_at,previous.place,previous.audience].join('|')!==[result.title,result.starts_at,result.ends_at,result.place,result.audience].join('|'))invites=await enqueue(db,result,'updated');
+ else if(previous?.status==='published'&&status==='published'&&(wasBureau!==(d.audience==='bureau')||[previous.title,previous.starts_at,previous.ends_at,previous.place,previous.audience].join('|')!==[result.title,result.starts_at,result.ends_at,result.place,result.audience].join('|')))invites=await enqueue(db,result,'updated');
  await audit(db,ctx.email,'activity.save',id,`${result.kind} · ${result.title} · ${status}`);
  return reply({ok:true,id,invitedMembers:invites,pushEnabled:false});
 }
