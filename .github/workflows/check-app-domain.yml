@@ -1,10 +1,5 @@
 name: Check live ZikaMansle app origin
 on:
-  push:
-    branches:
-      - prepare/google-play-android-2026
-    paths:
-      - '.github/workflows/check-app-domain.yml'
   workflow_dispatch:
 
 permissions:
