@@ -98,12 +98,13 @@ async function getMine(db,ctx){
   const canViewContacts=ctx.admin||ctx.leadPoles.includes(p.id);
   p.membersDetails=await all(db,"SELECT m.id,m.name,tm.role,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(cn.phone,'') ELSE '' END AS phone FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_contacts cn ON cn.member_id=m.id WHERE tm.pole_id=? AND m.active=1 ORDER BY tm.role DESC,m.name",canViewContacts?1:0,canViewContacts?1:0,p.id);
  }
+ const selfPhoto=ctx.member?await one(db,'SELECT member_id FROM team_member_photos WHERE member_id=?',ctx.member.id):null;
  const myContact=ctx.member?await one(db,"SELECT COALESCE(phone,'') AS phone FROM team_member_contacts WHERE member_id=?",ctx.member.id):null;
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
  for(const item of mine)if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
- return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email,has_photo:Boolean(selfPhoto)}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -702,12 +703,12 @@ async function getMessages(db,ctx,url){
  if(!['general','pole','activity','leaders'].includes(channel))return fail('Canal invalide.');
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
-  const messages=await all(db,'SELECT t.id,t.body,t.created_at,m.name AS author FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80');
+  const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id);
   return reply({messages:messages.reverse()});
  }
  if(!ctx.admin&&channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Accès à la discussion refusé.',403)}
- const messages=await all(db,'SELECT t.id,t.body,t.created_at,m.name AS author FROM team_messages t JOIN team_members m ON m.id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80',channel,channelId);
+ const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id,channel,channelId);
  return reply({messages:messages.reverse()});
 }
 async function upload(request,env,ctx,url){
