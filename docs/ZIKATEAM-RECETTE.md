@@ -56,3 +56,16 @@ Ne pas déployer, fusionner vers `main`, modifier `app.zikamansle.fr`, modifier 
 - Tests supplémentaires des règles de confidentialité et de l'interdiction des notifications staging.
 
 **Attention :** l'existence d'un workflow ne constitue pas une preuve que ses exécutions ont réussi. Son résultat doit être consulté dans l'onglet Actions de GitHub avant validation.
+
+## Ajouts de l'éditeur avancé — branche de développement
+
+- Migration additive `0114_team_saved_lists.sql` : modèles de listes enregistrés dans D1 staging **après le prochain déploiement autorisé**, sans toucher aux données existantes.
+- Création / modification / suppression d'une liste privée réservées aux membres ayant les droits **administration** ou **secrétariat**.
+- Sélection individuelle des participants, filtres, ordre des personnes et ordre des colonnes ; choix des colonnes à afficher.
+- Sauvegarde du titre, des IDs des membres et des colonnes ; réouverture ultérieure de la liste ; impression PDF via dialogue d'impression et export CSV.
+- Boutons Retour / Annuler sur les formulaires d'édition des pôles, activités, bénévoles, créneaux, listes, contacts, adhésions, tâches et charte.
+- Signature : bouton Faire signer pour un participant ajouté, affichage plein écran, demande native d'orientation paysage, affichage horizontal de secours quand l'API est refusée, boutons Recommencer / Valider / Retour sans enregistrer.
+- Contrôles statiques récents : syntaxe JavaScript valide et aucune des 65 familles de boutons `data-*` relevées n'est sans gestionnaire détecté. **Ce contrôle ne prouve pas leur fonctionnement sur téléphone**.
+- Tests SQL automatisés ajoutés pour créer, modifier, retrouver et supprimer les listes avec contrôle des droits ; vérification réelle des tests `npm test` encore nécessaire.
+- L'environnement du conteneur ne peut pas joindre github.com ; aucun clone local n'a pu servir à exécuter `npm test` dans cette session.
+- Les migrations de listes ne sont pas appliquées à la base distante tant que le staging n'est pas déployé. Ne pas annoncer la fonctionnalité comme disponible sur l'URL de test avant cette étape.
