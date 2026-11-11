@@ -43,7 +43,7 @@ jobs:
         run: |
           node --input-type=module -e "
             import {readFileSync} from 'node:fs';
-            for(const name of ['0105_team_photos_leaders_chat.sql','0106_team_member_roles.sql','0107_team_join_approval.sql','0108_membership_dues.sql','0109_team_member_contacts.sql','0110_team_member_consents.sql','0111_team_signing_sessions.sql','0112_team_activity_bureau_audience.sql','0113_team_password_setup.sql']){
+            for(const name of ['0105_team_photos_leaders_chat.sql','0106_team_member_roles.sql','0107_team_join_approval.sql','0108_membership_dues.sql','0109_team_member_contacts.sql','0110_team_member_consents.sql','0111_team_signing_sessions.sql','0112_team_activity_bureau_audience.sql','0113_team_password_setup.sql','0114_team_saved_lists.sql']){
               const sql=readFileSync('drizzle/'+name,'utf8').replace(/--[^\\n]*/g,'');
               const statements=sql.split(';').map(t=>t.trim()).filter(Boolean);
               if(!statements.length||!statements.some(t=>/^CREATE TABLE IF NOT EXISTS/i.test(t))||!statements.every(t=>/^CREATE (?:TABLE|INDEX) IF NOT EXISTS/i.test(t)))throw Error('Migration non additive : '+name);
