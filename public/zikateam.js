@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -16,7 +16,7 @@ async function api(path,data,options={}){
 }
 const command=(op,data={})=>api('command',{op,...data});
 const pills=arr=>arr.map(t=>'<span class="team-pill">'+esc(t)+'</span>').join('');
-function header(){const m=state.me;return '<header class="team-heading"><span>Espace privé · '+(m.admin?'Administration et bénévoles':m.leadPoles.length?'Responsable et bénévoles':m.secretariat?'Secrétariat':'Bénévoles')+'</span><h1>Bonjour '+esc(m.member?.name||'ZikaTeam')+' !</h1><p class="team-muted">Vos équipes, vos rendez-vous et vos informations au même endroit.</p></header>';
+function header(){const m=state.me;return '<header class="team-heading"><span>Espace privé · '+(m.admin?'Administration et bénévoles':m.leadPoles.length?'Responsable et bénévoles':m.secretariat?'Secrétariat':'Bénévoles')+'</span><h1>Bonjour '+esc(m.member?.name||'ZikaTeam')+' !</h1><p class="team-muted">Vos équipes, vos rendez-vous et vos informations au même endroit.</p>'+(state.freeLogin?'<button type="button" class="team-button light" data-team-logout>Me déconnecter</button>':'')+'</header>';
 }
 function menu(){return '<nav class="team-tabs" aria-label="Rubriques ZikaTeam">'+[
  ['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'],...((state.me.admin||state.me.leadPoles.length||state.me.secretariat)?[['gestion',state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length?'Secrétariat':'Gestion des équipes']]:[])
@@ -101,6 +101,24 @@ function manageAttendance(){
 }
 
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
+
+function loginScreen(error=''){
+ root.innerHTML='<section class="team-card" style="max-width:520px;margin:auto"><h1>Connexion gratuite à ZikaTeam</h1><p>Utilise l’adresse e-mail enregistrée par l’association. Tu recevras un code à six chiffres, sans compte Cloudflare.</p>'+
+ (error?'<p class="team-warning" role="alert">'+esc(error)+'</p>':'')+
+ (!state.codeSent?'<form id="teamLoginRequest" class="team-form"><label>Adresse e-mail<input type="email" name="email" maxlength="254" autocomplete="email" required placeholder="prenom@example.fr" value="'+esc(state.loginEmail)+'"></label><button class="team-button orange" type="submit">Recevoir mon code</button></form>':
+ '<p>Code demandé pour <strong>'+esc(state.loginEmail)+'</strong>. Regarde aussi les courriers indésirables.</p><form id="teamLoginVerify" class="team-form"><label>Code reçu<input type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="123456"></label><button class="team-button orange" type="submit">Me connecter</button></form><button class="team-button light" type="button" data-team-reset>Changer d’adresse</button>')+
+ '<p class="team-small team-muted">L’accès est réservé aux bénévoles préalablement inscrits dans ZikaTeam. En cas de difficulté, contacte l’administration.</p></section>';
+}
+async function freeLoginRequest(email){
+ await api('auth/request',{email});
+ state.loginEmail=email.trim().toLowerCase();state.codeSent=true;loginScreen();
+ toast('Si ton adresse est autorisée, un code vient d’être demandé.');
+}
+async function freeLoginVerify(code){
+ await api('auth/verify',{email:state.loginEmail,code:code.trim()});
+ await refresh();state.codeSent=false;toast('Connexion réussie.');
+}
+
 function render(){if(!state.me)return;root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)();}
 async function refresh(){state.me=await api('me');if(state.me.admin||state.me.leadPoles.length||state.me.secretariat)state.manage=await api('manage');else state.manage=null;if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length)state.managementTab='emargements';render();}
 async function refreshMessages(){const params=new URLSearchParams({channel:state.chatChannel});if(state.chatId)params.set('id',state.chatId);const response=await api('messages?'+params);state.messages=response.messages||[];if(state.tab==='messages')render();}
@@ -110,7 +128,9 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+ if(b.hasAttribute('data-team-reset')){state.codeSent=false;loginScreen();return;}
+ if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;loginScreen();return;}
  if(b.dataset.secretariat){
   const enabled=b.dataset.enabled==='1';
   if(!confirm(enabled?'Confirmer la nomination au secrétariat ? Cette personne pourra consulter les présences de toutes les équipes.':'Retirer les droits du secrétariat à cette personne ?'))return;
@@ -140,6 +160,12 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-de
 });
 root.addEventListener('change',async e=>{if(e.target.id==='teamChannel'){const [channel,id]=e.target.value.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}}});
 root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy)return;
+ if(f.id==='teamLoginRequest'){
+  state.busy=true;try{await freeLoginRequest(f.elements.email.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
+ }
+ if(f.id==='teamLoginVerify'){
+  state.busy=true;try{await freeLoginVerify(f.elements.code.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
+ }
  if(f.id==='charterAccept')return perform(async()=>command('charter.accept',{version:state.me.charter.version}));
  if(f.id==='messageForm')return perform(async()=>{await command('message.send',{channel:state.chatChannel,channelId:state.chatId,body:fromForm(f).body});await refreshMessages()});
  if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
@@ -154,6 +180,22 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   const saved=await command('activity.save',body);if(pdf){const documentId=await upload(pdf,'agenda',saved.id);await command('activity.save',{...body,id:saved.id,status:d.status,agenda_document_id:documentId});}state.editActivity=null;
  });
 });
-async function init(){try{await refresh();if(state.me.member&&state.me.charterAccepted){try{const sub=await window.ZikaPush?.subscription?.();if(sub)await command('push.link',{subscription:sub.toJSON()});}catch{}}if(state.tab==='messages')await refreshMessages();}catch(e){root.innerHTML='<section class="team-card"><h1>Connexion ZikaTeam</h1><p>'+esc(e.message)+'</p><p>Utilise l’adresse e-mail autorisée par l’association. Si ton compte n’est pas encore créé, contacte ton responsable de pôle ou l’administration.</p><a class="team-button" href="/index.html#plus">Retour à l’application</a></section>';}}
+async function init(){
+ try{
+  const status=await fetch('/zikateam/api/auth/status',{cache:'no-store',credentials:'same-origin'});
+  if(status.ok){state.freeLogin=true;}
+  else if(status.status===503){root.innerHTML='<section class="team-card"><h2>Connexion ZikaTeam en cours de configuration</h2><p>Le service de connexion gratuit doit être configuré par l’administration.</p></section>';return;}
+ }catch{}
+ try{
+  await refresh();
+  if(state.me.member&&state.me.charterAccepted){
+   try{const sub=await window.ZikaPush?.subscription?.();if(sub)await command('push.link',{subscription:sub.toJSON()});}catch{}
+  }
+  if(state.tab==='messages')await refreshMessages();
+ }catch(e){
+  if(state.freeLogin){loginScreen();return;}
+  root.innerHTML='<section class="team-card"><h1>Connexion ZikaTeam</h1><p>'+esc(e.message)+'</p><p>Utilise l’adresse e-mail autorisée par l’association. Si ton compte n’est pas encore créé, contacte ton responsable de pôle ou l’administration.</p><a class="team-button" href="/index.html#plus">Retour à l’application</a></section>';
+ }
+}
 init();
 })();
