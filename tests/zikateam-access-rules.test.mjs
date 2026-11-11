@@ -181,3 +181,8 @@ test('invitation et préférences de notifications visibles sur les fiches',()=>
  assert.ok(server.includes("d.op==='notification.settings'"));
  assert.ok(server.includes("d.op==='notification.chat.mute'"));
 });
+
+test('aucune intégration Brevo ne doit être imposée aux invitations',()=>{
+ assert.ok(!server.toLowerCase().includes('brevo'));
+ assert.ok(client.includes('teamInviteForm'));
+});
