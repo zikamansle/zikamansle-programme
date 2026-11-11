@@ -1,13 +1,5 @@
 name: ZikaMansle Android App Bundle (unsigned)
 on:
-  push:
-    branches:
-      - prepare/google-play-android-2026
-    paths:
-      - '.github/workflows/android-release-aab.yml'
-      - 'android-native/app/src/release/**'
-      - 'android-native/app/build.gradle'
-      - 'android-native/app/src/main/AndroidManifest.xml'
   workflow_dispatch:
 
 permissions:
