@@ -8,6 +8,7 @@ const client=readFileSync(new URL('../public/zikateam.js',import.meta.url),'utf8
 test('une inscription en attente ne peut lire aucune conversation par API',()=>{
  assert.ok(server.includes("if(ctx.pending)return fail('Inscription en attente de validation : aucune conversation n’est accessible.',403)"));
  assert.ok(server.includes("if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))"));
+ assert.ok(server.includes('Aucune conversation n’est accessible avant approbation.'));
  assert.ok(client.includes("state.me.pending?[['fiche','Mon accueil']]"));
 });
 
