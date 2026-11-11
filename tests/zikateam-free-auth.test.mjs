@@ -28,7 +28,7 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
    if(String(url).endsWith('/auth/v1/otp'))return respond({});
    if(String(url).endsWith('/auth/v1/verify')){
     const data=JSON.parse(options.body);
-    if(data.token!=='123456')return respond({error:'invalid'},401);
+    if(!['123456','87654321'].includes(data.token))return respond({error:'invalid'},401);
     return respond({access_token:'token-alice',refresh_token:'refresh-alice',expires_in:3600});
    }
    if(String(url).endsWith('/auth/v1/user'))return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
@@ -50,6 +50,10 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal((await invoke('/zikateam/api/auth/request',{email:names.alice})).status,200);
   assert.equal(requests.filter(r=>r.url.endsWith('/otp')).length,1);
   assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'999999'})).status,401);
+  assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'1234567'})).status,400,'7 chiffres refuses');
+  assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'abcdefgh'})).status,400,'lettres refusees');
+  const eight=await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'87654321'});
+  assert.equal(eight.status,200,'un code a 8 chiffres est valide');
   const auth=await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'123456'});
   assert.equal(auth.status,200);
   const cookies=auth.headers.getSetCookie();
@@ -65,4 +69,11 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.ok(logout.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
   db.close();
  }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
+});
+
+test('le formulaire ZikaTeam accepte les codes a 8 chiffres',()=>{
+ const ui=readFileSync('public/zikateam.js','utf8');
+ assert.ok(ui.includes('pattern="[0-9]{6}|[0-9]{8}"'));
+ assert.ok(ui.includes('maxlength="8"'));
+ assert.ok(!ui.includes('code à six chiffres'));
 });
