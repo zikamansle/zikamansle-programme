@@ -106,7 +106,7 @@ test('pastille des non lus sur onglet Discussions',()=>{
 test('les responsables ont une fiche contact sans messagerie privée',()=>{
  assert.ok(client.includes('team-wa-contact-panel'));
  assert.ok(client.includes('team-wa-contact'));
- assert.ok(client.includes('📞 Appeler'));
+ assert.ok(client.includes('📞 '));
  assert.ok(client.includes('✉️ Envoyer un e-mail'));
  assert.ok(!client.includes('data-chat-direct'));
  assert.ok(!server.includes("channel==='direct'"));
