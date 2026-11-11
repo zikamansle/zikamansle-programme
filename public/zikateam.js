@@ -165,7 +165,7 @@ function management(){const data=state.manage;if(!data)return '<section class="t
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
 function manageActivities(){const d={...state.manage,activities:state.manage.activities.filter(x=>x.can_edit)},a=d.activities.find(x=>x.id===state.editActivity)||{};const allp=state.me.admin?d.poles.filter(p=>!p.archived):d.poles;
  const audience=state.me.admin?[['','Choisir les destinataires…'],['all','Tous les bénévoles'],['leaders','Responsables uniquement'],['bureau','Bureau uniquement'],['poles','Pôles choisis']]:[['poles','Mes pôles']];
- return '<section class="team-card">'+(a.id?'<button type="button" class="team-button light team-back" data-back-edit="activity">← Retour sans modifier</button>':'')+'<h2>'+(a.id?'Modifier une activité':'Créer une réunion, une permanence ou une mission')+'</h2><form id="activityForm" class="team-form"><input type="hidden" name="id" value="'+esc(a.id||'')+'"><div class="team-split"><label>Type<select name="kind">'+opt(Object.entries(kindName),a.custom_kind?'other':a.kind||'meeting')+'</select></label><label>Objet libre (si « Autre activité »)<input name="customKind" maxlength="90" placeholder="Démarchage partenaires, distribution d’affiches…" value="'+esc(a.custom_kind||'')+'"></label><label>Titre<input name="title" maxlength="120" value="'+esc(a.title||'')+'" required></label></div><div class="team-split"><label>Début<input name="starts_at" type="datetime-local" value="'+inputDate(a.starts_at)+'" required></label><label>Fin<input name="ends_at" type="datetime-local" value="'+inputDate(a.ends_at)+'" required></label></div><label>Lieu<input name="place" value="'+esc(a.place||'')+'" placeholder="Salle, place, adresse…"></label><label>Informations utiles<textarea name="details">'+esc(a.details||'')+'</textarea></label><label>Ordre du jour / consignes<textarea name="agenda" rows="5">'+esc(a.agenda||'')+'</textarea></label><label>Joindre un PDF (ordre du jour ou consignes)<input name="pdf" type="file" accept="application/pdf,.pdf"></label>'+(a.agenda_document_id?'<p><a class="team-link" href="/zikateam/document/'+a.agenda_document_id+'" target="_blank" rel="noopener">Pièce jointe actuelle ↗</a></p>':'')+'<label>Destinataires<select name="audience" id="activityAudience">'+opt(audience,a.audience||(state.me.admin?'':'poles'))+'</select></label><fieldset class="team-fieldset"><legend>Choisir les pôles concernés</legend><div class="team-checks">'+(allp.length?allp.map(p=>'<label><input type="checkbox" name="pole" value="'+p.id+'" '+(a.poles?.includes(p.id)||(!a.id&&!state.me.admin)?'checked':'')+'>'+esc(p.name)+'</label>').join(''):'Aucun pôle créé')+'</div><p class="team-small team-muted">Les pôles sont utilisés lorsque « Pôles choisis » est sélectionné.</p></fieldset><div class="team-row team-agenda-publication"><button type="submit" name="publishAction" value="published" class="team-button orange team-publish-action">Publier et convoquer</button><button type="submit" name="publishAction" value="draft" class="team-button light">Enregistrer en brouillon</button>'+(a.id&&a.status==='published'?'<button type="submit" name="publishAction" value="cancelled" class="team-button danger">Annuler la réunion</button>':'')+'<button type="button" class="team-button light" data-reset-activity>Nouvelle activité</button></div><p id="activitySaveFeedback" class="team-save-feedback" role="status" aria-live="assertive" hidden></p><p class="team-small team-muted">La publication crée immédiatement une annonce visible dans ZikaTeam pour chaque bénévole concerné. L’envoi sur le téléphone dépend des autorisations et du service push.</p></form></section><section class="team-card"><h2>Créneaux pour une activité</h2>'+shiftForm()+'</section><section class="team-card"><h2>Préparation, matériel et tâches</h2>'+taskForm()+'</section><section class="team-card"><h2>Activités et confirmations</h2>'+(d.activities.length?d.activities.map(a=>activityCard(a,true)).join(''):'<p>Pas encore d’activité.</p>')+'</section>';
+ return '<section class="team-card">'+(a.id?'<button type="button" class="team-button light team-back" data-back-edit="activity">← Retour sans modifier</button>':'')+'<h2>'+(a.id?'Modifier une activité':'Créer une réunion, une permanence ou une mission')+'</h2><form id="activityForm" class="team-form"><input type="hidden" name="id" value="'+esc(a.id||'')+'"><div class="team-split"><label>Type<select name="kind">'+opt(Object.entries(kindName),a.custom_kind?'other':a.kind||'meeting')+'</select></label><label>Objet libre (si « Autre activité »)<input name="customKind" maxlength="90" placeholder="Démarchage partenaires, distribution d’affiches…" value="'+esc(a.custom_kind||'')+'"></label><label>Titre<input name="title" maxlength="120" value="'+esc(a.title||'')+'" required></label></div><div class="team-split"><label>Début<input name="starts_at" type="datetime-local" value="'+inputDate(a.starts_at)+'" required></label><label>Fin<input name="ends_at" type="datetime-local" value="'+inputDate(a.ends_at)+'" required></label></div><label>Lieu<input name="place" value="'+esc(a.place||'')+'" placeholder="Salle, place, adresse…"></label><label>Informations utiles<textarea name="details">'+esc(a.details||'')+'</textarea></label><label>Ordre du jour / consignes<textarea name="agenda" rows="5">'+esc(a.agenda||'')+'</textarea></label><label>Joindre un PDF (ordre du jour ou consignes)<input name="pdf" type="file" accept="application/pdf,.pdf"></label>'+(a.agenda_document_id?'<p><a class="team-link" href="/zikateam/document/'+a.agenda_document_id+'" target="_blank" rel="noopener">Pièce jointe actuelle ↗</a></p>':'')+'<label>Destinataires<select name="audience" id="activityAudience">'+opt(audience,a.audience||(state.me.admin?'':'poles'))+'</select></label><fieldset class="team-fieldset"><legend>Choisir les pôles concernés</legend><div class="team-checks">'+(allp.length?allp.map(p=>'<label><input type="checkbox" name="pole" value="'+p.id+'" '+(a.poles?.includes(p.id)||(!a.id&&!state.me.admin)?'checked':'')+'>'+esc(p.name)+'</label>').join(''):'Aucun pôle créé')+'</div><p class="team-small team-muted">Les pôles sont utilisés lorsque « Pôles choisis » est sélectionné.</p></fieldset><div class="team-row team-agenda-publication"><button type="button" data-activity-action="published" class="team-button orange team-publish-action">Publier et convoquer</button><button type="button" data-activity-action="draft" class="team-button light">Enregistrer en brouillon</button>'+(a.id&&a.status==='published'?'<button type="button" data-activity-action="cancelled" class="team-button danger">Annuler la réunion</button>':'')+'<button type="button" class="team-button light" data-reset-activity>Nouvelle activité</button></div><p id="activitySaveFeedback" class="team-save-feedback" role="status" aria-live="assertive" hidden></p><p class="team-small team-muted">La publication crée immédiatement une annonce visible dans ZikaTeam pour chaque bénévole concerné. L’envoi sur le téléphone dépend des autorisations et du service push.</p></form></section><section class="team-card"><h2>Créneaux pour une activité</h2>'+shiftForm()+'</section><section class="team-card"><h2>Préparation, matériel et tâches</h2>'+taskForm()+'</section><section class="team-card"><h2>Activités et confirmations</h2>'+(d.activities.length?d.activities.map(a=>activityCard(a,true)).join(''):'<p>Pas encore d’activité.</p>')+'</section>';
 }
 function shiftForm(){const activities=state.manage.activities.filter(a=>a.can_edit);const s=activities.flatMap(a=>a.shifts||[]).find(s=>s.id===state.editShift)||{};
  return (s.id?'<button type="button" class="team-button light team-back" data-back-edit="shift">← Retour sans modifier</button>':'')+'<form class="team-form" id="shiftForm"><label>Activité<select name="activityId" required><option value="">Choisir une activité</option>'+activities.filter(a=>a.status!=='cancelled').map(a=>'<option value="'+a.id+'" '+(s.activity_id===a.id||(!s.id&&state.editActivity===a.id)?'selected':'')+'>'+esc(a.title)+'</option>').join('')+'</select></label><input type="hidden" name="id" value="'+esc(s.id||'')+'"><label>Nom du créneau<input name="label" value="'+esc(s.label||'')+'" placeholder="Ex. Buvette 14h–17h" required></label><div class="team-split"><label>Début<input name="starts_at" type="datetime-local" value="'+inputDate(s.starts_at)+'" required></label><label>Fin<input name="ends_at" type="datetime-local" value="'+inputDate(s.ends_at)+'" required></label></div><label>Places disponibles<input name="capacity" type="number" min="1" max="500" value="'+(s.capacity||2)+'" required></label><button class="team-button" type="submit">Enregistrer le créneau</button></form>'+(activities.flatMap(a=>(a.shifts||[]).map(s=>'<div class="team-row team-item"><div><strong>'+esc(s.label)+'</strong><div class="team-small">'+esc(a.title)+' · '+shortdt(s.starts_at)+' · '+s.signed_count+'/'+s.capacity+'</div></div><button class="team-button light" data-edit-shift="'+s.id+'">Modifier</button><button class="team-button danger" data-remove-shift="'+s.id+'">Supprimer</button></div>')).join(''));
@@ -726,12 +726,56 @@ async function saveFunctionsForm(f){
   state.busy=false;
  }
 }
+// Entrée directe, indépendante du submit HTML qui peut être perdu sur mobile.
+async function saveActivityDirect(panel,action){
+ if(state.busy){toast('Une opération est déjà en cours.');return;}
+ const f=panel.querySelector('#activityForm')||panel;
+ const pick=(name)=>f.querySelector('[name="'+name+'"]');
+ let feedback=panel.querySelector('#activitySaveFeedback');
+ if(!feedback){feedback=document.createElement('p');feedback.id='activitySaveFeedback';feedback.setAttribute('role','status');panel.append(feedback);}
+ const showError=(message,field)=>{feedback.hidden=false;feedback.textContent='❌ '+message;feedback.style.color='#a92336';toast(message);if(field)pick(field)?.focus({preventScroll:true});};
+ const d=Object.fromEntries(['id','kind','customKind','title','starts_at','ends_at','place','details','agenda','audience'].map(name=>[name,pick(name)?.value||'']));
+ const poles=[...f.querySelectorAll('input[name="pole"]:checked')].map(x=>x.value);
+ const pdf=pick('pdf')?.files?.[0]||null;
+ if(!['published','draft','cancelled'].includes(action))return showError('Action de publication inconnue.');
+ if(!d.title.trim())return showError('Indique le titre de cette réunion.','title');
+ if(!d.audience)return showError('Choisis les destinataires de cette réunion.','audience');
+ if(d.audience==='poles'&&!poles.length)return showError('Coche au moins un pôle concerné ou choisis un autre public.');
+ if(d.kind==='other'&&d.customKind.trim().length<3)return showError('Indique l’objet de cette activité.','customKind');
+ const starts=new Date(d.starts_at),ends=new Date(d.ends_at);
+ if(!Number.isFinite(starts.getTime())||!Number.isFinite(ends.getTime())||ends<=starts)return showError('Vérifie les dates : la fin doit être après le début.','starts_at');
+ const button=f.querySelector('[data-activity-action="'+action+'"]');
+ const labels={published:'Publier et convoquer',draft:'Enregistrer en brouillon',cancelled:'Annuler la réunion'};
+ state.busy=true;
+ if(button){button.disabled=true;button.textContent='Enregistrement…';}
+ feedback.hidden=false;feedback.style.color='#1b5575';feedback.textContent='⏳ '+(action==='published'?'Publication et création des convocations…':'Enregistrement en cours…');
+ try{
+  const current=state.manage?.activities?.find(a=>a.id===d.id);
+  const body={id:d.id||undefined,kind:d.kind,customKind:d.kind==='other'?d.customKind:'',title:d.title.trim(),starts_at:starts.toISOString(),ends_at:ends.toISOString(),place:d.place,details:d.details,agenda:d.agenda,audience:d.audience,poles,status:pdf&&action==='published'?'draft':action,agenda_document_id:current?.agenda_document_id||null};
+  let saved=await command('activity.save',body);
+  if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé l’enregistrement.');
+  if(pdf){const docId=await upload(pdf,'agenda',saved.id);saved=await command('activity.save',{...body,id:saved.id,status:action,agenda_document_id:docId});if(!saved.ok)throw Error('La publication avec son document n’a pas été confirmée.');}
+  const count=Number(saved.invitedMembers)||0;
+  const kind=d.kind==='meeting'?'Réunion':d.kind==='stand'?'Permanence':d.kind==='mission'?'Mission':'Activité';
+  const message=action==='published'?kind+' publiée : '+count+' bénévole(s) ciblé(s).'+(count===0?' Vérifie les destinataires.':' Les notifications seront envoyées aux appareils autorisés.') : action==='draft'?'Brouillon enregistré sans notification.':kind+' annulée : '+count+' bénévole(s) ciblé(s).';
+  feedback.style.color='#146b4a';feedback.textContent='✅ '+message;toast(message);
+  state.editActivity=null;
+  try{await refresh();}catch{toast('Enregistrement confirmé. Recharge pour voir la liste actualisée.');}
+ }catch(error){showError('Impossible d’enregistrer : '+(error?.message||'Erreur de connexion.'));}
+ finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent=labels[action];}}
+}
 // Gestion prioritaire des boutons de sauvegarde : un appui doit déclencher
 // le formulaire avant les autres écouteurs, même sur un navigateur mobile.
 document.addEventListener('click',e=>{
- const button=e.target.closest?.('#teamRoot button[data-save-member], #teamRoot button[data-save-member-functions]');
+ const button=e.target.closest?.('#teamRoot button[data-save-member], #teamRoot button[data-save-member-functions], #teamRoot button[data-activity-action]');
  if(!button)return;
  e.preventDefault();e.stopImmediatePropagation();
+ if(button.hasAttribute('data-activity-action')){
+  const panel=button.closest('section.team-card')||button.closest('.team-card');
+  if(!panel){toast('Erreur : section de réunion introuvable.');return;}
+  void saveActivityDirect(panel,button.dataset.activityAction);
+  return;
+ }
  // Le contenu de la fiche est dans sa carte; un <form> parent peut être
  // réorganisé par le parseur HTML mobile. Ne pas s'appuyer sur closest('form').
  const isFullSave=button.hasAttribute('data-save-member');
@@ -1092,44 +1136,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
  if(f.id==='shiftForm')return perform(async()=>{const d=fromForm(f);await command('shift.save',{id:d.id||undefined,activityId:d.activityId,label:d.label,starts_at:new Date(d.starts_at).toISOString(),ends_at:new Date(d.ends_at).toISOString(),capacity:Number(d.capacity)});state.editShift=null});
  if(f.id==='charterForm')return perform(async()=>{const d=fromForm(f),pdf=f.elements.pdf.files[0];let documentId=state.me.charter?.document_id||null;if(pdf)documentId=await upload(pdf,'charter');await command('charter.save',{version:d.version,title:d.title,content:d.content,documentId})});
- if(f.id==='activityForm'){
-  const d=fromForm(f),action=e.submitter?.value||'published';
-  const feedback=f.querySelector('#activitySaveFeedback');
-  const showError=(message,field)=>{
-   if(feedback){feedback.hidden=false;feedback.textContent='❌ '+message;feedback.scrollIntoView({block:'center',behavior:'smooth'});}
-   toast(message);if(field)f.querySelector(field)?.focus({preventScroll:true});
-  };
-  if(feedback){feedback.hidden=true;feedback.textContent='';}
-  if(!['published','draft','cancelled'].includes(action))return showError('Action inconnue.');
-  const poles=[...f.querySelectorAll('input[name="pole"]:checked')].map(x=>x.value);
-  const pdf=f.elements.namedItem('pdf')?.files?.[0]||null;
-  if(!d.audience)return showError('Choisis les destinataires de cette réunion.','select[name="audience"]');
-  if(d.audience==='poles'&&!poles.length)return showError('Coche au moins un pôle concerné ou choisis un autre public.','input[name="pole"]');
-  if(d.kind==='other'&&String(d.customKind||'').trim().length<3)return showError('Indique l’objet libre de cette activité.','input[name="customKind"]');
-  const starts=new Date(d.starts_at),ends=new Date(d.ends_at);
-  if(!Number.isFinite(starts.getTime())||!Number.isFinite(ends.getTime())||ends<=starts)return showError('Vérifie les dates : la fin doit être après le début.','input[name="starts_at"]');
-  const submit=e.submitter;
-  state.busy=true;if(submit){submit.disabled=true;submit.textContent='Enregistrement…';}
-  try{
-   const current=state.manage?.activities?.find(a=>a.id===d.id);
-   const body={id:d.id||undefined,kind:d.kind,customKind:d.kind==='other'?d.customKind:'',title:d.title,starts_at:starts.toISOString(),ends_at:ends.toISOString(),place:d.place,details:d.details,agenda:d.agenda,audience:d.audience,poles,status:pdf&&action==='published'?'draft':action,agenda_document_id:current?.agenda_document_id||null};
-   const saved=await command('activity.save',body);
-   if(pdf){
-    const documentId=await upload(pdf,'agenda',saved.id);
-    await command('activity.save',{...body,id:saved.id,status:action,agenda_document_id:documentId});
-   }
-   if(!saved.ok)throw Error('La publication n’a pas été confirmée par le serveur.');
-   state.editActivity=null;
-   const count=Number(saved.invitedMembers)||0;
-   const kind=d.kind==='meeting'?'Réunion':d.kind==='stand'?'Permanence':d.kind==='mission'?'Mission':'Activité';
-   const message=action==='published'?kind+' publiée · '+count+' bénévole(s) ciblé(s) par la convocation ZikaTeam.'+(count===0?' Vérifie les destinataires et les affectations aux pôles.':' La réception téléphonique dépend des autorisations push.') : action==='draft'?'Brouillon enregistré sans notification.':kind+' annulée · '+count+' bénévole(s) ciblé(s) par l’avis d’annulation.';
-   if(feedback){feedback.hidden=false;feedback.textContent='✅ '+message;feedback.style.color='#126848';}
-   toast(message);
-   try{await refresh();}catch(refreshError){toast('Enregistrement confirmé ; recharge la page pour actualiser les activités.');}
-  }catch(error){showError('Impossible d’enregistrer : '+(error.message||'erreur de connexion'));if(submit){submit.disabled=false;submit.textContent=action==='published'?'Publier la réunion':action==='draft'?'Enregistrer en brouillon':'Annuler la réunion';}}
-  finally{state.busy=false;}
-  return;
- }
+ if(f.id==='activityForm')return saveActivityDirect(f,e.submitter?.value||'published');
 });
 async function init(){
  try{
