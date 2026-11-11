@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[]};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],listStatus:'all',listRole:'all',listPole:'',listSearch:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -90,8 +90,8 @@ function messages(){if(!state.me.member&&!state.me.admin)return '<div class="tea
  return '<div class="team-card team-accent-purple"><h2>Messagerie ZikaTeam</h2><p>Choisis une discussion : générale, celle de ton pôle, une activité ou, si tu es responsable, le salon réservé aux référents.</p><label class="team-form">Conversation <select id="teamChannel">'+choices.map(([c,id,label])=>'<option value="'+esc(c+':'+id)+'" '+(state.chatChannel===c&&state.chatId===(id||null)?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><div id="teamMessages" aria-live="polite">'+(state.messages.length?state.messages.map(m=>'<article class="team-message"><strong>'+esc(m.author)+'</strong><time>'+shortdt(m.created_at)+'</time><p>'+esc(m.body)+'</p>'+(state.me.admin||(state.me.leadPoles.length&&state.chatChannel==='pole')?'<button class="team-button danger" data-delete-message="'+m.id+'">Modérer / retirer</button>':'')+'</article>').join(''):'<p>Aucun message dans cette conversation.</p>')+'</div>'+(state.me.pending?'<div class="team-warning" role="status"><strong>Inscription en attente d’approbation.</strong> Tu peux lire la conversation générale, mais pas encore y répondre. Dès que l’administration aura validé ta fiche et attribué tes fonctions, les discussions et espaces autorisés pour ton rôle seront accessibles.</div>':'<form id="messageForm" class="team-composer"><label for="messageText">Votre message</label><textarea id="messageText" name="body" maxlength="1400" rows="3" required placeholder="Écrire à l’équipe…"></textarea><button class="team-button" type="submit">Envoyer le message</button></form>')+'</div>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
- const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire']]:[]),...(state.me.admin?[['benevoles','Bénévoles'],['charte','Charte'],['journal','Historique']]:[])];
- return '<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,journal:manageAudit}[state.managementTab]||manageActivities)();
+ const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...(state.me.admin?[['benevoles','Bénévoles'],['charte','Charte'],['journal','Historique']]:[])];
+ return '<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
 }
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
 function manageActivities(){const d={...state.manage,activities:state.manage.activities.filter(x=>x.can_edit)},a=d.activities.find(x=>x.id===state.editActivity)||{};const allp=state.me.admin?d.poles.filter(p=>!p.archived):d.poles;
@@ -330,6 +330,59 @@ function manageDirectory(){
  '</section>';
 }
 
+
+function listsData(){
+ const d=state.manage||{},dues=new Map((d.dues||[]).map(x=>[x.member_id,x])),memberships=d.listMemberships||[],roles=d.listRoles||[];
+ return (d.contacts||[]).map(m=>{
+  const mine=memberships.filter(x=>x.member_id===m.member_id);
+  const labels=roles.filter(x=>x.member_id===m.member_id).map(x=>x.role);
+  const poleNames=mine.map(x=>d.poles.find(p=>p.id===x.pole_id)?.name).filter(Boolean);
+  const quality=[...(labels.includes('director')?['Dirigeant']:[]),...(mine.some(x=>x.role==='lead')?['Responsable']:[]),...(labels.includes('bureau')?['Bureau']:[])];
+  const due=dues.get(m.member_id)||{};
+  return {...m,paid:Boolean(due.paid),paid_on:due.paid_on||'',quality:quality.length?quality.join(' · '):'Bénévole',poles:poleNames,memberships:mine,roles:labels};
+ }).filter(m=>{
+  if(state.listStatus==='paid'&&!m.paid||state.listStatus==='pending'&&m.paid)return false;
+  if(state.listRole==='leaders'&&!m.memberships.some(x=>x.role==='lead'))return false;
+  if(state.listRole==='director'&&!m.roles.includes('director'))return false;
+  if(state.listRole==='bureau'&&!m.roles.includes('bureau'))return false;
+  if(state.listRole==='volunteer'&&(m.roles.includes('director')||m.roles.includes('bureau')||m.memberships.some(x=>x.role==='lead')))return false;
+  if(state.listPole&&state.listPole!=='all'&&!m.memberships.some(x=>x.pole_id===state.listPole))return false;
+  const q=state.listSearch.toLocaleLowerCase('fr-FR').trim();
+  return !q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city,m.quality,...m.poles].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q));
+ });
+}
+function listsRows(){
+ return [['Nom et prénom','Qualité','Pôle(s)','Adhésion','Téléphone','E-mail','Adresse','CP','Ville','Règlement le'],...listsData().map(m=>[
+  m.name,m.quality,m.poles.join(', '),m.paid?'À jour':'En attente',m.phone,m.email,m.address,m.postal_code,m.city,m.paid_on
+ ])];
+}
+function exportListsCSV(){
+ const guard=s=>{const v=String(s??'');return /^[=+\-@\t\r]/.test(v)?"'"+v:v;};
+ const csv='\uFEFF'+listsRows().map(row=>row.map(x=>'"'+guard(x).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='zikamansle-listes-benevoles-'+new Date().toISOString().slice(0,10)+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function printLists(mode){
+ const rows=listsRows(),popup=window.open('','_blank');if(!popup)return toast('Autorise les fenêtres supplémentaires.');
+ popup.opener=null;
+ const headings=rows[0].map(v=>'<th>'+esc(v)+'</th>').join('');
+ const body=rows.slice(1).map(row=>'<tr>'+row.map(v=>'<td>'+esc(v||'—')+'</td>').join('')+'</tr>').join('');
+ const title='ZikaMansle — Liste des bénévoles';
+ const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+title+'</title><style>@page{size:A4 landscape;margin:9mm}body{font:9px Arial,sans-serif;color:#19374c}h1{font-size:18px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #b6c6d1;text-align:left;padding:5px 3px;overflow-wrap:anywhere}th{background:#eaf3f9}tr{break-inside:avoid}button{padding:10px;margin:10px 0}@media print{button,.hint{display:none}}</style></head><body><h1>'+title+'</h1><p>Liste interne confidentielle — Administration / Secrétariat · '+rows.slice(1).length+' personnes · '+new Date().toLocaleDateString('fr-FR')+'</p><p class="hint">'+(mode==='pdf'?'Choisis « Enregistrer au format PDF » dans l’impression.':'Choisis ton imprimante.')+'</p><button onclick="window.print()">Imprimer / enregistrer en PDF</button><table><thead><tr>'+headings+'</tr></thead><tbody>'+body+'</tbody></table></body></html>';
+ popup.document.open();popup.document.write(html);popup.document.close();
+}
+function manageLists(){
+ if(!state.me.admin&&!state.me.secretariat)return '<section class="team-card">Accès réservé à l’administration et au secrétariat.</section>';
+ const d=state.manage,rows=listsData();
+ return '<section class="team-card team-accent-blue"><h2>Listes et exports</h2><p>Combine les filtres pour préparer une liste des bénévoles. Les coordonnées complètes sont réservées à l’administration et au secrétariat.</p>'+
+ '<div class="team-split"><label>Adhésions<select id="teamListStatus"><option value="all" '+(state.listStatus==='all'?'selected':'')+'>Toutes</option><option value="paid" '+(state.listStatus==='paid'?'selected':'')+'>À jour</option><option value="pending" '+(state.listStatus==='pending'?'selected':'')+'>Non à jour</option></select></label>'+
+ '<label>Qualité / fonction<select id="teamListRole"><option value="all" '+(state.listRole==='all'?'selected':'')+'>Tous les bénévoles</option><option value="leaders" '+(state.listRole==='leaders'?'selected':'')+'>Responsables uniquement</option><option value="director" '+(state.listRole==='director'?'selected':'')+'>Dirigeants uniquement</option><option value="bureau" '+(state.listRole==='bureau'?'selected':'')+'>Bureau uniquement</option><option value="volunteer" '+(state.listRole==='volunteer'?'selected':'')+'>Bénévoles sans fonction</option></select></label>'+
+ '<label>Par pôle<select id="teamListPole"><option value="all">Tous les pôles</option>'+(d.poles||[]).filter(p=>!p.archived).map(p=>'<option value="'+p.id+'" '+(state.listPole===p.id?'selected':'')+'>'+esc(p.name)+'</option>').join('')+'</select></label>'+
+ '<label>Recherche<input id="teamListSearch" type="search" placeholder="Nom, ville, coordonnées…" value="'+esc(state.listSearch)+'"></label></div>'+
+ '<div class="team-export-tools"><button class="team-button light" type="button" data-list-apply>Appliquer les filtres</button><button class="team-button light" type="button" data-list-reset>Afficher tous</button><button class="team-button light" type="button" data-list-export="csv">Exporter CSV</button><button class="team-button light" type="button" data-list-export="print">Imprimer A4</button><button class="team-button orange" type="button" data-list-export="pdf">Créer un PDF</button></div><p><strong>'+rows.length+'</strong> personne(s) correspondent aux critères.</p>'+
+ '<div class="team-table-wrap"><table class="team-table"><thead><tr><th>Nom et prénom</th><th>Qualité</th><th>Pôle(s)</th><th>Adhésion</th><th>Téléphone</th><th>E-mail</th></tr></thead><tbody>'+
+ (rows.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+esc(m.quality)+'</td><td>'+esc(m.poles.join(', ')||'—')+'</td><td><span class="team-pill '+(m.paid?'ok':'warn')+'">'+(m.paid?'À jour':'Non à jour')+'</span></td><td>'+esc(m.phone||'—')+'</td><td>'+esc(m.email||'—')+'</td></tr>').join('')||'<tr><td colspan="6">Aucun résultat.</td></tr>')+'</tbody></table></div></section>';
+}
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
 
 function loginScreen(error=''){
@@ -392,10 +445,13 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.hasAttribute('data-team-reset')){state.codeSent=false;loginScreen();return;}
  if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;loginScreen();return;}
 
+ if(b.hasAttribute('data-list-apply')){state.listSearch=document.getElementById('teamListSearch')?.value||'';render();return;}
+ if(b.hasAttribute('data-list-reset')){state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();return;}
+ if(b.dataset.listExport){if(!state.me.admin&&!state.me.secretariat)return;b.dataset.listExport==='csv'?exportListsCSV():printLists(b.dataset.listExport);return;}
  if(b.dataset.printTeam){printTeam(b.dataset.printTeam);return;}
  if(b.dataset.signingOpen){
   state.signingCurrent=b.dataset.signingOpen;state.signingMember=null;state.signingSelection=[];state.managementTab='emargements';render();return;
@@ -475,6 +531,9 @@ root.addEventListener('change',async e=>{
   await perform(async()=>uploadTeamPhoto(e.target.dataset.photoMember,file));
   return;
  }
+ if(e.target.id==='teamListStatus'){state.listStatus=e.target.value;render();return;}
+ if(e.target.id==='teamListRole'){state.listRole=e.target.value;render();return;}
+ if(e.target.id==='teamListPole'){state.listPole=e.target.value;render();return;}
  if(e.target.id==='teamSigningFilter'){state.signingFilter=e.target.value;state.signingSelection=[];render();return;}
  if(e.target.id==='teamSigningPole'){state.signingPole=e.target.value;state.signingSelection=[];render();return;}
  if(e.target.matches('#signingAddForm input[name="member"]')){state.signingSelection=[...e.target.form.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(x=>x.value);return;}
