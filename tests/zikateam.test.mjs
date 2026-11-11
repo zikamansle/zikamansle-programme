@@ -100,6 +100,23 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await api(L,{op:'secretariat.set',memberId:secretary,enabled:true})).status,403);
   await okay(A,{op:'secretariat.set',memberId:secretary,enabled:true});
   assert.equal((await invoke(S,'/zikateam/api/me')).payload.secretariat,true);
+  // Listes privées : accès réservé, sélection ordonnée et colonnes contrôlées.
+  assert.equal((await api(B,{op:'list.save',title:'Liste interdite',columns:['name'],memberIds:[member]})).status,403);
+  assert.equal((await api(L,{op:'list.save',title:'Liste interdite',columns:['name'],memberIds:[member]})).status,403);
+  assert.equal((await api(S,{op:'list.save',title:'Sans colonne',columns:[],memberIds:[member]})).status,400);
+  const savedList=(await okay(S,{op:'list.save',title:'Permanence de test',columns:['name','quality','phone'],memberIds:[member,secretary]})).id;
+  let savedRows=(await invoke(S,'/zikateam/api/manage')).payload.savedLists;
+  assert.equal(savedRows.length,1,'le secrétariat retrouve les listes');
+  assert.deepEqual(JSON.parse(savedRows[0].member_ids_json),[member,secretary],'ordre conservé');
+  assert.deepEqual(JSON.parse(savedRows[0].columns_json),['name','quality','phone']);
+  await okay(A,{op:'list.save',id:savedList,title:'Permanence modifiée',columns:['name','email'],memberIds:[secretary,member]});
+  savedRows=(await invoke(S,'/zikateam/api/manage')).payload.savedLists;
+  assert.equal(savedRows[0].title,'Permanence modifiée');
+  assert.deepEqual(JSON.parse(savedRows[0].member_ids_json),[secretary,member]);
+  assert.equal((await api(B,{op:'list.delete',id:savedList})).status,403);
+  await okay(S,{op:'list.delete',id:savedList});
+  assert.equal((await invoke(S,'/zikateam/api/manage')).payload.savedLists.length,0);
+
   const secView=await invoke(S,'/zikateam/api/manage');
   assert.equal(secView.status,200);
   assert.equal(secView.payload.activities.length,1);
