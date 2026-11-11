@@ -80,3 +80,5 @@ test('listes personnalisées sauvegardées côté serveur et réutilisables',()=
  assert.ok(client.includes('data-list-exit'));
  assert.ok(client.includes("await command('list.save'"));
 });
+
+// Publication autorisée uniquement sur le Worker isolé de test ; application publique inchangée.
