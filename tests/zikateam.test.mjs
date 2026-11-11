@@ -103,6 +103,12 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
    }),env);
    return {status:res.status,payload:await res.json()};
   }
+  assert.equal((await filePost(B,'/zikateam/api/chat-icon?channel=general',photo,'image/jpeg','non.jpg')).status,403,'seul admin modifie les images des groupes');
+  const chatIconImage=await filePost(A,'/zikateam/api/chat-icon?channel=general',photo,'image/jpeg','groupe.jpg');
+  assert.equal(chatIconImage.status,200,'image de groupe enregistrée');
+  assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='general').image_id,chatIconImage.payload.id);
+  const iconResponse=await handleZikaTeam(new Request('https://example.org/zikateam/chat-icon/'+chatIconImage.payload.id,{headers:{'Cf-Access-Jwt-Assertion':B}}),env);
+  assert.equal(iconResponse.status,200,'image de groupe visible par un membre');
   const photoUpload=await filePost(B,'/zikateam/api/photo?member='+member,photo,'image/jpeg','avatar.jpg');
   assert.equal(photoUpload.status,200,'le bénévole ajoute lui-même sa photo');
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.member.has_photo,true);
