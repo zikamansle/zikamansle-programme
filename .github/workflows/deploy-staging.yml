@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Deploy only when explicitly enabled by the repository owner.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # Déploiement ponctuel de la correction Android install dans la copie de test.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Publier la correction installer application en staging') }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
