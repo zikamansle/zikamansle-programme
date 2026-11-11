@@ -10,6 +10,8 @@ test('une inscription en attente ne peut lire aucune conversation par API',()=>{
  assert.ok(server.includes("if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))"));
  assert.ok(server.includes('Aucune conversation n’est accessible avant approbation.'));
  assert.ok(client.includes("state.me.pending?[['fiche','Mon accueil']]"));
+ assert.ok(server.includes("if(ctx.pending&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))"));
+ assert.ok(server.includes("if(ctx.pending)return fail('Inscription en attente de validation.',403)"));
 });
 
 test('les coordonnées consenties ne sont servies qu’aux responsables du pôle',()=>{
