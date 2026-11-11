@@ -19,7 +19,7 @@ La suppression d'un pôle est une **archive réversible** pour préserver les hi
 
 ## Connexion gratuite pour tous (Supabase Auth + SMTP gratuit)
 
-La branche de test utilise désormais **`TEAM_AUTH_PROVIDER=supabase`**. La page `/zikateam` affiche un écran de connexion e-mail sans Cloudflare Access. Les participants reçoivent un **code à six chiffres** et la session est conservée dans des cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Chaque appel privé est vérifié directement par Supabase Auth puis filtré avec les rôles de D1 ; l'adresse déclarée par le visiteur n'accorde jamais de droits.
+La branche de test utilise **`TEAM_AUTH_PROVIDER=supabase`**. À la première connexion (ou après oubli du mot de passe), les participants vérifient leur adresse e-mail avec un **code de six ou huit chiffres**, puis définissent un mot de passe personnel d'au moins 12 caractères avec lettres et chiffres. Les connexions ultérieures utilisent **e-mail + mot de passe**, sans envoi systématique d'e-mail. La session est conservée dans des cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Supabase Auth conserve et vérifie les mots de passe ; la base D1 n'en stocke jamais la valeur, seulement la date de configuration. Chaque appel privé est vérifié puis filtré avec les rôles D1 ; créer son mot de passe ne vaut jamais approbation de la demande d'accès par l'administration.
 
 **Aucune limite de 50 membres** : le projet Supabase `ZikaMansle-Programme` existe déjà et l'offre Free comprend 50 000 utilisateurs actifs par mois à la date du 11 novembre 2026. Les quotas gratuits, dont 500 Mo de base et la mise en pause des projets inactifs, restent applicables. Le Worker Cloudflare et sa base D1 restent utilisés pour l'organisation ; seul l'authentificateur change.
 
