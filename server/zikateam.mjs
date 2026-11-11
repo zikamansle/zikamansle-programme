@@ -119,6 +119,45 @@ export async function drainTeamPush(env,maximum=40){
  }
  return {sent,disabled:false};
 }
+// Rappels horaires, exclusivement pour les destinataires encore autorisés.
+export async function scheduleTeamReminders(env,maximum=40){
+ if(env.TEAM_PUSH_ENABLED!=='true'||!env.TEAM_ACCESS_AUD||!env.DB||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY)return {sent:0,disabled:true};
+ const db=env.DB,clock=now();
+ for(const [kind,hours] of [['24h',24],['2h',2]]){
+  const from=new Date(clock+hours*3600000-30*60000).toISOString();
+  const until=new Date(clock+hours*3600000+30*60000).toISOString();
+  const activities=await all(db,"SELECT * FROM team_activities WHERE status='published' AND starts_at>=? AND starts_at<? ORDER BY starts_at LIMIT 35",from,until);
+  for(const activity of activities){
+   const members=await audienceMembers(db,activity);
+   for(const memberId of members){
+    const declined=await one(db,"SELECT answer FROM team_activity_rsvps WHERE activity_id=? AND member_id=?",activity.id,memberId);
+    if(declined?.answer==='no')continue;
+    const subs=await all(db,'SELECT subscription_id FROM team_push_links WHERE member_id=?',memberId);
+    for(const sub of subs)await db.prepare("INSERT OR IGNORE INTO team_reminder_jobs(activity_id,member_id,subscription_id,kind,status,created_at) VALUES(?,?,?,?,'pending',?)").bind(activity.id,memberId,sub.subscription_id,kind,clock).run();
+   }
+  }
+ }
+ const jobs=await all(db,"SELECT * FROM team_reminder_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
+ let sent=0;
+ for(const job of jobs){
+  const lock=await db.prepare("UPDATE team_reminder_jobs SET status='processing' WHERE activity_id=? AND subscription_id=? AND kind=? AND status='pending'").bind(job.activity_id,job.subscription_id,job.kind).run();
+  if(!lock.meta.changes)continue;
+  const a=await one(db,'SELECT * FROM team_activities WHERE id=?',job.activity_id);
+  const linked=await one(db,"SELECT l.member_id FROM team_push_links l JOIN team_members m ON m.id=l.member_id WHERE l.member_id=? AND l.subscription_id=? AND m.active=1",job.member_id,job.subscription_id);
+  const audience=a?.status==='published'&&(await audienceMembers(db,a)).includes(job.member_id);
+  const r=await one(db,'SELECT answer FROM team_activity_rsvps WHERE activity_id=? AND member_id=?',job.activity_id,job.member_id);
+  const sub=await one(db,'SELECT endpoint,p256dh,auth FROM push_subscriptions WHERE id=?',job.subscription_id);
+  let code=0;
+  if(linked&&audience&&r?.answer!=='no'&&sub){
+   const data={title:'ZikaTeam · Rappel '+(job.kind==='24h'?'demain':'dans 2 h'),body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites'};
+   try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},data,env)}catch{}
+  }
+  const ok=code>=200&&code<300;
+  await db.prepare('UPDATE team_reminder_jobs SET status=?,code=?,sent_at=? WHERE activity_id=? AND subscription_id=? AND kind=?').bind(ok?'sent':'failed',code,now(),job.activity_id,job.subscription_id,job.kind).run();
+  if(ok)sent++;
+ }
+ return {sent,disabled:false};
+}
 async function saveMember(db,ctx,d){
  if(!ctx.admin)return fail('Réservé à l’administration.',403);
  const name=clean(d.name,110),email=clean(d.email,254).toLowerCase();
