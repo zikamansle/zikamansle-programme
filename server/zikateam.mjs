@@ -375,7 +375,7 @@ async function memberAction(db,ctx,d){
   return reply({ok:true});
  }
  if(!await requireCharter(db,ctx))return fail('Veuillez accepter la charte avant de répondre ou de discuter.',409);
- if(ctx.pending)return fail('Ta demande attend la validation par l’administration. Le salon général est accessible en lecture seule.',403);
+ if(ctx.pending)return fail('Ta demande attend la validation par l’administration. Aucune conversation n’est accessible avant approbation.',403);
  if(d.op==='activity.rsvp'){
   if(!idok(d.activityId)||!['yes','no','maybe'].includes(d.answer))return fail('Réponse invalide.');
   const a=await one(db,'SELECT * FROM team_activities WHERE id=?',d.activityId);if(!a||a.status!=='published'||!(await audienceMembers(db,a)).includes(memberId))return fail('Convocation indisponible.',403);
