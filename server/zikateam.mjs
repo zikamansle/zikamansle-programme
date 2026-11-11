@@ -731,11 +731,37 @@ async function chatRooms(db,ctx){
  for(const a of allActivities)if(ctx.admin||await visibleActivity(db,ctx,a))rooms.push({channel:'activity',id:a.id,title:a.title});
  return rooms;
 }
+async function chatLeaders(db,ctx,room){
+ let ids=[];
+ if(room.channel==='pole'){
+  ids=(await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id WHERE tm.pole_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name LIMIT 25",room.id)).map(x=>x.id);
+ }else if(room.channel==='activity'){
+  ids=(await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id WHERE ap.activity_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name LIMIT 25",room.id)).map(x=>x.id);
+ }
+ if(room.channel==='leaders'){
+  ids=(await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_poles p ON p.id=tm.pole_id WHERE tm.role='lead' AND p.archived=0 AND m.active=1 ORDER BY m.name LIMIT 25")).map(x=>x.id);
+ }
+ if(room.channel==='general'||room.channel==='activity'&&!ids.length){
+  ids=(await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_member_roles r ON r.member_id=m.id WHERE m.active=1 AND r.role='director' ORDER BY m.name LIMIT 25")).map(x=>x.id);
+ }
+ const leaders=[];
+ for(const id of ids){
+  const person=await one(db,"SELECT m.id,m.name,m.email,COALESCE(cn.phone,'') AS phone FROM team_members m LEFT JOIN team_member_contacts cn ON cn.member_id=m.id WHERE m.id=? AND m.active=1",id);
+  if(!person)continue;
+  const sharedPole=ctx.member&&await one(db,"SELECT 1 FROM team_memberships a JOIN team_memberships b ON a.pole_id=b.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=? AND a.role='lead' AND p.archived=0 LIMIT 1",ctx.member.id,id);
+  const allow=ctx.admin||ctx.secretariat||ctx.member?.id===id||Boolean(sharedPole);
+  const consents=allow?await all(db,"SELECT kind,granted FROM team_member_consents WHERE member_id=? AND kind IN ('phone','email')",id):[];
+  const granted=Object.fromEntries(consents.map(x=>[x.kind,Boolean(x.granted)]));
+  leaders.push({id:person.id,name:person.name,email:allow&&(ctx.admin||ctx.secretariat||ctx.member?.id===id||granted.email)?person.email:'',phone:allow&&(ctx.admin||ctx.secretariat||ctx.member?.id===id||granted.phone)?person.phone:''});
+ }
+ return leaders;
+}
 async function chatSummary(db,ctx){
  if(!await requireCharter(db,ctx)||ctx.pending||!ctx.member?.active)return fail('Accès aux discussions refusé.',403);
  const rooms=await chatRooms(db,ctx);
  for(const room of rooms){
   const appearance=await one(db,'SELECT icon,image_id FROM team_chat_icons WHERE channel=? AND channel_id=?',room.channel,room.id||'');
+  room.responsibles=await chatLeaders(db,ctx,room);
   room.icon=appearance?.icon||({general:'💬',leaders:'⭐',pole:'🎨',activity:'📅'}[room.channel]||'💬');
   room.image_id=appearance?.image_id||null;
   const leader=room.channel==='leaders',table=leader?'team_leader_messages':'team_messages';
