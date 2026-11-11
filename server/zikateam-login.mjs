@@ -66,10 +66,22 @@ async function readBody(request){
  const raw=await request.text();if(raw.length>1500)return null;
  try{return JSON.parse(raw)}catch{return null}
 }
-async function isInvited(env,email){
- if(email===cleanEmail(env.ADMIN_EMAIL||''))return true;
- const member=await env.DB.prepare('SELECT id FROM team_members WHERE email=? AND active=1').bind(email).first();
- return Boolean(member);
+async function joinRequest(env,email,name){
+ // Après vérification du code : inscription provisoire, jamais d'accès automatique à l'équipe.
+ if(email===cleanEmail(env.ADMIN_EMAIL||''))return {status:'admin'};
+ const existing=await env.DB.prepare('SELECT id,active FROM team_members WHERE email=?').bind(email).first();
+ const prior=await env.DB.prepare('SELECT status FROM team_join_requests WHERE email=?').bind(email).first();
+ if(existing?.active===1)return {status:'approved'};
+ if(prior?.status==='rejected')return {status:'rejected'};
+ if(existing&&!prior)return {status:'disabled'};
+ const now=Date.now(),label=typeof name==='string'&&name.trim().length>=2?name.trim().slice(0,110):email.split('@')[0];
+ if(!existing){
+  await env.DB.prepare('INSERT OR IGNORE INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,0,?,?)').bind(crypto.randomUUID(),label,email,now,now).run();
+ }
+ if(!prior){
+  await env.DB.prepare("INSERT OR IGNORE INTO team_join_requests(email,name,status,requested_at) VALUES(?,?,'pending',?)").bind(email,label,now).run();
+ }
+ return {status:'pending'};
 }
 async function networkHash(request){
  const ip=request.headers.get('cf-connecting-ip')||'unknown';
@@ -103,8 +115,6 @@ export async function handleTeamLogin(request,env){
  const email=cleanEmail(body.email);
  if(!validEmail(email))return response({error:'Adresse e-mail invalide.'},400);
  if(!await permitted(env,email,request,path.endsWith('/request')?'otp':'verify'))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
- const invited=await isInvited(env,email);
- if(!invited)return response({ok:true,message:'Si cette adresse est autorisée, un code peut lui être envoyé.'});
  if(path.endsWith('/request')){
   const result=await provider(env,'/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
   if(!result?.ok)return response({error:'Envoi du code indisponible. Vérifie les réglages SMTP de Supabase.'},503);
@@ -116,7 +126,10 @@ export async function handleTeamLogin(request,env){
  if(!result?.ok)return response({error:'Code expiré ou incorrect.'},401);
  const user=await verifiedUser(env,result.data.access_token);
  if(!user||user.email!==email)return response({error:'Identité non vérifiée.'},403);
+ const enrollment=await joinRequest(env,email,body.name);
+ if(enrollment.status==='rejected')return response({error:'Cette demande d’inscription n’a pas été retenue. Contacte l’association.'},403);
+ if(enrollment.status==='disabled')return response({error:'Ce compte est désactivé. Contacte l’association.'},403);
  const newCookies=issue(result.data);
  if(newCookies.length!==2)return response({error:'Session indisponible.'},503);
- return response({ok:true},200,newCookies);
+ return response({ok:true,enrollment:enrollment.status},200,newCookies);
 }
