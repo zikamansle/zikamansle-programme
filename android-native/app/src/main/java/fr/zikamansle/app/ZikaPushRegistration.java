@@ -32,7 +32,11 @@ final class ZikaPushRegistration {
     static void setApproved(Context context, boolean approved) {
         SharedPreferences prefs=context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         prefs.edit().putBoolean(APPROVED, approved).apply();
+        if (FirebaseApp.getApps(context).isEmpty()) return;
+        FirebaseMessaging messaging=FirebaseMessaging.getInstance();
+        messaging.setAutoInitEnabled(approved);
         if (approved) refresh(context);
+        else messaging.deleteToken();
     }
     private static boolean permissionGranted(Context context) {
         return Build.VERSION.SDK_INT < 33 ||
