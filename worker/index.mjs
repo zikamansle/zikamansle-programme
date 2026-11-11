@@ -2,7 +2,7 @@ import {handle} from '../server/push-api.mjs';
 import {siteContent} from '../server/site-content.mjs';
 import {isAdmin} from '../server/admin-auth.mjs';
 import {handleNative} from '../server/native-push.mjs';
-import {handleZikaTeam, drainTeamPush} from '../server/zikateam.mjs';
+import {handleZikaTeam, scheduleTeamReminders} from '../server/zikateam.mjs';
 import catalog from '../public/data/site.json' with {type:'json'};
 
 const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(path);
@@ -19,6 +19,7 @@ export function adminAssetRequest(request) {
 }
 
 export default {
+  async scheduled(event,env,execution) { execution.waitUntil(scheduleTeamReminders(env)); },
   async fetch(request, env, execution) {
     const url = new URL(request.url);
     const path = url.pathname;
