@@ -237,8 +237,8 @@ function manageMembers(){
   const member=d.members.find(m=>m.email===r.email)||{name:r.name,email:r.email};
   return '<form class="team-card team-accent-orange team-form" data-member-review="'+esc(r.email)+'"><div class="team-between"><h3>Demande de '+esc(member.name||r.email)+'</h3><span class="team-pill warn">À valider</span></div><p class="team-small">'+esc(r.email)+' · Demande du '+esc(shortdt(r.requested_at))+'</p><label>Nom et prénom<input name="name" maxlength="110" required value="'+esc(member.name||r.name)+'"></label>'+roleAssignmentFields(member)+'<div class="team-row"><button class="team-button orange" type="submit">Approuver et enregistrer les fonctions</button><button class="team-button danger" type="button" data-reject-member="'+esc(r.email)+'">Refuser la demande</button></div></form>';
  }).join(''):'<section class="team-card team-accent-teal"><p>Aucune nouvelle demande pour le moment.</p></section>';
- const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form" novalidate><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange">Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
- const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="submit" class="team-button orange">Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
+ const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form" novalidate><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange" data-save-member>Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
+ const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="submit" class="team-button orange" data-save-member-functions>Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
  const cards=members.map(m=>{
   const list=d.memberships.filter(x=>x.member_id===m.id),byPole=list.map(x=>(d.poles.find(p=>p.id===x.pole_id)?.name||'')+(x.role==='lead'?' (responsable)':'')).filter(Boolean);
   const label=[...(m.roles||[]).map(v=>v==='director'?'Dirigeant':'Bureau'),...((d.secretariatIds||[]).includes(m.id)?['Secrétariat']:[]),...byPole];
@@ -649,7 +649,18 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-save-member],button[data-save-member-functions],button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+ if(b.matches('[data-save-member], [data-save-member-functions]')){
+  e.preventDefault();
+  const f=b.closest('form'),field=f?.querySelector('[data-member-save-feedback], [data-functions-save-feedback]');
+  if(!f){toast('Erreur : formulaire introuvable. Recharge cette page.');return;}
+  if(state.busy){toast('Un enregistrement est déjà en cours.');return;}
+  if(field)field.textContent='⏳ Enregistrement demandé…';
+  // Explicitly dispatch submit even on mobile browsers that suppress native form submit.
+  f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  return;
+ }
+
  if(b.hasAttribute('data-password-toggle')){
   const input=b.closest('.team-password-field')?.querySelector('input');
   if(!input)return;
@@ -897,7 +908,7 @@ root.addEventListener('change',async e=>{
  }catch(err){input.checked=!input.checked;toast(err.message||'Impossible de modifier ce groupe.')}
  finally{input.disabled=false;}
 });
-root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy)return;
+root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy){if(f.id==='memberForm'||f.id==='teamMemberFunctionsForm')toast('Enregistrement déjà en cours.');return;}
  if(f.id==='teamLoginPassword'){
   state.busy=true;try{await freeLoginPassword(f.elements.email.value,f.elements.password.value)}catch(err){state.loginEmail=f.elements.email.value;loginScreen(err.message)}finally{state.busy=false}return;
  }
@@ -953,7 +964,28 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   state.signingSelection=[];
  });
  if(f.id==='teamCustomListForm')return perform(async()=>{const d=fromForm(f);const columns=state.listColumns;if(!columns.length)throw Error('Choisis au moins une colonne.');const saved=await command('list.save',{id:state.listId||undefined,title:d.title,columns,memberIds:state.listSelected});state.listId=saved.id;state.listTitle=d.title;state.listColumns=columns;});
- if(f.id==='teamMemberFunctionsForm')return perform(async()=>{const d=fromForm(f),changes=rolePayload(f);await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});state.editMember=null;});
+ if(f.id==='teamMemberFunctionsForm'){
+  const button=f.querySelector('[data-save-member-functions]');
+  let feedback=f.querySelector('[data-functions-save-feedback]');
+  if(!feedback){feedback=document.createElement('p');feedback.dataset.functionsSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','assertive');f.append(feedback);}
+  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
+  feedback.textContent='⏳ Vérification des pôles et fonctions…';
+  try{
+   const d=fromForm(f),changes=rolePayload(f);
+   const saved=await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});
+   if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
+   const data=await api('manage');
+   const member=data.members?.find(x=>x.id===d.memberId);
+   const actual=(data.memberships||[]).filter(x=>x.member_id===d.memberId&&!data.poles?.find(p=>p.id===x.pole_id)?.archived);
+   if(!member||changes.roles.length!==(member.roles||[]).length||changes.roles.some(role=>!member.roles.includes(role))||actual.length!==changes.poleRoles.length||actual.some(x=>!changes.poleRoles.some(y=>y.poleId===x.pole_id&&y.role===x.role)))throw Error('Les fonctions n’ont pas été confirmées par la base.');
+   state.manage=data;state.editMember=null;render();toast('✅ Fonctions et pôles enregistrés.');
+  }catch(error){
+   feedback.textContent='❌ '+(error.message||'Échec de sauvegarde.');
+   feedback.style.color='#ad2034';feedback.style.fontWeight='700';
+   feedback.scrollIntoView({block:'center'});
+  }finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer les fonctions';}}
+  return;
+ }
  if(f.id==='teamInviteForm')return perform(async()=>{
   const d=fromForm(f),created=await command('invite.create',{name:d.name,email:d.email});
   state.invitationDraft={name:created.name,email:created.email,code:created.code,expiresAt:created.expiresAt};
