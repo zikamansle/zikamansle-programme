@@ -50,6 +50,33 @@ export async function sendFirebaseTest(deviceToken,env,fetcher=fetch){
  return {accepted:result.status>=200&&result.status<300,code:result.status};
 }
 
+// Authenticated, read-only Firebase preflight. Never returns credentials, OAuth
+// tokens, FCM device tokens or provider responses. No notification is sent.
+export async function firebasePreflight(env,fetcher=fetch){
+ if(!env.FCM_SERVICE_ACCOUNT_JSON)return {ready:false,stage:'CONFIG_MISSING'};
+ let credentials;
+ try{credentials=JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON)}
+ catch{return {ready:false,stage:'CONFIG_INVALID'}}
+ let assertion;
+ try{assertion=await fcmAssertion(credentials)}
+ catch{return {ready:false,stage:'CONFIG_INVALID'}}
+ let oauth;
+ try {
+  oauth=await fetcher(TOKEN_URL,{method:'POST',redirect:'manual',
+   headers:{'Content-Type':'application/x-www-form-urlencoded'},
+   body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),
+   signal:AbortSignal.timeout(12000)});
+ }catch(e){
+  return {ready:false,stage:e?.name==='TimeoutError'?'OAUTH_TIMEOUT':'OAUTH_NETWORK'};
+ }
+ if(!oauth.ok)return {ready:false,stage:'OAUTH_'+oauth.status};
+ try {
+  const data=await oauth.json();
+  if(typeof data?.access_token!=='string'||!data.access_token)return {ready:false,stage:'OAUTH_INVALID'};
+ }catch{return {ready:false,stage:'OAUTH_INVALID'}}
+ return {ready:true,stage:'OAUTH_OK'};
+}
+
 export async function handleNative(request,env,authorize,send=sendFirebaseTest) {
  if(env.APP_ENV!=='staging'||env.PUSH_SEND_ENABLED!=='false'||!env.DB)
   return json({error:'Ce service est réservé à la version de validation.'},503);
@@ -76,6 +103,10 @@ export async function handleNative(request,env,authorize,send=sendFirebaseTest) 
   return json({ok:true});
  }
  if(!await authorize(request,env))return json({error:'Accès administrateur requis'},403);
+ if(path==='/administration/api/native-diagnostics'&&request.method==='GET') {
+  // This endpoint checks signing and OAuth authorization only; it cannot send a push.
+  return json(await firebasePreflight(env));
+ }
  if(path==='/administration/api/native-status'&&request.method==='GET') {
   const count=await env.DB.prepare('SELECT COUNT(*) AS n FROM native_push_devices').first();
   return json({devices:count?.n||0,sendingConfigured:!!env.FCM_SERVICE_ACCOUNT_JSON,testingOnly:true});
