@@ -199,3 +199,15 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
  .team-shortcut:hover{transform:none}
 }
 @media(prefers-reduced-motion:reduce){.team-shortcut{transition:none}.team-shortcut:hover{transform:none}}
+
+
+/* Connexion simple : mot de passe quotidien, code réservé à l'inscription et au dépannage. */
+.team-login-card{max-width:570px;margin:20px auto 32px}
+.team-login-card h1{font-size:clamp(25px,5vw,36px);line-height:1.15;margin:8px 0 15px}
+.team-login-card .team-form{margin:18px 0}
+.team-login-card .team-form label{font-size:15px;font-weight:750}
+.team-login-card .team-form input{min-height:51px;font-size:16px}
+.team-login-card .team-form button{min-height:50px;font-size:15px}
+.team-login-card>button{margin-top:8px}
+.team-login-card>p{color:#395a72}
+@media(max-width:600px){.team-login-card{margin:8px auto}.team-login-card>button{width:100%}}
