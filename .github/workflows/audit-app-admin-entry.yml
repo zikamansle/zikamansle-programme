@@ -28,7 +28,7 @@ jobs:
               if path=='/':
                 print('SCRIPT_PATHS',re.findall(r'<script[^>]+src=["\\\']([^"\\\']+)',txt,re.I)[:20])
               if path.endswith('.js') and path not in ['/notifications.js','/admin-notifications.js']:
-                matches=list(re.finditer(r'plus|admin|partenaires|actualit|param[eè]tres|navigation|menu|supabase|fetch\\s*\\(',txt,re.I))
+                matches=list(re.finditer(r'plus|admin|partenaires|actualit|param[eè]tres|navigation|menu|supabase',txt,re.I))
                 print('MATCHES',len(matches))
                 for m in matches[:32]:
                   frag=txt[max(0,m.start()-135):m.end()+180].replace('\\n',' ')
