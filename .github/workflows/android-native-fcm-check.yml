@@ -63,17 +63,7 @@ jobs:
             adb shell dumpsys activity activities > android-startup-activity.txt
             adb exec-out screencap -p > android-startup.png
             adb shell pm path fr.zikamansle.app.debug
-            python3 - <<'PY'
-            from pathlib import Path
-            import re
-            log=Path("android-startup-log.txt").read_text(errors="replace")
-            fatal=re.search(r'FATAL EXCEPTION.{0,1000}Process: fr\.zikamansle\.app\.debug',log,re.S)
-            assert not fatal,"Android ZikaMansle crashed at startup"
-            assert "Native push initialization failed" not in log,"Firebase native initialization failed"
-            screen=Path("android-startup-activity.txt").read_text(errors="replace")
-            assert any(p in screen for p in ("fr.zikamansle.app.debug","com.android.chrome","org.chromium")), "Neither the Android app nor a browser is active"
-            print("Android emulator: no ZikaMansle fatal crash or Firebase initialization failure.")
-            PY
+            python3 android-native/scripts/check_startup.py
       - name: Rendre disponible l'APK Android de test après contrôle
         uses: actions/upload-artifact@v4
         with:
