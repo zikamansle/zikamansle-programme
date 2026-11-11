@@ -32,12 +32,13 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   }
   const api=(email,op)=>invoke(email,'/zikateam/api/command',op);
   async function okay(email,op){const r=await api(email,op);assert.equal(r.status,200,JSON.stringify(r.payload));return r.payload;}
-  const A='admin@example.org',L='lead@example.org',B='volunteer@example.org',O='other@example.org';
+  const A='admin@example.org',L='lead@example.org',B='volunteer@example.org',O='other@example.org',S='secretary@example.org';
   assert.equal((await invoke('', '/zikateam/api/me')).status,403);
   assert.equal((await invoke(B,'/zikateam/api/me')).status,403);
   const lead=(await okay(A,{op:'member.save',name:'Responsable',email:L})).id;
   const member=(await okay(A,{op:'member.save',name:'Bénévole',email:B})).id;
   const other=(await okay(A,{op:'member.save',name:'Autre bénévole',email:O})).id;
+  const secretary=(await okay(A,{op:'member.save',name:'Secrétariat',email:S})).id;
   const pole=(await okay(A,{op:'pole.save',name:'ZikaVillage'})).id;
   const outsidePole=(await okay(A,{op:'pole.save',name:'Logistique'})).id;
   await okay(A,{op:'assignment.set',memberId:lead,poleId:pole,role:'lead'});
@@ -50,6 +51,27 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await api(L,{op:'activity.save',kind:'meeting',title:'Tous',audience:'all',starts_at:'2027-04-24T09:00:00.000Z',ends_at:'2027-04-24T10:00:00.000Z',status:'published'})).status,403);
   const act=await okay(L,{op:'activity.save',kind:'meeting',title:'Réunion ZikaVillage',agenda:'Ordre du jour',audience:'poles',poles:[pole],starts_at:'2027-04-24T09:00:00.000Z',ends_at:'2027-04-24T10:00:00.000Z',status:'published'});
   assert.equal(act.invitedMembers,2);
+  // Accès Secrétariat transversal : attribution par admin, vue minimale, pointage seul.
+  assert.equal((await invoke(S,'/zikateam/api/manage')).status,403);
+  assert.equal((await api(L,{op:'secretariat.set',memberId:secretary,enabled:true})).status,403);
+  await okay(A,{op:'secretariat.set',memberId:secretary,enabled:true});
+  assert.equal((await invoke(S,'/zikateam/api/me')).payload.secretariat,true);
+  const secView=await invoke(S,'/zikateam/api/manage');
+  assert.equal(secView.status,200);
+  assert.equal(secView.payload.activities.length,1);
+  assert.equal(secView.payload.activities[0].can_edit,false);
+  assert.equal(secView.payload.activities[0].agenda,undefined);
+  assert.equal(secView.payload.activities[0].tasks,undefined);
+  assert.equal(secView.payload.members[0].email,undefined);
+  assert.equal((await api(S,{op:'member.save',name:'Inconnu',email:'x@example.org'})).status,403);
+  assert.equal((await api(S,{op:'pole.save',name:'Pôle non autorisé'})).status,403);
+  assert.equal((await api(S,{op:'activity.save',title:'Interdit'})).status,403);
+  assert.equal((await api(S,{op:'checkin.set',activityId:act.id,memberId:other,present:true})).status,403);
+  await okay(S,{op:'checkin.set',activityId:act.id,memberId:member,present:true});
+  assert.equal((await invoke(S,'/zikateam/api/manage')).payload.activities[0].attendance.filter(m=>m.checked_in_at).length,1);
+  assert.ok((await invoke(A,'/zikateam/api/manage')).payload.audit.some(x=>x.action==='checkin.set'&&x.actor_email===S));
+  await okay(A,{op:'secretariat.set',memberId:secretary,enabled:false});
+  assert.equal((await invoke(S,'/zikateam/api/manage')).status,403);
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities.length,1);
   assert.equal((await invoke(O,'/zikateam/api/me')).payload.activities.length,0);
   assert.equal((await api(O,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403);
