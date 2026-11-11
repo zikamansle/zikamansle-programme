@@ -10,6 +10,30 @@ const fingerprint=async value=>{
 };
 const validToken=value=>typeof value==='string'&&value.length>=40&&value.length<=4096&&/^[A-Za-z0-9_:.-]+$/.test(value);
 
+// Safe diagnosis: publish only a fixed reason code, never a JSON field value.
+export function classifyFirebaseCredentials(raw){
+ if(typeof raw!=='string'||!raw.trim())return {stage:'CONFIG_MISSING'};
+ let credentials;
+ try{credentials=JSON.parse(raw)}
+ catch{return {stage:'CONFIG_JSON_SYNTAX'}}
+ if(typeof credentials==='string'){
+  // Some dashboards or copy/paste steps produce an extra JSON-encoded string.
+  // Decode it once locally; never echo its contents to the API or logs.
+  try{credentials=JSON.parse(credentials)}
+  catch{return {stage:'CONFIG_DOUBLE_ENCODED'}}
+ }
+ if(!credentials||typeof credentials!=='object'||Array.isArray(credentials))
+  return {stage:'CONFIG_NOT_OBJECT'};
+ if(credentials.project_id!==PROJECT)return {stage:'CONFIG_WRONG_PROJECT'};
+ if(!/^firebase-adminsdk-[^@]+@zikamansle-d0c4e\\.iam\\.gserviceaccount\\.com$/.test(credentials.client_email||''))
+  return {stage:'CONFIG_WRONG_ACCOUNT'};
+ if(typeof credentials.private_key!=='string'||!credentials.private_key.trim())
+  return {stage:'CONFIG_NO_PRIVATE_KEY'};
+ if(!/^-----BEGIN PRIVATE KEY-----\\s/.test(credentials.private_key)||!/-----END PRIVATE KEY-----\\s*$/.test(credentials.private_key))
+  return {stage:'CONFIG_PRIVATE_KEY_FORMAT'};
+ return {stage:'CONFIG_PARSED',credentials};
+}
+
 export async function fcmAssertion(credentials,now=Math.floor(Date.now()/1000)){
  if(!credentials||credentials.project_id!==PROJECT||
     !/^firebase-adminsdk-[^@]+@zikamansle-d0c4e\.iam\.gserviceaccount\.com$/.test(credentials.client_email||'')||
@@ -25,11 +49,10 @@ export async function fcmAssertion(credentials,now=Math.floor(Date.now()/1000)){
 }
 
 export async function sendFirebaseTest(deviceToken,env,fetcher=fetch){
- if(!env.FCM_SERVICE_ACCOUNT_JSON)throw Error('CONFIG_MISSING');
- let credentials;
- try{credentials=JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON)}catch{throw Error('CONFIG_INVALID')}
+ const parsed=classifyFirebaseCredentials(env.FCM_SERVICE_ACCOUNT_JSON);
+ if(parsed.stage!=='CONFIG_PARSED')throw Error(parsed.stage);
  let assertion;
- try{assertion=await fcmAssertion(credentials)}catch{throw Error('CONFIG_INVALID')}
+ try{assertion=await fcmAssertion(parsed.credentials)}catch{throw Error('CONFIG_KEY_SIGNING')}
  const oauth=await fetcher(TOKEN_URL,{method:'POST',redirect:'manual',
   headers:{'Content-Type':'application/x-www-form-urlencoded'},
   body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),
@@ -53,13 +76,11 @@ export async function sendFirebaseTest(deviceToken,env,fetcher=fetch){
 // Authenticated, read-only Firebase preflight. Never returns credentials, OAuth
 // tokens, FCM device tokens or provider responses. No notification is sent.
 export async function firebasePreflight(env,fetcher=fetch){
- if(!env.FCM_SERVICE_ACCOUNT_JSON)return {ready:false,stage:'CONFIG_MISSING'};
- let credentials;
- try{credentials=JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON)}
- catch{return {ready:false,stage:'CONFIG_INVALID'}}
+ const parsed=classifyFirebaseCredentials(env.FCM_SERVICE_ACCOUNT_JSON);
+ if(parsed.stage!=='CONFIG_PARSED')return {ready:false,stage:parsed.stage};
  let assertion;
- try{assertion=await fcmAssertion(credentials)}
- catch{return {ready:false,stage:'CONFIG_INVALID'}}
+ try{assertion=await fcmAssertion(parsed.credentials)}
+ catch{return {ready:false,stage:'CONFIG_KEY_SIGNING'}}
  let oauth;
  try {
   oauth=await fetcher(TOKEN_URL,{method:'POST',redirect:'manual',
