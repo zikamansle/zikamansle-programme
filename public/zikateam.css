@@ -267,3 +267,16 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
  .team-signing-panel .team-row{flex-wrap:nowrap}
  .team-signing-panel button{width:auto;min-height:43px;font-size:13px}
 }
+
+/* Listes personnalisées : champs lisibles, sélection claire et ordre explicite. */
+.team-column-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;margin:14px 0}
+.team-column-picks .team-check{display:flex;gap:10px;align-items:center;padding:9px 11px;border-radius:10px;background:#f0f7fb;border:1px solid #c6dbe7}
+.team-column-picks input{width:19px;height:19px;accent-color:#147cb8}
+.team-list-order{display:grid;gap:7px;margin:12px 0 20px}
+.team-order-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-radius:12px;background:#f8faff;border:1px solid #cddde7}
+.team-order-item>span{font-weight:750;color:#163e58}
+.team-order-item .team-row{display:flex;gap:5px;flex-wrap:nowrap}
+.team-order-item .team-button{padding:8px 11px;min-height:39px;min-width:40px}
+.team-order-item .team-button:disabled{opacity:.38}
+.team-table input[data-list-check]{width:21px;height:21px;accent-color:#eb8c2d}
+@media(max-width:600px){.team-order-item{align-items:flex-start;flex-direction:column}.team-order-item .team-row{width:100%;justify-content:flex-end}}
