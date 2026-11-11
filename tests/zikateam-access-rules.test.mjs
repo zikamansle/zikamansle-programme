@@ -54,3 +54,29 @@ test('les photos privées respectent le consentement et sont sans cache',()=>{
 test('les convocations du bureau incluent les dirigeants',()=>{
  assert.ok(server.includes("r.role IN ('bureau','director')"));
 });
+
+test('signature en paysage : ouvrir, recommencer, valider et revenir',()=>{
+ assert.ok(client.includes('async function openSigning(memberId)'));
+ assert.ok(client.includes("screen.orientation.lock('landscape')"));
+ assert.ok(client.includes("classList.add('team-signing-fallback')"));
+ assert.ok(client.includes('async function closeSigning()'));
+ assert.ok(client.includes('data-signing-clear>Recommencer'));
+ assert.ok(client.includes('data-signing-confirm>Valider la signature'));
+ assert.ok(client.includes('data-signing-return>Retour sans enregistrer'));
+ assert.ok(client.includes('data-signing-back'));
+ assert.ok(client.includes('data-back-edit="activity"'));
+ assert.ok(client.includes('data-back-edit="pole"'));
+ assert.ok(client.includes('data-back-edit="member"'));
+});
+test('listes personnalisées sauvegardées côté serveur et réutilisables',()=>{
+ assert.ok(server.includes("if(d.op==='list.save')"));
+ assert.ok(server.includes("if(d.op==='list.delete')"));
+ assert.ok(server.includes('team_saved_lists'));
+ assert.ok(client.includes('function openSavedList(id)'));
+ assert.ok(client.includes('id="teamCustomListForm"'));
+ assert.ok(client.includes('data-list-column-move'));
+ assert.ok(client.includes('data-list-move'));
+ assert.ok(client.includes('data-list-check'));
+ assert.ok(client.includes('data-list-exit'));
+ assert.ok(client.includes("await command('list.save'"));
+});
