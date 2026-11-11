@@ -513,6 +513,7 @@ async function adminAction(db,ctx,d){
 async function getMessages(db,ctx,url){
  if(!ctx.admin&&(!ctx.member||!await requireCharter(db,ctx)))return fail('Charte à accepter avant les discussions.',403);
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
+ if(ctx.pending&&(channel!=='general'||channelId))return fail('En attente d’approbation : seule la conversation générale est accessible en lecture seule.',403);
  if(!['general','pole','activity','leaders'].includes(channel))return fail('Canal invalide.');
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
