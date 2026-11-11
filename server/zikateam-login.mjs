@@ -124,7 +124,7 @@ export async function handleTeamLogin(request,env){
   const join=await env.DB.prepare('SELECT status FROM team_join_requests WHERE email=?').bind(userEmail).first();
   const authorized=userEmail===cleanEmail(env.ADMIN_EMAIL||'')||member?.active===1||(member?.active===0&&join?.status==='pending');
   if(!authorized)return response({error:'Ce compte ne peut pas accéder à ZikaTeam.'},403);
-  if(!await permitted(env,userEmail,request,'password-set'))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
+  if(!await permitted(env,userEmail,request,'verify'))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
   const changed=await provider(env,'/user',{method:'PUT',body:JSON.stringify({password}),headers:{Authorization:'Bearer '+session.token}});
   if(!changed?.ok)return response({error:changed?.status===422?'Ce mot de passe ne respecte pas les critères de sécurité. Choisis-en un autre.':'Impossible d’enregistrer le mot de passe. Réessaie après une nouvelle vérification par e-mail.'},changed?.status===422?422:503);
   await env.DB.prepare('INSERT INTO team_auth_password_setup(email,set_at) VALUES(?,?) ON CONFLICT(email) DO UPDATE SET set_at=excluded.set_at').bind(userEmail,Date.now()).run();
@@ -133,7 +133,7 @@ export async function handleTeamLogin(request,env){
  const body=await readBody(request);if(!body)return response({error:'Contenu invalide.'},400);
  const email=cleanEmail(body.email);
  if(!validEmail(email))return response({error:'Adresse e-mail invalide.'},400);
- const action=path.endsWith('/request')?'otp':path.endsWith('/password')?'password-login':'verify';
+ const action=path.endsWith('/request')?'otp':'verify';
  if(!await permitted(env,email,request,action))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
  if(path==='/zikateam/api/auth/password'){
   if(typeof body.password!=='string'||body.password.length>128||!body.password)return response({error:'Mot de passe invalide.'},400);
