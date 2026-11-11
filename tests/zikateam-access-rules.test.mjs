@@ -193,3 +193,13 @@ test('affichage du mot de passe au choix sans changer les valeurs',()=>{
  assert.ok(client.includes('name="confirmation"'));
  assert.ok(client.includes('aria-pressed'));
 });
+
+test('parcours de test pratique réservé au Secrétariat avec navigation fonctionnelle',()=>{
+ assert.ok(client.includes('function secretaryTestGuide()'));
+ assert.ok(client.includes("state.me?.secretariat||state.me.admin"));
+ for(const tab of ['emargements','adhesions','annuaire','listes','benevoles']){
+  assert.ok(client.includes("task('"+tab+"'"),'onglet '+tab);
+ }
+ assert.ok(client.includes('return secretaryTestGuide()+'));
+ assert.ok(client.includes('data-mtab'));
+});
