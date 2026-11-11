@@ -221,3 +221,13 @@ test('les messages déclenchent un push ciblé sans diffusion générale en stag
  assert.ok(server.includes("if(muted?.muted===1)continue"));
  assert.ok(server.includes("env.TEAM_PUSH_ENABLED==='true'"));
 });
+
+test('la fiche bénévole est enregistrée sans blocage de validation HTML native et vérifiée côté serveur',()=>{
+ assert.ok(client.includes('<form id="memberForm" class="team-form" novalidate>'));
+ assert.ok(client.includes("if(f.id==='memberForm')"));
+ assert.ok(client.includes("const saved=await command('member.save'"));
+ assert.ok(client.includes("const data=await api('manage')"));
+ assert.ok(client.includes("const actual=new Map((data.memberships||[])"));
+ assert.ok(client.includes("La fiche est enregistrée, mais certaines affectations aux pôles"));
+ assert.ok(client.includes("const active=f.querySelector('input[name=\"active\"]')"));
+});
