@@ -391,7 +391,100 @@ async function memberAction(db,ctx,d){
  }
  return fail('Action non reconnue.',404);
 }
+
+async function getSigning(db,ctx){
+ if(!ctx.admin&&!ctx.secretariat)return fail('Émargements réservés à l’administration et au secrétariat.',403);
+ const sessions=await all(db,'SELECT id,title,starts_at,place,created_by,created_at,closed_at FROM team_signing_sessions ORDER BY starts_at DESC,created_at DESC LIMIT 80');
+ for(const session of sessions){
+  session.attendees=await all(db,'SELECT member_id,display_name,quality,added_at,signature_points,signed_at,signed_by_operator FROM team_signing_attendees WHERE session_id=? ORDER BY added_at,display_name',session.id);
+ }
+ const people=await all(db,`SELECT m.id,m.name,
+ CASE WHEN EXISTS(SELECT 1 FROM team_member_roles r WHERE r.member_id=m.id AND r.role='director') THEN 'Dirigeant'
+ WHEN EXISTS(SELECT 1 FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=m.id AND tm.role='lead' AND p.archived=0) THEN 'Responsable'
+ WHEN EXISTS(SELECT 1 FROM team_member_roles r WHERE r.member_id=m.id AND r.role='bureau') THEN 'Membre du bureau'
+ ELSE 'Bénévole' END AS quality,
+ CASE WHEN EXISTS(SELECT 1 FROM team_member_roles r WHERE r.member_id=m.id AND r.role='bureau') THEN 1 ELSE 0 END AS bureau,
+ CASE WHEN EXISTS(SELECT 1 FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=m.id AND tm.role='lead' AND p.archived=0) THEN 1 ELSE 0 END AS leader
+ FROM team_members m WHERE m.active=1 ORDER BY m.name`);
+ const memberships=await all(db,'SELECT tm.member_id,tm.pole_id FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id JOIN team_poles p ON p.id=tm.pole_id WHERE m.active=1 AND p.archived=0');
+ const poles=await all(db,'SELECT id,name FROM team_poles WHERE archived=0 ORDER BY name');
+ return reply({sessions,people,memberships,poles});
+}
+function validSignature(strokes){
+ if(!Array.isArray(strokes)||!strokes.length||strokes.length>80)return false;
+ let count=0,movement=0;
+ for(const line of strokes){
+  if(!Array.isArray(line)||line.length<2||line.length>1800)return false;
+  for(let i=0;i<line.length;i++){
+   const p=line[i];
+   if(!Array.isArray(p)||p.length!==2||!Number.isInteger(p[0])||!Number.isInteger(p[1])||p[0]<0||p[0]>1000||p[1]<0||p[1]>400)return false;
+   if(i)movement+=Math.hypot(p[0]-line[i-1][0],p[1]-line[i-1][1]);
+   if(++count>3200)return false;
+  }
+ }
+ return count>=4&&movement>=30;
+}
+async function signingAction(db,ctx,d){
+ if(!ctx.admin&&!ctx.secretariat)return fail('Émargements réservés à l’administration et au secrétariat.',403);
+ if(d.op==='signing.create'){
+  const title=clean(d.title,180),place=clean(d.place,180),startsAt=d.startsAt;
+  if(!title||!place||!dateok(startsAt))return fail('Renseignez l’objet, la date, l’heure et le lieu.',400);
+  const id=uuid();
+  await db.prepare('INSERT INTO team_signing_sessions(id,title,starts_at,place,created_by,created_at) VALUES(?,?,?,?,?,?)').bind(id,title,startsAt,place,ctx.email,now()).run();
+  await audit(db,ctx.email,'signing.create',id,title);
+  return reply({ok:true,id});
+ }
+ if(!idok(d.sessionId))return fail('Séance d’émargement invalide.',400);
+ const session=await one(db,'SELECT id,closed_at FROM team_signing_sessions WHERE id=?',d.sessionId);
+ if(!session)return fail('Séance introuvable.',404);
+ if(session.closed_at)return fail('Cette feuille est clôturée et ne peut plus être modifiée.',409);
+ if(d.op==='signing.add'){
+  const ids=Array.isArray(d.memberIds)?[...new Set(d.memberIds)]:[];
+  if(!ids.length||ids.length>250||ids.some(id=>!idok(id)))return fail('Sélectionnez des bénévoles à ajouter (250 maximum).',400);
+  let added=0;
+  for(const id of ids){
+   const member=await one(db,'SELECT id,name,active FROM team_members WHERE id=?',id);
+   if(!member?.active)return fail('Bénévole non approuvé ou introuvable.',404);
+   const quality=await one(db,`SELECT CASE
+ WHEN EXISTS(SELECT 1 FROM team_member_roles WHERE member_id=? AND role='director') THEN 'Dirigeant'
+ WHEN EXISTS(SELECT 1 FROM team_memberships WHERE member_id=? AND role='lead') THEN 'Responsable'
+ WHEN EXISTS(SELECT 1 FROM team_member_roles WHERE member_id=? AND role='bureau') THEN 'Membre du bureau'
+ ELSE 'Bénévole' END AS quality`,id,id,id);
+   const result=await db.prepare('INSERT OR IGNORE INTO team_signing_attendees(session_id,member_id,display_name,quality,added_at) VALUES(?,?,?,?,?)').bind(d.sessionId,id,member.name,quality.quality,now()).run();
+   added+=result.meta?.changes||0;
+  }
+  await audit(db,ctx.email,'signing.add',d.sessionId,String(added)+' participant(s)');
+  return reply({ok:true,added});
+ }
+ if(d.op==='signing.remove'){
+  if(!idok(d.memberId))return fail('Participant invalide.',400);
+  const result=await db.prepare('DELETE FROM team_signing_attendees WHERE session_id=? AND member_id=? AND signed_at IS NULL').bind(d.sessionId,d.memberId).run();
+  if(!result.meta?.changes)return fail('La signature est déjà validée, ou ce bénévole ne figure pas dans la séance.',409);
+  await audit(db,ctx.email,'signing.remove',d.sessionId,d.memberId);
+  return reply({ok:true});
+ }
+ if(d.op==='signing.sign'){
+  if(!idok(d.memberId)||!validSignature(d.strokes))return fail('Signature invalide ou incomplète.',400);
+  const signature=JSON.stringify(d.strokes);
+  if(signature.length>26000)return fail('Signature trop longue.',413);
+  const existing=await one(db,'SELECT signed_at FROM team_signing_attendees WHERE session_id=? AND member_id=?',d.sessionId,d.memberId);
+  if(!existing)return fail('Ce bénévole ne figure pas dans cette feuille.',404);
+  if(existing.signed_at)return fail('Cette signature a déjà été validée et ne peut être écrasée.',409);
+  const result=await db.prepare('UPDATE team_signing_attendees SET signature_points=?,signed_at=?,signed_by_operator=? WHERE session_id=? AND member_id=? AND signed_at IS NULL').bind(signature,now(),ctx.email,d.sessionId,d.memberId).run();
+  if(!result.meta?.changes)return fail('Signature déjà enregistrée.',409);
+  await audit(db,ctx.email,'signing.sign',d.sessionId,d.memberId);
+  return reply({ok:true});
+ }
+ if(d.op==='signing.close'){
+  await db.prepare('UPDATE team_signing_sessions SET closed_at=? WHERE id=? AND closed_at IS NULL').bind(now(),d.sessionId).run();
+  await audit(db,ctx.email,'signing.close',d.sessionId);
+  return reply({ok:true});
+ }
+ return fail('Commande d’émargement inconnue.',404);
+}
+
 async function adminAction(db,ctx,d){
+ if(d.op.startsWith('signing.'))return signingAction(db,ctx,d);
  if(d.op==='dues.set'){
   if(!ctx.admin&&!ctx.secretariat)return fail('Suivi des adhésions réservé au secrétariat.',403);
   if(!idok(d.memberId)||typeof d.paid!=='boolean')return fail('Adhésion ou bénévole invalide.',400);
@@ -628,6 +721,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
    return getDocument(env,ctx,path.split('/').pop());
   }
   if(path==='/zikateam/api/manage'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getManage(db,ctx);
+  if(path==='/zikateam/api/signing'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getSigning(db,ctx);
   if(path==='/zikateam/api/messages'&&request.method==='GET')return locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
