@@ -743,15 +743,55 @@ async function getMessages(db,ctx,url){
  if(!await permittedChat(db,ctx,channel,channelId))return fail('Discussion non autorisée.',403);
  if(channel==='leaders'){
   if(channelId||(!ctx.admin&&!ctx.leadPoles.length))return fail('Discussion réservée aux responsables.',403);
-  const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id);
+  const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,md.id AS media_id,md.filename,md.mime,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_leader_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_chat_media md ON md.message_id=t.id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id);
   await db.prepare('INSERT INTO team_chat_reads(member_id,channel,channel_id,last_read_at) VALUES(?,?,?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET last_read_at=MAX(last_read_at,excluded.last_read_at)').bind(ctx.member.id,channel,'',now()).run();
   return reply({messages:messages.reverse()});
  }
  if(!ctx.admin&&channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Accès à la discussion refusé.',403)}
- const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id,channel,channelId);
+ const messages=await all(db,"SELECT t.id,t.body,t.created_at,t.author_id,m.name AS author,md.id AS media_id,md.filename,md.mime,CASE WHEN ph.member_id IS NOT NULL AND (t.author_id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=t.author_id AND c.kind='image' AND c.granted=1 AND EXISTS(SELECT 1 FROM team_memberships a JOIN team_memberships b ON b.pole_id=a.pole_id JOIN team_poles p ON p.id=a.pole_id WHERE a.member_id=? AND b.member_id=t.author_id AND p.archived=0))) THEN 1 ELSE 0 END AS has_photo FROM team_messages t JOIN team_members m ON m.id=t.author_id LEFT JOIN team_chat_media md ON md.message_id=t.id LEFT JOIN team_member_photos ph ON ph.member_id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80",ctx.member.id,ctx.admin?1:0,ctx.member.id,channel,channelId);
  await db.prepare('INSERT INTO team_chat_reads(member_id,channel,channel_id,last_read_at) VALUES(?,?,?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET last_read_at=MAX(last_read_at,excluded.last_read_at)').bind(ctx.member.id,channel,channelId||'',now()).run();
  return reply({messages:messages.reverse()});
+}
+
+async function uploadChatMedia(request,env,ctx,url){
+ if(!ctx.member?.active||ctx.pending||!await requireCharter(env.DB,ctx))return fail('Accès refusé.',403);
+ if(!env.BUCKET)return fail('Médias indisponibles.',503);
+ const channel=url.searchParams.get('channel'),channelId=url.searchParams.get('id')||null;
+ if(!await permittedChat(env.DB,ctx,channel,channelId))return fail('Groupe non autorisé.',403);
+ const mime=request.headers.get('content-type'),types=['image/jpeg','image/png','image/webp','application/pdf'];
+ if(!types.includes(mime))return fail('Format autorisé : JPEG, PNG, WebP ou PDF.',415);
+ const limit=8*1024*1024;
+ if(Number(request.headers.get('content-length')||0)>limit)return fail('Fichier trop volumineux (8 Mo).',413);
+ const bytes=new Uint8Array(await request.arrayBuffer());
+ if(bytes.length<12||bytes.length>limit)return fail('Fichier vide ou trop volumineux.',413);
+ const sig=(...b)=>b.every((v,i)=>bytes[i]===v);
+ const str=(p,n)=>String.fromCharCode(...bytes.slice(p,p+n));
+ if(!(mime==='image/jpeg'&&sig(0xff,0xd8,0xff)||
+   mime==='image/png'&&sig(0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)||
+   mime==='image/webp'&&str(0,4)==='RIFF'&&str(8,4)==='WEBP'||
+   mime==='application/pdf'&&str(0,5)==='%PDF-'))return fail('Le contenu du fichier est invalide.',415);
+ const filename=clean(decodeURIComponent(request.headers.get('x-file-name')||'Média'),120).replace(/[\\/<>"]/g,'-');
+ const id=uuid(),messageId=uuid(),table=channel==='leaders'?'team_leader_messages':'team_messages';
+ await env.BUCKET.put('team/chat/'+id,bytes,{httpMetadata:{contentType:mime}});
+ try{
+  if(channel==='leaders')await env.DB.prepare('INSERT INTO team_leader_messages(id,author_id,body,created_at) VALUES(?,?,?,?)').bind(messageId,ctx.member.id,filename,now()).run();
+  else await env.DB.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id,body,created_at) VALUES(?,?,?,?,?,?)').bind(messageId,ctx.member.id,channel,channelId,filename,now()).run();
+  await env.DB.prepare('INSERT INTO team_chat_media(id,channel,channel_id,message_id,filename,mime,size,uploaded_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,channel,channelId,messageId,filename,mime,bytes.length,ctx.email,now()).run();
+ }catch(e){await env.BUCKET.delete('team/chat/'+id).catch(()=>{});await env.DB.prepare('UPDATE '+table+' SET deleted_at=? WHERE id=?').bind(now(),messageId).run().catch(()=>{});throw e;}
+ return reply({ok:true,id,messageId});
+}
+async function getChatMedia(env,ctx,id){
+ if(!idok(id)||!ctx.member?.active||ctx.pending||!await requireCharter(env.DB,ctx))return fail('Média non autorisé.',403);
+ const media=await one(env.DB,'SELECT * FROM team_chat_media WHERE id=?',id);
+ if(!media||!await permittedChat(env.DB,ctx,media.channel,media.channel_id))return fail('Média non autorisé.',403);
+ const table=media.channel==='leaders'?'team_leader_messages':'team_messages';
+ const msg=await one(env.DB,'SELECT id FROM '+table+' WHERE id=? AND deleted_at IS NULL',media.message_id);
+ if(!msg)return fail('Média supprimé.',404);
+ const object=await env.BUCKET?.get('team/chat/'+id);
+ if(!object)return fail('Média introuvable.',404);
+ const image=media.mime.startsWith('image/');
+ return new Response(object.body,{headers:{'Content-Type':media.mime,'Content-Disposition':(image?'inline':'attachment')+'; filename="media-'+id+(image?'.'+media.mime.split('/')[1]:'.pdf')+'"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"}});
 }
 async function upload(request,env,ctx,url){
  if(!env.BUCKET)return fail('Stockage documentaire indisponible.',503);
@@ -855,6 +895,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
   const locked=!accepted;
   const notice=currentCharter?'Charte obligatoire : veuillez la lire et l’accepter pour poursuivre.':'La charte officielle doit être publiée avant l’ouverture de ZikaTeam.';
+  if(path.startsWith('/zikateam/chat-media/')&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getChatMedia(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/photo/')&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):getTeamPhoto(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/document/')&&request.method==='GET'){
    if(ctx.pending&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail('Inscription en attente de validation.',403);
@@ -867,6 +908,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(path==='/zikateam/api/chat-summary'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):chatSummary(db,ctx);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
+   if(path==='/zikateam/api/chat-media')return locked||ctx.pending?fail(notice,403):uploadChatMedia(request,env,ctx,url);
    if(path==='/zikateam/api/photo')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
    if(path==='/zikateam/api/upload'){
     if(ctx.pending)return fail('Inscription en attente de validation.',403);
