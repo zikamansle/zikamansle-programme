@@ -230,7 +230,7 @@ function manageMembers(){
   const member=d.members.find(m=>m.email===r.email)||{name:r.name,email:r.email};
   return '<form class="team-card team-accent-orange team-form" data-member-review="'+esc(r.email)+'"><div class="team-between"><h3>Demande de '+esc(member.name||r.email)+'</h3><span class="team-pill warn">À valider</span></div><p class="team-small">'+esc(r.email)+' · Demande du '+esc(shortdt(r.requested_at))+'</p><label>Nom et prénom<input name="name" maxlength="110" required value="'+esc(member.name||r.name)+'"></label>'+roleAssignmentFields(member)+'<div class="team-row"><button class="team-button orange" type="submit">Approuver et enregistrer les fonctions</button><button class="team-button danger" type="button" data-reject-member="'+esc(r.email)+'">Refuser la demande</button></div></form>';
  }).join(''):'<section class="team-card team-accent-teal"><p>Aucune nouvelle demande pour le moment.</p></section>';
- const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form"><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button class="team-button orange">Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
+ const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form"><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange">Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
  const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="submit" class="team-button orange">Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
  const cards=members.map(m=>{
   const list=d.memberships.filter(x=>x.member_id===m.id),byPole=list.map(x=>(d.poles.find(p=>p.id===x.pole_id)?.name||'')+(x.role==='lead'?' (responsable)':'')).filter(Boolean);
@@ -906,7 +906,28 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   const d=fromForm(f),created=await command('invite.create',{name:d.name,email:d.email});
   state.invitationDraft={name:created.name,email:created.email,code:created.code,expiresAt:created.expiresAt};
  });
- if(f.id==='memberForm')return perform(async()=>{const d=fromForm(f);await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked,...rolePayload(f)});state.editMember=null});
+ if(f.id==='memberForm'){
+  const button=f.querySelector('button[type="submit"]');
+  let feedback=f.querySelector('[data-member-save-feedback]');
+  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');f.append(feedback);}
+  const d=fromForm(f);
+  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
+  feedback.textContent='Enregistrement de la fiche et des fonctions…';
+  try{
+   const saved=await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked,...rolePayload(f)});
+   if(!saved.ok)throw Error('Enregistrement non confirmé.');
+   state.editMember=null;
+   await refresh();
+   toast('Fiche, fonctions et pôles enregistrés pour '+d.name+'.');
+   const heading=[...root.querySelectorAll('h2')].find(x=>x.textContent.includes('Fiches bénévoles actives'));
+   heading?.scrollIntoView({block:'start',behavior:'smooth'});
+  }catch(error){
+   feedback.textContent='❌ Enregistrement non effectué : '+(error.message||'Erreur de service.');
+   feedback.style.color='#ad2034';feedback.style.fontWeight='700';
+   feedback.scrollIntoView({block:'center',behavior:'smooth'});
+  }finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
+  return;
+ }
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
  if(f.id==='shiftForm')return perform(async()=>{const d=fromForm(f);await command('shift.save',{id:d.id||undefined,activityId:d.activityId,label:d.label,starts_at:new Date(d.starts_at).toISOString(),ends_at:new Date(d.ends_at).toISOString(),capacity:Number(d.capacity)});state.editShift=null});
  if(f.id==='charterForm')return perform(async()=>{const d=fromForm(f),pdf=f.elements.pdf.files[0];let documentId=state.me.charter?.document_id||null;if(pdf)documentId=await upload(pdf,'charter');await command('charter.save',{version:d.version,title:d.title,content:d.content,documentId})});
