@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],listStatus:'all',listRole:'all',listPole:'',listSearch:''};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],listStatus:'all',listRole:'all',listPole:'',listSearch:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -385,25 +385,51 @@ function manageLists(){
 }
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
 
+
 function loginScreen(error=''){
- root.innerHTML='<section class="team-card" style="max-width:520px;margin:auto"><h1>Connexion gratuite à ZikaTeam</h1><p>Utilise l’adresse e-mail enregistrée par l’association. Tu recevras un code numérique par e-mail, sans compte Cloudflare.</p>'+
- (error?'<p class="team-warning" role="alert">'+esc(error)+'</p>':'')+
- (!state.codeSent?'<form id="teamLoginRequest" class="team-form"><label>Adresse e-mail<input type="email" name="email" maxlength="254" autocomplete="email" required placeholder="prenom@example.fr" value="'+esc(state.loginEmail)+'"></label><button class="team-button orange" type="submit">Recevoir mon code</button></form>':
- '<p>Code demandé pour <strong>'+esc(state.loginEmail)+'</strong>. Regarde aussi les courriers indésirables.</p><form id="teamLoginVerify" class="team-form"><label>Code reçu<input type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}|[0-9]{8}" minlength="6" maxlength="8" required placeholder="Code à 8 chiffres"></label><button class="team-button orange" type="submit">Me connecter</button></form><button class="team-button light" type="button" data-team-reset>Changer d’adresse</button>')+
- '<p class="team-small team-muted">L’accès est réservé aux bénévoles préalablement inscrits dans ZikaTeam. En cas de difficulté, contacte l’administration.</p></section>';
+ const mail='<label>Adresse e-mail<input type="email" name="email" maxlength="254" autocomplete="email" required placeholder="prenom@example.fr" value="'+esc(state.loginEmail)+'"></label>';
+ const body=state.loginMethod==='password'
+ ?'<p>Connecte-toi avec ton adresse e-mail et ton mot de passe personnel. Tu n’as pas besoin de recevoir un code à chaque visite.</p><form id="teamLoginPassword" class="team-form">'+mail+'<label>Mot de passe<input type="password" name="password" autocomplete="current-password" required></label><button class="team-button orange" type="submit">Me connecter</button></form><button type="button" class="team-button light" data-team-code-login>Première connexion ou mot de passe oublié ?</button>'
+ :(!state.codeSent?
+ '<p>Pour ta première connexion ou si tu as oublié ton mot de passe, reçois un code de vérification par e-mail. Après vérification, tu pourras créer un nouveau mot de passe.</p><form id="teamLoginRequest" class="team-form">'+mail+'<button class="team-button orange" type="submit">Recevoir mon code e-mail</button></form><button type="button" class="team-button light" data-team-password-login>Revenir à la connexion par mot de passe</button>'
+ :'<p>Code envoyé à <strong>'+esc(state.loginEmail)+'</strong>. Vérifie aussi les courriers indésirables.</p><form id="teamLoginVerify" class="team-form"><label>Code de vérification<input type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}|[0-9]{8}" minlength="6" maxlength="8" required placeholder="Code à 8 chiffres"></label><button class="team-button orange" type="submit">Vérifier mon identité</button></form><div class="team-row"><button class="team-button light" type="button" data-team-reset>Changer d’adresse</button><button type="button" class="team-button light" data-team-password-login>Connexion avec mot de passe</button></div>');
+ root.innerHTML='<section class="team-card team-login-card team-accent-blue"><h1>Bienvenue dans ZikaTeam</h1>'+body+(error?'<p class="team-warning" role="alert">'+esc(error)+'</p>':'')+'<p class="team-small team-muted">Le mot de passe reste privé et n’est jamais enregistré dans les fiches des bénévoles. L’administration valide toujours les nouvelles inscriptions.</p></section>';
+}
+function passwordSetupScreen(error=''){
+ root.innerHTML='<section class="team-card team-login-card team-accent-orange"><span class="team-pill warn">Dernière étape de sécurisation</span><h1>'+ (state.forcePasswordSetup?'Créer un nouveau mot de passe':'Choisis ton mot de passe')+'</h1><p>Ton adresse e-mail est vérifiée. Choisis un mot de passe personnel pour te connecter ensuite directement, sans redemander de code par e-mail.</p><form id="teamSetPassword" class="team-form"><label>Nouveau mot de passe<input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required></label><label>Confirmer le mot de passe<input type="password" name="confirmation" autocomplete="new-password" minlength="12" maxlength="128" required></label><p class="team-small team-muted">12 caractères minimum avec des lettres et des chiffres. Utilise de préférence une phrase de passe facile à retenir.</p><button class="team-button orange" type="submit">Enregistrer mon mot de passe</button></form>'+(error?'<div class="team-warning" role="alert">'+esc(error)+'</div>':'')+'<p class="team-small">Les bénévoles en attente d’approbation pourront définir leur mot de passe dès maintenant ; leurs autres accès resteront limités jusqu’à validation.</p><button type="button" class="team-button light" data-team-logout>Me déconnecter</button></section>';
 }
 async function freeLoginRequest(email){
  await api('auth/request',{email});
  state.loginEmail=email.trim().toLowerCase();state.codeSent=true;loginScreen();
- toast('Si ton adresse est autorisée, un code vient d’être demandé.');
+ toast('Un code de vérification a été demandé par e-mail.');
 }
 async function freeLoginVerify(code){
  await api('auth/verify',{email:state.loginEmail,code:code.trim()});
- await refresh();state.codeSent=false;toast('Connexion réussie.');
+ state.forcePasswordSetup=true;
+ state.codeSent=false;
+ await refresh();
+ toast('Adresse vérifiée. Choisis maintenant ton mot de passe personnel.');
+}
+async function freeLoginPassword(email,password){
+ await api('auth/password',{email,password});
+ state.forcePasswordSetup=false;
+ state.loginMethod='password';
+ state.loginEmail=email.trim().toLowerCase();
+ await refresh();toast('Connexion réussie.');
+}
+async function saveNewPassword(password,confirmation){
+ if(password!==confirmation)throw Error('Les deux mots de passe ne sont pas identiques.');
+ if(password.length<12||!/[A-Za-zÀ-ÿ]/.test(password)||!/[0-9]/.test(password))throw Error('Choisis au moins 12 caractères avec des lettres et des chiffres.');
+ await api('auth/set-password',{password});
+ state.forcePasswordSetup=false;
+ state.loginMethod='password';
+ state.codeSent=false;
+ await refresh();toast('Ton mot de passe est enregistré. La prochaine connexion se fera sans code e-mail.');
 }
 
 function render(){
  if(!state.me)return;
+ if(state.me.passwordRequired||state.forcePasswordSetup){passwordSetupScreen();return;}
  if(!state.me.charterAccepted){
   state.tab='fiche';
   const adminSetup=state.me.admin&&!state.me.charter;
@@ -419,8 +445,8 @@ function render(){
 }
 async function refresh(){
  state.me=await api('me');
- if(state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;
- if(state.me.charterAccepted&&(state.me.admin||state.me.secretariat))state.signing=await api('signing');else state.signing=null;
+ if(!state.me.passwordRequired&&state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;
+ if(!state.me.passwordRequired&&state.me.charterAccepted&&(state.me.admin||state.me.secretariat))state.signing=await api('signing');else state.signing=null;
  if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length&&state.managementTab==='activites')state.managementTab='emargements';
  render();
 }
@@ -445,9 +471,11 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
- if(b.hasAttribute('data-team-reset')){state.codeSent=false;loginScreen();return;}
- if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;loginScreen();return;}
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-print-team],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+ if(b.hasAttribute('data-team-password-login')){state.loginMethod='password';state.codeSent=false;loginScreen();return;}
+ if(b.hasAttribute('data-team-code-login')){state.loginMethod='code';state.codeSent=false;loginScreen();return;}
+ if(b.hasAttribute('data-team-reset')){state.codeSent=false;state.loginMethod='code';loginScreen();return;}
+ if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;state.forcePasswordSetup=false;state.loginMethod='password';loginScreen();return;}
 
  if(b.hasAttribute('data-list-apply')){state.listSearch=document.getElementById('teamListSearch')?.value||'';render();return;}
  if(b.hasAttribute('data-list-reset')){state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();return;}
@@ -548,6 +576,12 @@ root.addEventListener('change',async e=>{
  if(e.target.id==='teamChannel'){const [channel,id]=e.target.value.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}}});
 root.addEventListener('input',e=>{if(e.target.id==='teamDirectorySearch')state.directorySearch=e.target.value;});
 root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy)return;
+ if(f.id==='teamLoginPassword'){
+  state.busy=true;try{await freeLoginPassword(f.elements.email.value,f.elements.password.value)}catch(err){state.loginEmail=f.elements.email.value;loginScreen(err.message)}finally{state.busy=false}return;
+ }
+ if(f.id==='teamSetPassword'){
+  state.busy=true;try{await saveNewPassword(f.elements.password.value,f.elements.confirmation.value)}catch(err){passwordSetupScreen(err.message)}finally{state.busy=false}return;
+ }
  if(f.id==='teamLoginRequest'){
   state.busy=true;try{await freeLoginRequest(f.elements.email.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
  }
@@ -601,7 +635,7 @@ async function init(){
  }catch{}
  try{
   await refresh();
-  if(state.me.member&&state.me.charterAccepted){
+  if(!state.me.passwordRequired&&state.me.member&&state.me.charterAccepted){
    try{const sub=await window.ZikaPush?.subscription?.();if(sub)await command('push.link',{subscription:sub.toJSON()});}catch{}
   }
   if(state.tab==='messages')await refreshMessages();
