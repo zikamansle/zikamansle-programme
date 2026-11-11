@@ -163,7 +163,12 @@ export async function handleTeamLogin(request,env){
  }
  if(path.endsWith('/request')){
   const result=await provider(env,'/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
-  if(!result?.ok)return response({error:'Envoi du code indisponible. Vérifie les réglages SMTP de Supabase.'},503);
+  if(!result?.ok){
+   if(result.status===422&&result.data?.code==='signup_disabled')return response({error:'Première inscription désactivée dans Supabase. Un administrateur doit activer « Allow new users to sign up » dans Authentication → Settings, tout en conservant « Confirm Email » activé.'},503);
+   if(result.status===429||result.data?.code==='over_email_send_rate_limit')return response({error:'Limite d’envoi des codes atteinte. Réessaie plus tard.'},429);
+   if(result.data?.code==='email_provider_disabled')return response({error:'L’envoi de codes par e-mail est désactivé dans Supabase Auth.'},503);
+   return response({error:'Le service de vérification par e-mail est temporairement indisponible. Contacte l’administration.'},503);
+  }
   return response({ok:true,message:'Consulte tes e-mails pour trouver le code de connexion.'});
  }
  const code=typeof body.code==='string'?body.code.trim():'';
