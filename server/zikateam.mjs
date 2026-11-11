@@ -41,7 +41,7 @@ async function selectedPoles(db,activityId){return (await all(db,'SELECT pole_id
 async function audienceMembers(db,activity){
  if(activity.audience==='all')return (await all(db,'SELECT id FROM team_members WHERE active=1')).map(x=>x.id);
  if(activity.audience==='bureau'||activity.audience==='leaders'&&await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',activity.id))
-  return (await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_member_roles r ON r.member_id=m.id WHERE m.active=1 AND r.role='bureau'")).map(x=>x.id);
+  return (await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_member_roles r ON r.member_id=m.id WHERE m.active=1 AND r.role IN ('bureau','director')")).map(x=>x.id);
  if(activity.audience==='leaders')return (await all(db,"SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_poles p ON p.id=tm.pole_id WHERE m.active=1 AND tm.role='lead' AND p.archived=0")).map(x=>x.id);
  return (await all(db,'SELECT DISTINCT m.id FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id JOIN team_poles p ON p.id=tm.pole_id WHERE m.active=1 AND p.archived=0 AND ap.activity_id=?',activity.id)).map(x=>x.id);
 }
