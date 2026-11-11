@@ -392,14 +392,17 @@ async function setMemberFunctions(db,ctx,d){
   seen.add(item.poleId);
   if(!await one(db,'SELECT id FROM team_poles WHERE id=? AND archived=0',item.poleId))return fail('Pôle introuvable ou archivé.',404);
  }
- // Mise à jour des seules fonctions : aucune modification de compte, de charte,
- // d'approbation ou des accès au secrétariat.
- await db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(member.id).run();
- for(const role of labels)await db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(member.id,role,now()).run();
- await db.prepare("DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)").bind(member.id).run();
- for(const item of poleRoles)await db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(member.id,item.poleId,item.role,now()).run();
+ // Mise à jour atomique des fonctions, sans modification du compte ou des droits secrétariat.
+ const statements=[db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(member.id)];
+ for(const role of labels)statements.push(db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(member.id,role,now()));
+ statements.push(db.prepare('DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)').bind(member.id));
+ for(const item of poleRoles)statements.push(db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(member.id,item.poleId,item.role,now()));
+ try{await db.batch(statements)}catch(error){console.error('ZikaTeam member.functions.set failed',error?.message);return fail('Impossible d’enregistrer les fonctions et les pôles. Aucun changement partiel n’a été appliqué.',500);}
+ const savedRoles=await all(db,'SELECT role FROM team_member_roles WHERE member_id=?',member.id);
+ const savedPoles=await all(db,'SELECT tm.pole_id,tm.role FROM team_memberships tm JOIN team_poles p ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0',member.id);
+ if(savedRoles.length!==labels.length||savedRoles.some(x=>!labels.includes(x.role))||savedPoles.length!==poleRoles.length||savedPoles.some(x=>!poleRoles.some(p=>p.poleId===x.pole_id&&p.role===x.role)))return fail('Vérification des fonctions et pôles échouée.',500);
  await audit(db,ctx.email,'member.functions.set',member.id,JSON.stringify({roles:labels,poleRoles}).slice(0,500));
- return reply({ok:true});
+ return reply({ok:true,rolesSaved:labels.length,polesSaved:poleRoles.length});
 }
 async function saveActivity(db,ctx,d){
  if(!ctx.admin&&!ctx.leadPoles.length)return fail('Réservé aux responsables.',403);
