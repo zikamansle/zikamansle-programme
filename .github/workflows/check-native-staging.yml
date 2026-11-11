@@ -1,0 +1,24 @@
+name: Vérifier les inscriptions Android de test
+on:
+  push:
+    branches: [migration/application-autonome]
+    paths:
+      - .github/workflows/check-native-staging.yml
+permissions:
+  contents: read
+jobs:
+  check:
+    if: ${{ github.event.head_commit.message == 'Compter une fois les inscriptions Android Cloudflare staging' }}
+    runs-on: ubuntu-latest
+    environment: zikamansle-staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ZIKA_D1_DATABASE_ID: ${{ vars.ZIKA_D1_DATABASE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Lire uniquement le nombre d'appareils Android dans D1 staging
+        run: node scripts/check-native-staging.mjs
