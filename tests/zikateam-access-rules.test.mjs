@@ -87,8 +87,8 @@ test('photo de profil, pastille avatar et chat façon groupes mobiles',()=>{
  assert.ok(client.includes('Ma photo de profil'));
  assert.ok(client.includes('Ajouter ou changer ma photo'));
  assert.ok(client.includes('function chatAvatar(m)'));
- assert.ok(client.includes('class="team-chat-avatar"'));
- assert.ok(client.includes('team-chat-room'));
+ assert.ok(client.includes('class="team-wa-person"'));
+ assert.ok(client.includes('team-wa-room'));
  assert.ok(client.includes('team-unread'));
  assert.ok(client.includes('teamChatAttachment'));
  assert.ok(server.includes('async function chatSummary('));
@@ -104,8 +104,8 @@ test('pastille des non lus sur onglet Discussions',()=>{
 });
 
 test('les responsables ont une fiche contact sans messagerie privée',()=>{
- assert.ok(client.includes('team-chat-contact-card'));
- assert.ok(client.includes('Contacter '));
+ assert.ok(client.includes('team-wa-contact-panel'));
+ assert.ok(client.includes('team-wa-contact'));
  assert.ok(client.includes('📞 Appeler'));
  assert.ok(client.includes('✉️ Envoyer un e-mail'));
  assert.ok(!client.includes('data-chat-direct'));
@@ -116,9 +116,9 @@ test('les responsables ont une fiche contact sans messagerie privée',()=>{
 // Publier seulement sur ZikaTeam staging, après succès des tests. Contact responsable uniquement.
 
 test('messagerie compacte : onglets et zone de saisie en permanence',()=>{
- assert.ok(client.includes('team-chat-compact'));
- assert.ok(client.includes('✍️ Votre message'));
- assert.ok(client.includes('Écrivez votre message ici…'));
+ assert.ok(client.includes('team-wa-app'));
+ assert.ok(client.includes('team-wa-input-label'));
+ assert.ok(client.includes('Écrire un message…'));
  assert.ok(client.includes('signal:AbortSignal.timeout(12000)'));
  assert.ok(client.includes('void Promise.allSettled(tasks)'));
  assert.ok(client.includes('rooms[0]||null'));
