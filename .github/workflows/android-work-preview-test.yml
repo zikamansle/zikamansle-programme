@@ -1,16 +1,6 @@
 name: Android ZikaMansle Work preview (test only)
 
 on:
-  push:
-    branches:
-      - prepare/google-play-android-2026
-    paths:
-      - '.github/workflows/android-work-preview-test.yml'
-      - 'android-native/**'
-  pull_request:
-    paths:
-      - '.github/workflows/android-work-preview-test.yml'
-      - 'android-native/**'
   workflow_dispatch:
 
 permissions:
