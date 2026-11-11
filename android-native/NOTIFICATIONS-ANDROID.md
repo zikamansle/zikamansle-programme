@@ -6,16 +6,16 @@ La version Android, indépendante du navigateur Web Push, dispose désormais d'u
 
 Les autres fonctions (programme, plan, billetterie, favoris, etc.) continuent à s'ouvrir dans la Trusted Web Activity existante. Le système de notifications Web Push reste en place pour le site Web, indépendamment du canal Android FCM.
 
-**Important : le code n'est pas encore une notification fonctionnelle de bout en bout.** Aucune configuration Firebase ni aucun serveur d'enregistrement de jetons FCM n'a été ajoutée : un téléphone ne peut donc pas encore recevoir un envoi depuis l'administration ZikaMansle. Une compilation Android ne vaut pas test de réception.
+**Important : une notification réelle n'a pas encore été reçue.** Le projet Firebase `zikamansle-d0c4e` et l'application Android de test `fr.zikamansle.app.debug` sont enregistrés. Les identifiants clients publics sont intégrés uniquement à l'APK debug (pas de `google-services.json` dans GitHub). Le Worker Cloudflare de staging comporte désormais `POST /api/native/subscribe` et les API privées `native-status` / `native-test` dans l'administration. Le dernier composant manquant est **la clé de compte de service FCM pour envoyer depuis Cloudflare**, qui doit rester exclusivement dans un secret Cloudflare `FCM_SERVICE_ACCOUNT_JSON`. La réception réelle sur Redmi reste à vérifier.
 
 ## Etapes obligatoires avant un test réel
 
 1. Dans Firebase Console, créer (ou sélectionner) un projet contrôlé par l'association, et activer Cloud Messaging.
 2. Enregistrer l'application Android avec l'identifiant **`fr.zikamansle.app`**. Pour tester le APK debug séparément, enregistrer également **`fr.zikamansle.app.debug`**, car la variante debug utilise ce suffixe.
-3. Relever dans la configuration du projet les identifiants **publics** Android de Firebase (application ID, API key, sender ID, project ID). Le code les attend lors du build sous `ZIKA_FIREBASE_APP_ID`, `ZIKA_FIREBASE_API_KEY`, `ZIKA_FIREBASE_SENDER_ID`, `ZIKA_FIREBASE_PROJECT_ID` (variables d'environnement ou propriétés Gradle).
-4. Implémenter, tester et déployer sur le **Worker de validation uniquement** `POST /api/native/subscribe`. Il devra enregistrer les jetons FCM de manière sécurisée, prévoir la désinscription, éviter les abus, et maintenir une base isolée.
-5. Configurer côté Cloudflare un compte de service Firebase avec droit d'envoi FCM HTTP v1, dans un **secret Cloudflare**, puis raccorder les boutons administrateur à la file des appareils Android, en conservant la séparation tests / diffusion générale.
-6. Fournir `ZIKA_NATIVE_REGISTRATION_URL=https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe` au build Android **de validation**, et vérifier que les abonnements se créent bien. Cette URL n'est pas définie par défaut et le code refuse d'envoyer un jeton vers une autre adresse.
+3. **Fait pour l'APK debug uniquement :** identifiants publics configurés dans `android-native/app/build.gradle`. Le fichier original `google-services.json` ne doit pas être publié. La release reste non configurée.
+4. **Fait côté staging :** `POST /api/native/subscribe` enregistre les jetons Android dans une table D1 isolée avec limite anti-abus. La suppression explicite de l'abonnement serveur et une protection renforcée (App Check) restent à traiter avant ouverture au public.
+5. **À faire dans Cloudflare :** générer une clé privée de compte de service Firebase et la placer directement dans le secret `FCM_SERVICE_ACCOUNT_JSON` du Worker `zikamansle-app-staging`. Ne jamais la partager dans le chat ni GitHub. L'interface administrateur de staging est déjà reliée au test Firebase : l'envoi général reste interdit.
+6. **Déjà configuré pour l'APK debug :** `ZIKA_NATIVE_REGISTRATION_URL=https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe`. Il reste à vérifier une inscription réelle après installation sur le Redmi.
 7. Tester sur un vrai Android : consentement utilisateur, notification au premier plan, arrière-plan et écran verrouillé, icône de Zika et ouverture directe de l'actualité.
 8. Une fois l'envoi complètement vérifié, préparer un AAB signé dans la piste **Google Play test interne**, jamais en production sans décision explicite. Attention à l'identité exacte de l'application déjà installée et aux certificats de signature.
 
