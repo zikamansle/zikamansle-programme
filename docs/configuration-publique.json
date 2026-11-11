@@ -1,0 +1,11 @@
+{
+  "sourceProject": "appgprj_6ae90a659d748191a53d90c4cc02fd7b",
+  "sourceCommit": "95867159de7b0fd1a5ae8b9642c4794aa91d659b",
+  "supabaseProject": "kuipdwzqamiduhosofjb",
+  "variables": [
+    {
+      "key": "VAPID_PUBLIC_KEY",
+      "value": "BDSMAnTU2yZhPFHzxqCaBdv5AnsDtIM9RWIX_akfsxAySnU1kNFl32zVUyc0dpNeNXpcw0HWUifQ4nj96tI8lYc"
+    }
+  ]
+}

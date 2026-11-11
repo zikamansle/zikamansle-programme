@@ -1,0 +1,336 @@
+{
+  "columns": [
+    {
+      "udt_name": "uuid",
+      "data_type": "uuid",
+      "table_name": "zika_events",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "title",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "category",
+      "is_nullable": "NO",
+      "column_default": "'Animations'::text"
+    },
+    {
+      "udt_name": "date",
+      "data_type": "date",
+      "table_name": "zika_events",
+      "column_name": "event_date",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "time",
+      "data_type": "time without time zone",
+      "table_name": "zika_events",
+      "column_name": "start_time",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "time",
+      "data_type": "time without time zone",
+      "table_name": "zika_events",
+      "column_name": "end_time",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "time_label",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "location",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "description",
+      "is_nullable": "YES",
+      "column_default": "''::text"
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "image_url",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "link_url",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "bool",
+      "data_type": "boolean",
+      "table_name": "zika_events",
+      "column_name": "is_free",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "udt_name": "bool",
+      "data_type": "boolean",
+      "table_name": "zika_events",
+      "column_name": "published",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "udt_name": "int4",
+      "data_type": "integer",
+      "table_name": "zika_events",
+      "column_name": "display_order",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "udt_name": "jsonb",
+      "data_type": "jsonb",
+      "table_name": "zika_events",
+      "column_name": "extra",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "udt_name": "timestamptz",
+      "data_type": "timestamp with time zone",
+      "table_name": "zika_events",
+      "column_name": "created_at",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "logo_url",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "video_url",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "video_poster_url",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "udt_name": "bool",
+      "data_type": "boolean",
+      "table_name": "zika_events",
+      "column_name": "video_autoplay",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "udt_name": "bool",
+      "data_type": "boolean",
+      "table_name": "zika_events",
+      "column_name": "video_loop",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "udt_name": "bool",
+      "data_type": "boolean",
+      "table_name": "zika_events",
+      "column_name": "video_muted",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_events",
+      "column_name": "image_position",
+      "is_nullable": "YES",
+      "column_default": "'center'::text"
+    },
+    {
+      "udt_name": "jsonb",
+      "data_type": "jsonb",
+      "table_name": "zika_events",
+      "column_name": "card_style",
+      "is_nullable": "YES",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "udt_name": "text",
+      "data_type": "text",
+      "table_name": "zika_settings",
+      "column_name": "key",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "udt_name": "jsonb",
+      "data_type": "jsonb",
+      "table_name": "zika_settings",
+      "column_name": "value",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin events delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin events update",
+      "schemaname": "public",
+      "with_check": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin events insert",
+      "schemaname": "public",
+      "with_check": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin events read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(published = true)",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "zika_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public events read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin settings delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin settings update",
+      "schemaname": "public",
+      "with_check": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "zika_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admin settings insert",
+      "schemaname": "public",
+      "with_check": "(( SELECT auth.uid() AS uid) = '7355541f-da9c-466f-b5ee-641da466f76d'::uuid)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "zika_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public settings read",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "zika_events_pkey",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "zika_events"
+    },
+    {
+      "conname": "zika_settings_pkey",
+      "definition": "PRIMARY KEY (key)",
+      "table_name": "zika_settings"
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "updated": "2026-11-02",
+  "source": "https://www.zikamansle.fr/",
+  "items": [
+    {
+      "name": "Super U Mansle",
+      "logo": "assets/partner-1.webp",
+      "website": "https://www.magasins-u.com/magasin/superu-mansle.m32076",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_9b6159854f8e45559da54e58f422a752~mv2.jpg"
+    },
+    {
+      "name": "CAUE 16",
+      "logo": "assets/partner-2.webp",
+      "website": "https://www.caue16.fr/",
+      "group": "Territoire & culture",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_6cb22882cb704b638c37fcf6fe79aec3~mv2.jpg"
+    },
+    {
+      "name": "Chez Racho",
+      "logo": "assets/partner-3.webp",
+      "website": "https://www.facebook.com/profile.php?id=100068733336181&locale=fr_FR",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_acb7fa0c3a4c4791ada44146b64ec75d~mv2.jpg"
+    },
+    {
+      "name": "L'Indalo",
+      "logo": "assets/partner-4.webp",
+      "website": "https://www.facebook.com/profile.php?id=100026806789370&locale=fr_FR",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_9b18b693e8a149df97a12dcf6781eead~mv2.png"
+    },
+    {
+      "name": "Althéa Fleurs",
+      "logo": "assets/partner-5.webp",
+      "website": "https://althea-fleurs.fr/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_cb5c005da2884a4ebcca0a757d74ae37~mv2.jpeg"
+    },
+    {
+      "name": "STE",
+      "logo": "assets/partner-6.webp",
+      "website": "https://www.reseau-ste.com/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_da9a72936f9c45649be097dfb3cafc54~mv2.png"
+    },
+    {
+      "name": "DSL",
+      "logo": "assets/partner-7.webp",
+      "website": "https://www.dsl16.com/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_ffb98fb3440f431e9c8fa62b9cd80480~mv2.png"
+    },
+    {
+      "name": "Brins de jeux",
+      "logo": "assets/partner-8.webp",
+      "website": "https://www.facebook.com/profile.php?id=61561877038458",
+      "group": "Jeux & découvertes",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_977c35d741e04371a5222e4838b7cab8~mv2.jpg"
+    },
+    {
+      "name": "Les Ludistes Charentais",
+      "logo": "assets/partner-9.webp",
+      "website": "https://www.ludistes-charentais.fr/",
+      "group": "Jeux & découvertes",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_fa0be6c04d6d43c4a3f31371cfffcc67~mv2.png"
+    },
+    {
+      "name": "Association Angoul'Aime Jouer",
+      "logo": "assets/partner-10.webp",
+      "website": "https://www.facebook.com/salondujeudangouleme",
+      "group": "Jeux & découvertes",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_a12d880c80d54805b95033b6fb7d967a~mv2.jpg"
+    },
+    {
+      "name": "Médiathèque de Mansle-les-Fontaines",
+      "logo": "assets/partner-11.webp",
+      "website": "https://bibliothequemansle.wixsite.com/my-site-1",
+      "group": "Territoire & culture",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_d58591f682b4477cb31fc6ca91a7a340~mv2.png"
+    },
+    {
+      "name": "Archives Départementales de la Charente",
+      "logo": "assets/partner-12.webp",
+      "website": "https://lasource.archives.lacharente.fr/fr",
+      "group": "Territoire & culture",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_cdb64f14d067466c843883c9d05a9426~mv2.jpg"
+    },
+    {
+      "name": "Attitude",
+      "logo": "assets/partner-13.webp",
+      "website": "https://www.attitudefm.com/",
+      "group": "Média",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_2b11738190864458b5102f9e290ea9c0~mv2.png"
+    },
+    {
+      "name": "Association Prévention Routière",
+      "logo": "assets/partner-14.webp",
+      "website": "https://www.preventionroutiere.asso.fr/comite/charente/",
+      "group": "Prévention & solidarité",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_56fef598c8b44339bd5eac9797b250d4~mv2.png"
+    },
+    {
+      "name": "Les Indices Créés",
+      "logo": "assets/partner-15.webp",
+      "website": "https://www.lesindicescrees.fr/",
+      "group": "Jeux & découvertes",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_699bccc0a4ad4ee0a8537624d7ba840a~mv2.png"
+    },
+    {
+      "name": "Cars Thorin-Vriet",
+      "logo": "assets/partner-16.webp",
+      "website": "https://thorin-vriet.com/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_3f5b59eaed2e4f8c932547e1310a2de6~mv2.png"
+    },
+    {
+      "name": "France ADOT 16",
+      "logo": "assets/partner-17.webp",
+      "website": "https://www.france-adot.org/adot-departementales/adot-16/",
+      "group": "Prévention & solidarité",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_ae5620f1cb774bba8f5ac5b156a11ceb~mv2.jpg"
+    },
+    {
+      "name": "Croix-Rouge Française Délégation territoriale de la Charente",
+      "logo": "assets/partner-18.webp",
+      "website": "https://www.croix-rouge.fr/delegation-territoriale-de-la-charente",
+      "group": "Prévention & solidarité",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_f163a8cab3a34f86ac0b528082b6e62b~mv2.jpg"
+    },
+    {
+      "name": "AGS Sécurité & Services",
+      "logo": "assets/partner-19.webp",
+      "website": "https://www.ag-s.fr/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_e85407d199d545a68d4baed9515a43f9~mv2.jpg"
+    },
+    {
+      "name": "Collectif Ekinox",
+      "logo": "assets/partner-20.webp",
+      "website": "https://www.helloasso.com/associations/collectif-ekinox",
+      "group": "Prévention & solidarité",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_c484d1574988480b86ec74b9d8ccf59e~mv2.jpg"
+    },
+    {
+      "name": "Ville de Mansle-Les-Fontaines",
+      "logo": "assets/partner-21.webp",
+      "website": "https://www.mansle.fr/",
+      "group": "Territoire & culture",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_481fe4cf9de94cef8d20ef49b48f9a72~mv2.png"
+    },
+    {
+      "name": "Destination Nord Charente",
+      "logo": "assets/partner-22.webp",
+      "website": "https://www.destination-nordcharente.com/",
+      "group": "Territoire & culture",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_00bbeb76c7b14d3a812ab222ecaa4b3c~mv2.jpg"
+    },
+    {
+      "name": "Stéphane Dumont Traiteur",
+      "logo": "assets/partner-23.webp",
+      "website": "https://stephane-dumont-traiteur.fr/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_441051ce0b6d496eac7a505de9a5176d~mv2.png"
+    },
+    {
+      "name": "Crédit Agricole Charente Périgord",
+      "logo": "assets/partner-24.webp",
+      "website": "https://www.credit-agricole.fr/ca-charente-perigord/particulier.html",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_f20a4fd292a14c95b36cd5412a295dce~mv2.png"
+    },
+    {
+      "name": "Garage Daugé Alexandre",
+      "logo": "assets/partner-25.webp",
+      "website": "https://www.facebook.com/p/Garage-Daug%C3%A9-61551009939691/",
+      "group": "Partenaires",
+      "sourceLogo": "https://static.wixstatic.com/media/685632_d523272380e14fd1aa90cf69da3b2c04~mv2.jpg"
+    }
+  ]
+}

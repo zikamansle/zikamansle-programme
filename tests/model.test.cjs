@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),M=(require('../public/model.js'),globalThis.ZikaModel),fs=require('fs');
+const e=M.normalize({id:'x',title:'Église',is_free:true,extra:{starts_at:'2027-04-05T00:00',ends_at:'2027-05-08T23:59',all_day:true}});
+for(const period of ['before','samedi','dimanche'])assert.equal(M.inPeriod(e,period),true);
+assert.equal(M.filter([e],{q:'eglise',free:true}).length,1);
+assert(M.ics([e]).includes('DTEND;VALUE=DATE:20270509'));assert(M.ics([e]).includes('TZID:Europe/Paris'));assert.equal(M.safeURL('javascript:alert(1)'), '');
+assert.equal(JSON.parse(fs.readFileSync('public/data/site.json')).pages.length,17);
+const partners=JSON.parse(fs.readFileSync('public/data/partners.json'));assert.equal(partners.items.length,25);for(const p of partners.items)assert(fs.existsSync('public/'+p.logo));for(const i of JSON.parse(fs.readFileSync('public/manifest.webmanifest')).icons)assert(fs.existsSync('public/'+i.src));
+console.log('PASS : périodes, recherche, calendrier, URL sûres, 17 pages, 25 logos, manifeste');
+const venueEvents=[{title:'A',place:'Scène A',disciplines:[]},{title:'B',place:'Scène B',disciplines:[]}];
+const model=M;
+require('node:assert/strict').deepEqual(model.filter(venueEvents,{place:'Scène B'}).map(e=>e.title),['B']);
+const partnerData=require('../public/data/partners.json');
+require('node:assert/strict').equal(partnerData.items.filter(p=>model.safeURL(p.website)).length,25);
+console.log('PASS : filtre par lieu et 25 liens partenaires');

@@ -1,0 +1,3265 @@
+{
+  "updatedAt": "2026-11-02T21:55:14.809366+00:00",
+  "pages": [
+    {
+      "slug": "accueil-site",
+      "title": "Accueil",
+      "url": "https://www.zikamansle.fr",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_eccf5192c7c04103a0b1d779df4d70e0~mv2.png",
+          "alt": "background-zikamansle.png"
+        },
+        {
+          "type": "heading",
+          "value": "ZIKAMANSLE"
+        },
+        {
+          "type": "heading",
+          "value": "24 & 25 AVRIL 2027"
+        },
+        {
+          "type": "heading",
+          "value": "Mansle-les-Fontaines (Charente)"
+        },
+        {
+          "type": "text",
+          "value": "Concerts • Parade • Village • Cinéma • Expositions"
+        },
+        {
+          "type": "link",
+          "value": "Programme interactif",
+          "url": "https://zikamansle.github.io/zikamansle-programme/index.html"
+        },
+        {
+          "type": "link",
+          "value": "Réserver mes billets",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente"
+        },
+        {
+          "type": "heading",
+          "value": "Un festival au cœur de la Charente"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle est un événement culturel et festif incontournable au cœur de la Charente."
+        },
+        {
+          "type": "text",
+          "value": "Durant deux jours, cet événement intergénérationnel propose des concerts vibrants, une parade colorée,"
+        },
+        {
+          "type": "text",
+          "value": "un village d'animations, du cinéma et des rencontres inspirantes à partager en famille ou entre amis."
+        },
+        {
+          "type": "heading",
+          "value": "L’esprit ZikaMansle"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle transforme"
+        },
+        {
+          "type": "text",
+          "value": "Mansle-Les-Fontaines en un véritable lieu"
+        },
+        {
+          "type": "text",
+          "value": "de vie et de partage."
+        },
+        {
+          "type": "text",
+          "value": "Pensé pour être accessible à tous,"
+        },
+        {
+          "type": "text",
+          "value": "il rassemble concerts, animations,"
+        },
+        {
+          "type": "text",
+          "value": "parade artistique et projection cinéma"
+        },
+        {
+          "type": "text",
+          "value": "dans une ambiance festive et conviviale."
+        },
+        {
+          "type": "embed",
+          "value": "https://www.youtube.com/embed/oQ_H6H2oGn0?enablejsapi=0&controls=0&mute=0&loop=0&autoplay=0&cc_load_policy=0&start=0&end=0&playlist=oQ_H6H2oGn0",
+          "title": "Contenu interactif"
+        },
+        {
+          "type": "heading",
+          "value": "LES TEMPS FORTS"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_10ab1df401474e52ab89719aa2aeef86~mv2.png",
+          "alt": "Capture d'écran 2026-09-22 094957.png"
+        },
+        {
+          "type": "text",
+          "value": "Médiathèque de Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "L'histoire des femmes sous"
+        },
+        {
+          "type": "text",
+          "value": "le prisme de l’histoire locale"
+        },
+        {
+          "type": "text",
+          "value": "en Charente à travers"
+        },
+        {
+          "type": "text",
+          "value": "chaque époque de l’histoire :"
+        },
+        {
+          "type": "text",
+          "value": "le Moyen-Âge, la Renaissance, l’Ancien régime, la Révolution,"
+        },
+        {
+          "type": "text",
+          "value": "le XIXe et le XXe siècle."
+        },
+        {
+          "type": "link",
+          "value": "Plus \nd'infos",
+          "url": "https://www.zikamansle.fr/expositions-patrimoine"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_e7220bb809dd4f51bae891ad6e07ca38~mv2.png",
+          "alt": "mascotte zika fd trsprt.png"
+        },
+        {
+          "type": "text",
+          "value": "Square de Verdun"
+        },
+        {
+          "type": "text",
+          "value": "Un espace dédié aux jeux et à la bonne humeur !"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez des jeux en bois géants et partagez un moment convivial en famille ou entre amis."
+        },
+        {
+          "type": "text",
+          "value": "Gratuit et ouvert à tous !"
+        },
+        {
+          "type": "link",
+          "value": "Voir le programme",
+          "url": "https://www.zikamansle.fr/zika-ludik"
+        },
+        {
+          "type": "text",
+          "value": "Salle Gautier Capuçon"
+        },
+        {
+          "type": "text",
+          "value": "Cinq artistes pour une soirée exceptionnelle avec Kamini, Timéo Sparking, Dub Silence et deux autres artistes ."
+        },
+        {
+          "type": "text",
+          "value": "Buvette et restauration"
+        },
+        {
+          "type": "text",
+          "value": "sur place."
+        },
+        {
+          "type": "text",
+          "value": "Entrée payante."
+        },
+        {
+          "type": "link",
+          "value": "VOIR                                                        LA PROG",
+          "url": "https://www.zikamansle.fr/programmation"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_679cbda1aed243fe9c9096e3f4fcd858~mv2.png",
+          "alt": "Rencontres littéraires.png"
+        },
+        {
+          "type": "text",
+          "value": "Médiathèque & ZikaVillage"
+        },
+        {
+          "type": "text",
+          "value": "Rencontres et dédicaces avec des auteures locales, entre médiathèque et ZikaVillage, pour un moment de partage autour des livres et de la création."
+        },
+        {
+          "type": "link",
+          "value": "Plus\nd'infos",
+          "url": "https://www.zikamansle.fr/rencontres-litteraires"
+        },
+        {
+          "type": "text",
+          "value": "Centre-ville de Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "Une grande parade musicale et colorée avec bandas, bagad, majorettes et artistes de rue."
+        },
+        {
+          "type": "text",
+          "value": "Départ de la place de l'Hôtel de Ville et arrivée à la salle Gautier Capuçon."
+        },
+        {
+          "type": "text",
+          "value": "Une journée culturelle gratuite mêlant concerts, projections de films, rencontres, exposition cinéma et remise des prix du concours photo"
+        },
+        {
+          "type": "text",
+          "value": "Place de l'Hôtel de Ville"
+        },
+        {
+          "type": "text",
+          "value": "Démonstrations, Initiations, animations familiales au rendez-vous de ce village en plein coeur de la Ville."
+        },
+        {
+          "type": "text",
+          "value": "Un moment festif associé à ZikArmonie, l'espace prévention et sensibilisation du Festival."
+        },
+        {
+          "type": "heading",
+          "value": "Devenir partenaire"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle se construit avec le soutien"
+        },
+        {
+          "type": "text",
+          "value": "de partenaires engagés sur le territoire."
+        },
+        {
+          "type": "text",
+          "value": "Vous souhaitez associer votre image à l’événement,"
+        },
+        {
+          "type": "text",
+          "value": "soutenir la culture et gagner en visibilité ? Parlons-en."
+        },
+        {
+          "type": "link",
+          "value": "Devenir partenaire",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_ea2faa686f7b4745ab7b00305ac2d84b.pdf"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_9b6159854f8e45559da54e58f422a752~mv2.jpg",
+          "alt": "Super U Mansle"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_6cb22882cb704b638c37fcf6fe79aec3~mv2.jpg",
+          "alt": "CAUE 16"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_acb7fa0c3a4c4791ada44146b64ec75d~mv2.jpg",
+          "alt": "Chez Racho"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_9b18b693e8a149df97a12dcf6781eead~mv2.png",
+          "alt": "L'Indalo"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_cb5c005da2884a4ebcca0a757d74ae37~mv2.jpeg",
+          "alt": "Althéa Fleurs"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_da9a72936f9c45649be097dfb3cafc54~mv2.png",
+          "alt": "STE"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ffb98fb3440f431e9c8fa62b9cd80480~mv2.png",
+          "alt": "DSL"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_977c35d741e04371a5222e4838b7cab8~mv2.jpg",
+          "alt": "Brins de jeux"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_fa0be6c04d6d43c4a3f31371cfffcc67~mv2.png",
+          "alt": "Les Ludistes Charentais"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_a12d880c80d54805b95033b6fb7d967a~mv2.jpg",
+          "alt": "Association Angoul'Aime Jouer"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_d58591f682b4477cb31fc6ca91a7a340~mv2.png",
+          "alt": "Médiathèque de Mansle-les-Fontaines"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_cdb64f14d067466c843883c9d05a9426~mv2.jpg",
+          "alt": "Archives Départementales de la Charente"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_2b11738190864458b5102f9e290ea9c0~mv2.png",
+          "alt": "Attitude"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_56fef598c8b44339bd5eac9797b250d4~mv2.png",
+          "alt": "Association Prévention Routière"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_699bccc0a4ad4ee0a8537624d7ba840a~mv2.png",
+          "alt": "Les Indices Créés"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_3f5b59eaed2e4f8c932547e1310a2de6~mv2.png",
+          "alt": "Cars Thorin-Vriet"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ae5620f1cb774bba8f5ac5b156a11ceb~mv2.jpg",
+          "alt": "France ADOT 16"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f163a8cab3a34f86ac0b528082b6e62b~mv2.jpg",
+          "alt": "Croix-Rouge Française Délégation territoriale de la Charente"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_e85407d199d545a68d4baed9515a43f9~mv2.jpg",
+          "alt": "AGS Sécurité & Services"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_c484d1574988480b86ec74b9d8ccf59e~mv2.jpg",
+          "alt": "Collectif Ekinox"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_481fe4cf9de94cef8d20ef49b48f9a72~mv2.png",
+          "alt": "Ville de Mansle-Les-Fontaines"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_00bbeb76c7b14d3a812ab222ecaa4b3c~mv2.jpg",
+          "alt": "Destination Nord Charente"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_441051ce0b6d496eac7a505de9a5176d~mv2.png",
+          "alt": "Stéphane Dumont Traiteur"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f20a4fd292a14c95b36cd5412a295dce~mv2.png",
+          "alt": "Crédit Agricole Charente Périgord"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_d523272380e14fd1aa90cf69da3b2c04~mv2.jpg",
+          "alt": "Garage Daugé Alexandre"
+        },
+        {
+          "type": "link",
+          "value": "Go to link",
+          "url": "https://www.magasins-u.com/magasin/superu-mansle.m32076"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_9b6159854f8e45559da54e58f422a752~mv2.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "zika-village",
+      "title": "ZikaVillage",
+      "url": "https://www.zikamansle.fr/zika-village",
+      "blocks": [
+        {
+          "type": "heading",
+          "value": "ZikaVillage"
+        },
+        {
+          "type": "text",
+          "value": "« Le Festival au coeur de la Ville ! »"
+        },
+        {
+          "type": "text",
+          "value": "Samedi 24 avril 2027 • 14 h – 17 h • Place de l'Hôtel de Ville Mansle-les-Fontaines • Accès gratuit"
+        },
+        {
+          "type": "text",
+          "value": "Pendant trois heures, la place de l'Hôtel de Ville se transforme en un lieu de rencontres, de découvertes et de partage !"
+        },
+        {
+          "type": "text",
+          "value": "Danse, cirque, démonstrations, animations et associations vous donnent"
+        },
+        {
+          "type": "text",
+          "value": "rendez-vous pour un après-midi festif ouvert à tous."
+        },
+        {
+          "type": "heading",
+          "value": "Trois heures pour découvrir, partager et s'émerveiller"
+        },
+        {
+          "type": "heading",
+          "value": "Ils feront vivre le ZikaVillage !"
+        },
+        {
+          "type": "text",
+          "value": "Le samedi 24 avril 2027, de 14 h à 17 h,"
+        },
+        {
+          "type": "text",
+          "value": "le ZikaVillage s'installe au cœur de Mansle-les-Fontaines!"
+        },
+        {
+          "type": "text",
+          "value": "Associations, artistes et intervenants se réunissent pour faire découvrir leurs passions, leurs activités et leurs savoir-faire."
+        },
+        {
+          "type": "text",
+          "value": "Au programme : des démonstrations, de la danse, du cirque,"
+        },
+        {
+          "type": "text",
+          "value": "des animations et de nombreuses occasions de faire de belles rencontres."
+        },
+        {
+          "type": "text",
+          "value": "Que vous veniez en famille, entre amis ou simplement par curiosité, chacun trouvera une bonne raison de s'arrêter, de regarder,"
+        },
+        {
+          "type": "text",
+          "value": "de participer et d'échanger."
+        },
+        {
+          "type": "text",
+          "value": "Et tout cela gratuitement !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_c6c793e49ced41fe840e4dca4b8e4290~mv2.png",
+          "alt": "HoplaCircus.png"
+        },
+        {
+          "type": "heading",
+          "value": "HOPLA CIRCUS"
+        },
+        {
+          "type": "text",
+          "value": "Plongez dans l'univers fascinant des arts du cirque ! Hopla Circus propose une expérience familiale, accessible et participative pour découvrir la magie de la piste. Animations : Ateliers de découverte et démonstrations circassiennes."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_d1163e62e9aa44a5932f89c464c4acf5~mv2.jpg",
+          "alt": "Sand Mêlé.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "LES SANGS MÊLÉS"
+        },
+        {
+          "type": "text",
+          "value": "Une association dynamique engagée dans la vie locale. Les Sangs Mêlés vous présentent leurs activités et leur engagement passionné au cœur du territoire. Animations : Rencontres et présentation des activités associatives."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_912f46757d3140378768ad54b2a43d08~mv2.jpg",
+          "alt": "PalaCalle_edited.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "PA' LA CALLE CHARENTE"
+        },
+        {
+          "type": "text",
+          "value": "Vivez au rythme de la culture latino-américaine ! Pa' La Calle Charente apporte chaleur et énergie à travers ses univers de danse passionnés. Animations : Démonstrations de danses latines et animations culturelles."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_c9c35db7dc7f4ee1be9acf05a78fbe59~mv2.jpg",
+          "alt": "Arabesk.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "ARABESK"
+        },
+        {
+          "type": "text",
+          "value": "Retrouvez Arabesk pour une immersion artistique. Présente également à la ZikaParade, l'association propose un stand interactif au ZikaVillage. Animations : Stand de présentation et démonstrations artistiques."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_e299d874a770460cac8a28148ea1ab3a~mv2.jpg",
+          "alt": "AstridBoop.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "ASTRID BOOP"
+        },
+        {
+          "type": "text",
+          "value": "Un moment de féerie pour les plus jeunes. Astrid Boop transforme les visages avec talent et créativité pour le plus grand plaisir des familles. Animations : Séance de maquillage artistique pour enfants."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_da4237621787452fb18e6a86f5bc037c~mv2.jpg",
+          "alt": "Doin_edited.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "DO-IN"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez les bienfaits du Do-In, pratique ancestrale de bien-être. Des intervenants qualifiés vous feront explorer ces techniques de relaxation et de santé. Animations : Démonstrations et initiation à la pratique du Do-In."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_45a3d1a09e6c4a8a8baaff1fae090f79~mv2.jpg",
+          "alt": "FFsavate.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "SAVATE BOXE FRANCAISE"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez l'élégance et la précision de la savate !"
+        },
+        {
+          "type": "text",
+          "value": "Sport de combat français associant techniques de pieds et de poings,"
+        },
+        {
+          "type": "text",
+          "value": "la savate conjugue agilité, maîtrise, précision et respect de l'adversaire."
+        },
+        {
+          "type": "text",
+          "value": "Au ZikaVillage, découvrez cette discipline spectaculaire à travers"
+        },
+        {
+          "type": "text",
+          "value": "des démonstrations qui mettent en lumière la technicité et le savoir-faire de ses pratiquants."
+        },
+        {
+          "type": "text",
+          "value": "Une belle occasion de découvrir"
+        },
+        {
+          "type": "text",
+          "value": "un sport aussi exigeant que passionnant !"
+        },
+        {
+          "type": "heading",
+          "value": "Nos associations ont du talent !"
+        },
+        {
+          "type": "text",
+          "value": "Derrière chaque association"
+        },
+        {
+          "type": "text",
+          "value": "se trouvent des femmes et des hommes passionnés, des bénévoles engagés, des projets et des initiatives qui font vivre notre territoire."
+        },
+        {
+          "type": "text",
+          "value": "Avec ZikaVillage, ZikaMansle souhaite leur offrir une place de choix,"
+        },
+        {
+          "type": "text",
+          "value": "permettre de rencontrer de nouveaux publics et encourager les échanges entre les habitants."
+        },
+        {
+          "type": "text",
+          "value": "C'est aussi cela, l'esprit du festival : partager, découvrir"
+        },
+        {
+          "type": "text",
+          "value": "et construire ensemble."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_84623a1fbe904492951ae01334d89306~mv2.jpg",
+          "alt": "ffamhe.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Plongez dans l'univers"
+        },
+        {
+          "type": "text",
+          "value": "des chevaliers !"
+        },
+        {
+          "type": "text",
+          "value": "Remontez le temps et découvrez l'escrime médiévale, une discipline fascinante qui mêle histoire, technique, maîtrise et maniement des armes anciennes."
+        },
+        {
+          "type": "text",
+          "value": "À travers des démonstrations, découvrez les gestes et les techniques de combat inspirés des traditions historiques."
+        },
+        {
+          "type": "text",
+          "value": "Un voyage dans le passé qui devrait captiver petits et grands !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_a675a9e6006840279f2755c4588bead7~mv2.jpg",
+          "alt": "Bandafesta17.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "BANDA FESTA 17"
+        },
+        {
+          "type": "text",
+          "value": "La musique festive débarque !"
+        },
+        {
+          "type": "text",
+          "value": "Avec Banda Festa 17,"
+        },
+        {
+          "type": "text",
+          "value": "impossible de rester immobile !"
+        },
+        {
+          "type": "text",
+          "value": "Cuivres, percussions et rythmes entraînants : la musique de banda apporte immédiatement"
+        },
+        {
+          "type": "text",
+          "value": "une ambiance de fête"
+        },
+        {
+          "type": "text",
+          "value": "et de convivialité."
+        },
+        {
+          "type": "text",
+          "value": "Retrouvez ces musiciens lors"
+        },
+        {
+          "type": "text",
+          "value": "de la ZikaParade, le samedi 24 avril"
+        },
+        {
+          "type": "text",
+          "value": "à partir de 17 h, pour faire vibrer"
+        },
+        {
+          "type": "text",
+          "value": "les rues de Mansle-les-Fontaines !"
+        },
+        {
+          "type": "text",
+          "value": "Une belle dose de bonne humeur pour lancer la fête dans toute la ville !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_00bbeb76c7b14d3a812ab222ecaa4b3c~mv2.jpg",
+          "alt": "destinationnordcharente.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "DESTINATION NORD CHARENTE"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez les trésors du"
+        },
+        {
+          "type": "text",
+          "value": "Nord Charente !"
+        },
+        {
+          "type": "text",
+          "value": "Patrimoine, nature, balades, loisirs"
+        },
+        {
+          "type": "text",
+          "value": "et découvertes : notre territoire regorge de richesses"
+        },
+        {
+          "type": "text",
+          "value": "parfois insoupçonnées !"
+        },
+        {
+          "type": "text",
+          "value": "L'équipe de l'Office de tourisme Destination Nord Charente"
+        },
+        {
+          "type": "text",
+          "value": "sera présente au ZikaVillage"
+        },
+        {
+          "type": "text",
+          "value": "pour vous faire découvrir"
+        },
+        {
+          "type": "text",
+          "value": "les incontournables de notre région, partager ses idées de sorties"
+        },
+        {
+          "type": "text",
+          "value": "et vous donner envie d'explorer"
+        },
+        {
+          "type": "text",
+          "value": "le territoire autrement."
+        },
+        {
+          "type": "heading",
+          "value": "Attitude en Direct du ZikaVillage !"
+        },
+        {
+          "type": "text",
+          "value": "Notre partenaire Radio Attitude sera au cœur du ZikaVillage pour faire vivre cette première édition au plus près du public ! Rencontres, échanges avec les associations, découvertes et ambiance festive : la radio accompagnera cet après-midi et donnera la parole à celles et ceux qui font vivre l'événement."
+        },
+        {
+          "type": "link",
+          "value": "Écouter Radio Attitude",
+          "url": "https://www.attitudefm.com/"
+        },
+        {
+          "type": "heading",
+          "value": "Et après le Zikavillage ? La fête continue !"
+        },
+        {
+          "type": "text",
+          "value": "À 17 h, les rues de Mansle-les-Fontaines prennent le relais du ZikaVillage ! Banda, bagad, majorettes, danseurs, échassiers et artistes déambulatoires vous entraînent dans une grande parade festive à travers la ville."
+        },
+        {
+          "type": "text",
+          "value": "Samedi 24 avril 2027 • 17 h – 18 h 30"
+        },
+        {
+          "type": "text",
+          "value": "Départ : place de l'Hôtel de Ville • Arrivée : Salle Gautier Capuçon"
+        },
+        {
+          "type": "text",
+          "value": "Accès gratuit"
+        },
+        {
+          "type": "link",
+          "value": "Découvrir ZikaParade",
+          "url": "https://www.zikamansle.fr/zika-parade"
+        },
+        {
+          "type": "heading",
+          "value": "Et si nous faisions connaissance ?"
+        },
+        {
+          "type": "text",
+          "value": "Vous représentez une association, un collectif artistique ou une initiative locale ?"
+        },
+        {
+          "type": "text",
+          "value": "N'hésitez pas à contacter notre équipe pour découvrir le projet et échanger avec nous !"
+        },
+        {
+          "type": "text",
+          "value": "Tél : 07 82 36 40 30 | Email : zikamansle@gmail.com"
+        },
+        {
+          "type": "link",
+          "value": "Contacter ZikaMansle",
+          "url": "tel:0782364030"
+        }
+      ]
+    },
+    {
+      "slug": "programmation",
+      "title": "Soirée Concerts",
+      "url": "https://www.zikamansle.fr/programmation",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f7664227003c40ddacdd76ccc090e4ed~mv2.png",
+          "alt": "Village néon au clair de lune.png"
+        },
+        {
+          "type": "heading",
+          "value": "LES ARTISTES DU SAMEDI"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_8def5250019f48b895ec6f6823f6dacf~mv2.jpg",
+          "alt": "489751640_1196482561845476_7316188516082806744_n.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "DUB SILENCE"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_1ca9ce99fda1435cb50540c1f6f4d933~mv2.png",
+          "alt": "Capture d'écran 2026-09-01 191706.png"
+        },
+        {
+          "type": "heading",
+          "value": "TIMÉO SPARKING"
+        },
+        {
+          "type": "text",
+          "value": "Finaliste de La France a un incroyable talent 2025"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_7ec86feedc604e528c5a5cd97003dcaf~mv2.jpg",
+          "alt": "480327184_1184274759733010_3197298492678061842_n.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "KAMINI"
+        },
+        {
+          "type": "text",
+          "value": "+ 2 autres artistes prochainement dévoilés"
+        },
+        {
+          "type": "text",
+          "value": "Kamini"
+        },
+        {
+          "type": "link",
+          "value": "Kamini",
+          "url": "https://video.wixstatic.com/video/685632_6a09e3c7e8c949dfbe3f3d287fc61830/720p/mp4/file.mp4"
+        },
+        {
+          "type": "text",
+          "value": "Dub Silence"
+        },
+        {
+          "type": "link",
+          "value": "Dub Silence",
+          "url": "https://video.wixstatic.com/video/685632_cb24c9ca4a5e417eb2c02c2900fb73f6/480p/mp4/file.mp4"
+        },
+        {
+          "type": "text",
+          "value": "Timéo Sparking"
+        },
+        {
+          "type": "link",
+          "value": "Timéo Sparking",
+          "url": "https://video.wixstatic.com/video/685632_9d67fcbb33f0462e973c43b585e5bcf9/720p/mp4/file.mp4"
+        },
+        {
+          "type": "link",
+          "value": "Billetterie",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente"
+        }
+      ]
+    },
+    {
+      "slug": "zika-parade",
+      "title": "ZikaParade",
+      "url": "https://www.zikamansle.fr/zika-parade",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f4abacb7fe0e49e4905414c4ff9f2fdc~mv2.png",
+          "alt": "Paysage fluvial néon et pont coloré.png"
+        },
+        {
+          "type": "heading",
+          "value": "ZikaParade"
+        },
+        {
+          "type": "heading",
+          "value": "La ville entre en fête !"
+        },
+        {
+          "type": "heading",
+          "value": "Une parade, mille émotions !"
+        },
+        {
+          "type": "text",
+          "value": "Après un après-midi de rencontres et d'animations au ZikaVillage, la fête prend une nouvelle dimension !"
+        },
+        {
+          "type": "text",
+          "value": "À 17 h, les rues de Mansle-les-Fontaines deviennent le théâtre d'une grande parade où musiciens, danseurs, majorettes, échassiers et artistes déambulatoires se retrouvent pour partager leur énergie avec le public."
+        },
+        {
+          "type": "text",
+          "value": "Des rythmes entraînants, des costumes, des performances et des surprises : une belle occasion de se retrouver"
+        },
+        {
+          "type": "text",
+          "value": "en famille ou entre amis pour profiter d'un moment collectif et festif."
+        },
+        {
+          "type": "text",
+          "value": "Et surtout, un spectacle gratuit et accessible à tous !"
+        },
+        {
+          "type": "heading",
+          "value": "Découvrez les artistes"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_a675a9e6006840279f2755c4588bead7~mv2.jpg",
+          "alt": "Bandafesta17.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Avec la Banda Festa 17,"
+        },
+        {
+          "type": "text",
+          "value": "place à l'énergie des bandas"
+        },
+        {
+          "type": "text",
+          "value": "et aux musiques festives !"
+        },
+        {
+          "type": "text",
+          "value": "Cuivres, percussions et rythmes entraînants accompagneront ZikaParade pour faire vibrer les rues de Mansle-les-Fontaines."
+        },
+        {
+          "type": "link",
+          "value": "Voir plus",
+          "url": "https://www.facebook.com/bandafesta17"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_266cd1b333034539b08fa50602720801~mv2.jpg",
+          "alt": "633230552_1717184629620433_6114762701219634760_n.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Place aux sonorités puissantes"
+        },
+        {
+          "type": "text",
+          "value": "et aux traditions musicales bretonnes !"
+        },
+        {
+          "type": "text",
+          "value": "Avec ses cornemuses, bombardes"
+        },
+        {
+          "type": "text",
+          "value": "et percussions, le Bagad Kevrenn Balzac apportera"
+        },
+        {
+          "type": "text",
+          "value": "une atmosphère unique."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_95301dee513c4d15a884f00ad13fac1d~mv2.jpg",
+          "alt": "615822949_1439150224887935_8469996262820983710_n.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Avec leurs chorégraphies, leur coordination et leur dynamisme, les Majorettes de Segonzac apporteront couleurs et mouvement à ZikaParade."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_afd3484fa6dc4d2da906a1a9f27eb6b0~mv2.jpg",
+          "alt": "306122738_751371335942318_3585474278534625608_n.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Levez les yeux !"
+        },
+        {
+          "type": "text",
+          "value": "Les échassiers de la Compagnie"
+        },
+        {
+          "type": "text",
+          "value": "Le Passage apporteront"
+        },
+        {
+          "type": "text",
+          "value": "une dimension spectaculaire"
+        },
+        {
+          "type": "text",
+          "value": "et poétique avec leurs silhouettes impressionnantes."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_e299d874a770460cac8a28148ea1ab3a~mv2.jpg",
+          "alt": "AstridBoop.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Avec Astrid Boop,"
+        },
+        {
+          "type": "text",
+          "value": "les ballons prennent vie !"
+        },
+        {
+          "type": "text",
+          "value": "Retrouvez son univers créatif"
+        },
+        {
+          "type": "text",
+          "value": "et coloré pour ajouter une touche"
+        },
+        {
+          "type": "text",
+          "value": "de fantaisie à la ZikaParade."
+        },
+        {
+          "type": "link",
+          "value": "VOIR PLUS",
+          "url": "https://www.facebook.com/astridboop.cognac"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_c9c35db7dc7f4ee1be9acf05a78fbe59~mv2.jpg",
+          "alt": "Arabesk.jpg"
+        },
+        {
+          "type": "text",
+          "value": "L'association rejoindra"
+        },
+        {
+          "type": "text",
+          "value": "la déambulation pour partager"
+        },
+        {
+          "type": "text",
+          "value": "sa passion et contribuer"
+        },
+        {
+          "type": "text",
+          "value": "à l'ambiance festive de cet événement au cœur des festivités."
+        },
+        {
+          "type": "heading",
+          "value": "Suivez la parade à travers Mansle !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_647a8e50f23241a3b5c0fce4d04fdfb7~mv2.png",
+          "alt": "zikamansle_plan_complet.png"
+        },
+        {
+          "type": "text",
+          "value": "Départ : Place de l'Hôtel de Ville (17 h)"
+        },
+        {
+          "type": "text",
+          "value": "Rue Grande"
+        },
+        {
+          "type": "text",
+          "value": "Avenue Paul-Mairat"
+        },
+        {
+          "type": "text",
+          "value": "Arrivée : Salle Gautier Capuçon (18 h 30)"
+        },
+        {
+          "type": "link",
+          "value": "Voir le parcours sur le plan",
+          "url": "https://www.zikamansle.fr/infos-pratiques"
+        },
+        {
+          "type": "heading",
+          "value": "La fête commence dès 14 h !"
+        },
+        {
+          "type": "text",
+          "value": "Avant de rejoindre ZikaParade, rendez-vous au ZikaVillage, de 14 h à 17 h,"
+        },
+        {
+          "type": "text",
+          "value": "sur la Place de l'Hôtel de Ville. Associations, démonstrations, cirque, danse"
+        },
+        {
+          "type": "text",
+          "value": "et découvertes vous attendent. À 17 h, la parade prend le relais !"
+        },
+        {
+          "type": "link",
+          "value": "Découvrir le ZikaVillage",
+          "url": "https://www.zikamansle.fr/zika-village"
+        },
+        {
+          "type": "heading",
+          "value": "Et après ? La fête continue en musique !"
+        },
+        {
+          "type": "text",
+          "value": "À l'arrivée de la parade, les festivités se poursuivent à la Salle Gautier Capuçon"
+        },
+        {
+          "type": "text",
+          "value": "avec la grande soirée concerts du Festival ZikaMansle 2027 !"
+        },
+        {
+          "type": "text",
+          "value": "Retrouvez Kamini, Timéo Sparking et Dub Silence."
+        },
+        {
+          "type": "text",
+          "value": "Après la parade gratuite, place à la soirée concerts sur billetterie !"
+        },
+        {
+          "type": "link",
+          "value": "Découvrir la soirée concerts",
+          "url": "https://www.zikamansle.fr/programmation"
+        },
+        {
+          "type": "link",
+          "value": "BILLETTERIE",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente"
+        }
+      ]
+    },
+    {
+      "slug": "boutique",
+      "title": "ZikaBoutique",
+      "url": "https://www.zikamansle.fr/boutique",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_eccf5192c7c04103a0b1d779df4d70e0~mv2.png",
+          "alt": "background-zikamansle.png"
+        },
+        {
+          "type": "link",
+          "value": "Découvrez la boutique                     du festival",
+          "url": "https://www.helloasso.com/associations/zikamansle/boutiques/zikaboutique"
+        }
+      ]
+    },
+    {
+      "slug": "experiences-decouvertes",
+      "title": "Expériences & Découvertes",
+      "url": "https://www.zikamansle.fr/experiences-decouvertes",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f7664227003c40ddacdd76ccc090e4ed~mv2.png",
+          "alt": "Village néon au clair de lune.png"
+        },
+        {
+          "type": "heading",
+          "value": "Expériences immersives"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f62f39c4bffd435eac6a5ee38ab46965~mv2.png",
+          "alt": "lesindicescréés.png"
+        },
+        {
+          "type": "text",
+          "value": "Et si le Parc Floral devenait le théâtre de vos aventures ?"
+        },
+        {
+          "type": "text",
+          "value": "Des énigmes, des indices, des mystères à résoudre…"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle et son partenaire les Indices Créés vous invitent"
+        },
+        {
+          "type": "text",
+          "value": "à explorer le Parc Floral Jean-Pierre Lanson autrement !"
+        },
+        {
+          "type": "heading",
+          "value": "Un écrin de nature qui cache bien des surprises"
+        },
+        {
+          "type": "text",
+          "value": "À quelques pas du cœur de Mansle-les-Fontaines,"
+        },
+        {
+          "type": "text",
+          "value": "le Parc Floral Jean-Pierre Lanson vous ouvre les portes"
+        },
+        {
+          "type": "text",
+          "value": "d'un univers où la nature rencontre le jeu et l'imagination. Entre arbres, fleurs, allées et espaces de découverte,"
+        },
+        {
+          "type": "text",
+          "value": "ce lieu emblématique de la commune devient,"
+        },
+        {
+          "type": "text",
+          "value": "le temps du Festival ZikaMansle, un terrain d'exploration pas comme les autres. Ouvrez l'œil, soyez curieux et prenez le temps d'observer : les réponses ne sont peut-être pas là où vous les attendez !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_0c5e1f4cd31046ffbcbe493b48898d21~mv2.jpg",
+          "alt": "1000007554.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Ancienne carrière transformée en arboretum à partir de 1987,"
+        },
+        {
+          "type": "text",
+          "value": "le site s'est enrichi d'une collection de fuchsias offerte à la commune"
+        },
+        {
+          "type": "text",
+          "value": "par Jean-Pierre Lanson en 1996."
+        },
+        {
+          "type": "text",
+          "value": "Le jardin comprend notamment une cascade et une rivière artificielle."
+        },
+        {
+          "type": "heading",
+          "value": "À la recherche de la plume de Zika"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_11c13bca7fed4ca7a4f6d5aac32ffba5~mv2.png",
+          "alt": "mascotte zika fd trsprt.png"
+        },
+        {
+          "type": "text",
+          "value": "Zika a besoin de vous ! Une mystérieuse plume est au cœur d'une aventure qui vous entraînera à"
+        },
+        {
+          "type": "text",
+          "value": "la découverte des lieux, des détails et des surprises du Festival. Pour avancer, il faudra faire preuve d'observation, de curiosité et d'un peu"
+        },
+        {
+          "type": "text",
+          "value": "de réflexion. En famille, entre amis ou à plusieurs générations, partez à la recherche des indices et laissez-vous entraîner dans une aventure pleine de découvertes. Saurez-vous retrouver la plume de Zika ?"
+        },
+        {
+          "type": "text",
+          "value": "Les expériences immersives seront accessibles le Samedi 24 Avril 2027"
+        },
+        {
+          "type": "text",
+          "value": "(horaires des sessions gratuites communiquées prochainement,"
+        },
+        {
+          "type": "text",
+          "value": "sur réservation)"
+        },
+        {
+          "type": "text",
+          "value": "Jeu de piste en accès libre"
+        },
+        {
+          "type": "text",
+          "value": "du 12 au 26 Avril 2027"
+        },
+        {
+          "type": "text",
+          "value": "Une aventure à vivre au cœur du festival"
+        },
+        {
+          "type": "heading",
+          "value": "Un lieu emblématique de Mansle-les-Fontaines"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_ca947f4c32324a69bf9476e1130605df~mv2.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "À propos du Parc Floral"
+        },
+        {
+          "type": "text",
+          "value": "Parc Floral Jean-Pierre Lanson Secteur du Moulin à Vent 16230 Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "Le Parc Floral Jean-Pierre Lanson est un véritable écrin de verdure et de biodiversité au cœur de Mansle-les-Fontaines. Lieu de promenade privilégié, il abrite une collection botanique unique et offre un cadre apaisant avec sa rivière et sa cascade artificielle."
+        },
+        {
+          "type": "link",
+          "value": "Voir le plan interactif",
+          "url": "https://www.zikamansle.fr/infos-pratiques"
+        },
+        {
+          "type": "heading",
+          "value": "Envie de prolonger l'aventure ?"
+        },
+        {
+          "type": "text",
+          "value": "Le jeu est aussi à l'honneur au Festival ZikaMansle ! Retrouvez ZikaLudik au Square de Verdun pour découvrir d'autres propositions ludiques et partager de nouveaux moments de convivialité."
+        },
+        {
+          "type": "link",
+          "value": "Découvrir ZikaLudik",
+          "url": "https://www.zikamansle.fr/zika-ludik"
+        }
+      ]
+    },
+    {
+      "slug": "infos-pratiques",
+      "title": "Infos pratiques",
+      "url": "https://www.zikamansle.fr/infos-pratiques",
+      "blocks": [
+        {
+          "type": "heading",
+          "value": "INFOS PRATIQUES"
+        },
+        {
+          "type": "heading",
+          "value": "Tout savoir pour profiter pleinement du Festival ZikaMansle !"
+        },
+        {
+          "type": "text",
+          "value": "Les 24 et 25 avril 2027, Mansle-les-Fontaines vibrera au rythme de la première édition du Festival ZikaMansle ! Concerts, spectacles, animations, parade, cinéma, expositions et rencontres culturelles :"
+        },
+        {
+          "type": "text",
+          "value": "deux jours de découvertes et de convivialité vous attendent au cœur de la Charente. Retrouvez ici toutes les informations utiles pour organiser votre venue et profiter de la fête !"
+        },
+        {
+          "type": "text",
+          "value": "24 & 25 avril 2027"
+        },
+        {
+          "type": "text",
+          "value": "Mansle-les-Fontaines (16230) – Charente"
+        },
+        {
+          "type": "text",
+          "value": "Animations gratuites"
+        },
+        {
+          "type": "text",
+          "value": "et soirée concerts payante"
+        },
+        {
+          "type": "link",
+          "value": "Réserver mes billets",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente?_gl=1%2a1ttaqbe%2a_gcl_au%2aMTIzMzAzNDg2My4xNzkwMTU3OTcwLjYwMzY2MDg4MC4xNzkxNzk5NjQ1LjE3OTE4MDAwNDYuMjEwNDIxMDM2MS4xNzkxNzk5NjQ1LjE3OTE4MDAwNDY."
+        },
+        {
+          "type": "heading",
+          "value": "UNE VILLE, PLUSIEURS LIEUX, UNE GRANDE FÊTE !"
+        },
+        {
+          "type": "heading",
+          "value": "Place de l'Hôtel de Ville ZikaVillage"
+        },
+        {
+          "type": "text",
+          "value": "Le cœur battant du festival"
+        },
+        {
+          "type": "text",
+          "value": "l'après-midi du samedi. Démonstrations, initiations"
+        },
+        {
+          "type": "text",
+          "value": "et animations familiales."
+        },
+        {
+          "type": "text",
+          "value": "Espace ZikArmonie (prévention)."
+        },
+        {
+          "type": "link",
+          "value": "S’y rendre",
+          "url": "http://maps.google.com/maps?daddr=Pl.%20de%20L%20H%C3%B4tel%20de%20ville,%2016230%20Mansle-les-Fontaines,%20France"
+        },
+        {
+          "type": "heading",
+          "value": "Square de Verdun ZikaLudik"
+        },
+        {
+          "type": "text",
+          "value": "L'espace dédié aux jeux en bois géants, aux jeux de société"
+        },
+        {
+          "type": "text",
+          "value": "et diverses animations."
+        },
+        {
+          "type": "text",
+          "value": "Un moment convivial intergénérationnel en plein air."
+        },
+        {
+          "type": "heading",
+          "value": "Salle Gautier Capuçon Concerts"
+        },
+        {
+          "type": "text",
+          "value": "Le temple de la musique pour la grande soirée concerts."
+        },
+        {
+          "type": "text",
+          "value": "Cinq artistes sur scène."
+        },
+        {
+          "type": "text",
+          "value": "Buvette et restauration sur place."
+        },
+        {
+          "type": "heading",
+          "value": "Médiathèque de Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "Exposition culturelle et rencontres littéraires avec des auteures locales. Un havre de culture et d'échange."
+        },
+        {
+          "type": "heading",
+          "value": "Parc Floral Expériences immersives"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez des installations artistiques et des expériences sonores ou visuelles dans le cadre verdoyant du Parc Floral."
+        },
+        {
+          "type": "heading",
+          "value": "L'art roman en Poitou-Charentes"
+        },
+        {
+          "type": "text",
+          "value": "Exposition sur la richesse et les secrets des édifices romans de notre région."
+        },
+        {
+          "type": "heading",
+          "value": "REJOIGNEZ-NOUS À MANSLE-LES-FONTAINES"
+        },
+        {
+          "type": "text",
+          "value": "Située au cœur de la Charente,"
+        },
+        {
+          "type": "text",
+          "value": "Mansle-les-Fontaines est facilement accessible. Préparez votre trajet pour profiter sereinement"
+        },
+        {
+          "type": "text",
+          "value": "du Festival ZikaMansle."
+        },
+        {
+          "type": "heading",
+          "value": "En voiture"
+        },
+        {
+          "type": "text",
+          "value": "Mansle-les-Fontaines est desservie par la RN10"
+        },
+        {
+          "type": "text",
+          "value": "(axe Poitiers-Angoulême)."
+        },
+        {
+          "type": "text",
+          "value": "Empruntez la sortie Mansle / Aigre / Ruffec."
+        },
+        {
+          "type": "link",
+          "value": "Calculer mon itinéraire",
+          "url": "http://maps.google.com/maps?daddr=Pl.%20de%20L%20H%C3%B4tel%20de%20ville,%2016230%20Mansle-les-Fontaines,%20France"
+        },
+        {
+          "type": "heading",
+          "value": "Stationnement"
+        },
+        {
+          "type": "text",
+          "value": "Plusieurs parkings gratuits sont à votre disposition en périphérie du centre-ville. Suivez le fléchage temporaire mis en place dès votre arrivée dans la commune."
+        },
+        {
+          "type": "heading",
+          "value": "Circulation pendant La Zikaparade"
+        },
+        {
+          "type": "text",
+          "value": "Le samedi après-midi, la circulation sera temporairement interrompue dans les rues empruntées par la ZikaParade. Soyez attentifs aux signalisations et prévoyez d'arriver en avance."
+        },
+        {
+          "type": "heading",
+          "value": "PROFITEZ DU FESTIVAL À VOTRE RYTHME !"
+        },
+        {
+          "type": "heading",
+          "value": "SOIRÉE CONCERTS"
+        },
+        {
+          "type": "text",
+          "value": "Tarif Prévente : 23 € Tarif moins de 12 ans : 11€"
+        },
+        {
+          "type": "heading",
+          "value": "ANIMATIONS GRATUITES"
+        },
+        {
+          "type": "text",
+          "value": "ZikaVillage"
+        },
+        {
+          "type": "text",
+          "value": "ZikaLudik"
+        },
+        {
+          "type": "text",
+          "value": "ZikaParade"
+        },
+        {
+          "type": "text",
+          "value": "ZikaCinoche (dimanche)"
+        },
+        {
+          "type": "text",
+          "value": "Exposition à la médiathèque"
+        },
+        {
+          "type": "text",
+          "value": "Office de Tourisme"
+        },
+        {
+          "type": "text",
+          "value": "Destination Nord Charente"
+        },
+        {
+          "type": "link",
+          "value": "BILLETTERIE EN LIGNE",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/festival-zikamansle-2027-prevente?_gl=1%2a1m0e80d%2a_gcl_au%2aMTIzMzAzNDg2My4xNzkwMTU3OTcwLjYwMzY2MDg4MC4xNzkxNzk5NjQ1LjE3OTE4MDAwNDYuMjEwNDIxMDM2MS4xNzkxNzk5NjQ1LjE3OTE4MDAwNDY."
+        },
+        {
+          "type": "heading",
+          "value": "UNE PETITE FAIM ? UNE PAUSE CONVIVIALE ?"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_a23ebc4732d040b5a7ff8b0994acffe6~mv2.jpg",
+          "alt": "Affiche Zikabar_edited.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Pour vous restaurer durant la soirée concerts du samedi ou le ZikaCinoche du dimanche,"
+        },
+        {
+          "type": "text",
+          "value": "une buvette et une offre de restauration seront installées"
+        },
+        {
+          "type": "text",
+          "value": "à la Salle Gautier Capuçon."
+        },
+        {
+          "type": "text",
+          "value": "Le paiement se fera en Zikas qu'il vous faudra échanger à l'une de nos caisses."
+        },
+        {
+          "type": "text",
+          "value": "Moyens de paiements acceptés : Espèces, Carte Bleue"
+        },
+        {
+          "type": "heading",
+          "value": "VOS QUESTIONS"
+        },
+        {
+          "type": "heading",
+          "value": "Questions fréquemment posées"
+        },
+        {
+          "type": "heading",
+          "value": "Qu’est-ce que le Festival ZikaMansle ?"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle est un événement culturel, musical, artistique et festif organisé à Mansle-les-Fontaines, en Charente, les 24 et 25 avril 2027. Cette première édition propose deux jours de découvertes, de rencontres et de convivialité autour de plusieurs formes d’expression."
+        },
+        {
+          "type": "heading",
+          "value": "Quels sont les principaux rendez-vous du samedi 24 avril ?"
+        },
+        {
+          "type": "text",
+          "value": "Le samedi, le public pourra profiter du ZikaVillage, de ZikaLudik et de la ZikaParade. La journée se prolongera par une grande soirée de concerts à la salle Gautier Capuçon, avec notamment Kamini, Timéo Sparking et Dub Silence."
+        },
+        {
+          "type": "heading",
+          "value": "Que propose la journée du dimanche 25 avril ?"
+        },
+        {
+          "type": "text",
+          "value": "Le dimanche sera consacré à ZikaCinoche, avec des projections de films, des rencontres et des échanges autour du cinéma. Des expositions, des rencontres littéraires et des expériences immersives viendront également enrichir la programmation."
+        },
+        {
+          "type": "heading",
+          "value": "UNE QUESTION AVANT DE NOUS REJOINDRE ?"
+        },
+        {
+          "type": "text",
+          "value": "L'équipe ZikaMansle est à votre disposition pour vous aider à préparer votre visite."
+        },
+        {
+          "type": "link",
+          "value": "Nous contacter",
+          "url": "mailto:zikamansle@gmail.com"
+        },
+        {
+          "type": "link",
+          "value": "Suivre sur Facebook",
+          "url": "https://www.facebook.com/profile.php?id=61580804552241&locale=fr_FR"
+        },
+        {
+          "type": "text",
+          "value": "FESTIVAL ZIKAMANSLE 2027 – Deux jours – Une ville – Une fête"
+        },
+        {
+          "type": "heading",
+          "value": "FAQ"
+        },
+        {
+          "type": "heading",
+          "value": "Qu’est-ce que le ZikaVillage ?"
+        },
+        {
+          "type": "text",
+          "value": "Le ZikaVillage est un espace gratuit ouvert au public le samedi 24 avril. On y retrouve des animations associatives, des ateliers, des artisans et des créateurs."
+        },
+        {
+          "type": "heading",
+          "value": "À quoi correspond ZikaLudik ?"
+        },
+        {
+          "type": "text",
+          "value": "ZikaLudik est un espace de jeux en bois géants pensé pour tous les âges. C’est une animation conviviale qui complète les autres activités du festival."
+        },
+        {
+          "type": "heading",
+          "value": "Que représente la ZikaParade ?"
+        },
+        {
+          "type": "text",
+          "value": "La ZikaParade est un défilé qui traversera la ville avec des formations musicales et des artistes. Elle participe à l’ambiance festive et à la mise en valeur du centre de Mansle-les-Fontaines."
+        },
+        {
+          "type": "heading",
+          "value": "À qui s’adresse le Festival ZikaMansle ?"
+        },
+        {
+          "type": "text",
+          "value": "Le festival s’adresse à toutes les générations. Il a été imaginé comme un rendez-vous accessible, populaire, intergénérationnel et convivial."
+        },
+        {
+          "type": "heading",
+          "value": "Quelle est la vocation du festival pour le territoire ?"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle valorise les associations, les artistes, les commerçants, les artisans et les acteurs du territoire. Il souhaite aussi contribuer au rayonnement culturel et touristique du Nord Charente."
+        },
+        {
+          "type": "heading",
+          "value": "Qui organise le Festival ZikaMansle ?"
+        },
+        {
+          "type": "text",
+          "value": "Le festival est organisé par l’association ZikaMansle. Il est porté par des bénévoles passionnés."
+        },
+        {
+          "type": "heading",
+          "value": "FAIRE LA FÊTE, C'EST AUSSI PRENDRE SOIN LES UNS DES AUTRES !"
+        },
+        {
+          "type": "text",
+          "value": "Le dispositif ZikArmonie est présent pour garantir un environnement sain et sécurisé. Nous agissons sur la prévention des violences et du harcèlement, la sensibilisation aux risques liés à l'alcool et aux produits psychoactifs, ainsi que sur la santé"
+        },
+        {
+          "type": "link",
+          "value": "ZikArmonie",
+          "url": "https://www.zikamansle.fr/zik-armonie-le-village-prevention-sante-bien-etre"
+        },
+        {
+          "type": "text",
+          "value": "et le bien-être général des festivaliers."
+        },
+        {
+          "type": "text",
+          "value": "Retrouvez sur place un espace de repos,"
+        },
+        {
+          "type": "text",
+          "value": "des ressources d'information et des actions concrètes menées avec nos associations partenaires"
+        },
+        {
+          "type": "text",
+          "value": "pour que la fête reste un moment de pur plaisir pour tous."
+        },
+        {
+          "type": "heading",
+          "value": "ACCESSIBILITÉ ET BESOINS SPÉCIFIQUES"
+        },
+        {
+          "type": "text",
+          "value": "Le festival s'engage pour l'accueil de tous."
+        },
+        {
+          "type": "text",
+          "value": "Des aménagements spécifiques sont prévus pour les personnes à mobilité réduite"
+        },
+        {
+          "type": "text",
+          "value": "sur les différents lieux."
+        },
+        {
+          "type": "text",
+          "value": "Une signalétique adaptée et les bénévoles sont à votre écoute pour faciliter votre parcours et votre expérience au sein"
+        },
+        {
+          "type": "text",
+          "value": "du festival ZikaMansle."
+        }
+      ]
+    },
+    {
+      "slug": "contact",
+      "title": "Contact",
+      "url": "https://www.zikamansle.fr/contact",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f4abacb7fe0e49e4905414c4ff9f2fdc~mv2.png",
+          "alt": "Paysage fluvial néon et pont coloré.png"
+        },
+        {
+          "type": "heading",
+          "value": "ADHÉSION & CONTACT"
+        },
+        {
+          "type": "text",
+          "value": "En adhérant à l’association qui porte le Festival ZikaMansle, vous soutenez directement"
+        },
+        {
+          "type": "text",
+          "value": "le projet et son développement à Mansle-les-Fontaines et en Charente."
+        },
+        {
+          "type": "text",
+          "value": "Votre adhésion nous aide à financer la programmation, les animations"
+        },
+        {
+          "type": "text",
+          "value": "et l’organisation du festival."
+        },
+        {
+          "type": "link",
+          "value": "Adhérer à l’association",
+          "url": "https://www.helloasso.com/associations/zikamansle/adhesions/adhesion-zikamansle-2026"
+        },
+        {
+          "type": "heading",
+          "value": "Nous contacter"
+        }
+      ]
+    },
+    {
+      "slug": "zika-cinoche",
+      "title": "ZikaCinoche",
+      "url": "https://www.zikamansle.fr/zika-cinoche",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_b45fc899934a4a70bbdb04b6ae5b23e8~mv2.png",
+          "alt": "Reflets nocturnes sur le pont.png"
+        },
+        {
+          "type": "heading",
+          "value": "ZikaCinoche"
+        },
+        {
+          "type": "heading",
+          "value": "Le cinéma aussi fait son festival !"
+        },
+        {
+          "type": "text",
+          "value": "À ZikaMansle, la culture se vit aussi sur grand écran ! Avec ZikaCinoche, le festival fait une place au Septième Art et invite le public"
+        },
+        {
+          "type": "text",
+          "value": "à découvrir deux œuvres aux univers différents. D'un côté, Mathilde nous replonge dans la mémoire de Mansle et d'un établissement qui a marqué la vie locale."
+        },
+        {
+          "type": "text",
+          "value": "De l'autre, À terre promise nous entraîne dans un récit intense, imaginé par le réalisateur Lionel Bernardin,"
+        },
+        {
+          "type": "text",
+          "value": "qui sera présent à l'occasion du festival. Deux films, deux regards, et une même envie : partager des histoires et provoquer des rencontres. »"
+        },
+        {
+          "type": "heading",
+          "value": "« Mathilde »"
+        },
+        {
+          "type": "text",
+          "value": "Au cœur de Mansle, l'auberge-restaurant de Mathilde Picard a laissé son empreinte dans la mémoire de celles et ceux qui l'ont connue. À travers des témoignages, des photographies d'archives et des images des lieux aujourd'hui, Mathilde fait revivre l'histoire de cet établissement et de la femme qui lui a donné son nom. Des rues commerçantes de Mansle aux souvenirs des anciens, des photographies de repas aux vestiges du restaurant, le documentaire nous entraîne dans une histoire profondément liée à la vie locale. Au-delà d'un établissement, c'est toute une époque qui ressurgit : celle des rencontres, de la convivialité, du quotidien et des figures qui ont marqué leur commune. Un précieux témoignage sur la mémoire de Mansle et sur ces lieux qui continuent de vivre à travers les souvenirs de leurs habitants."
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_f6df516533364150bd632f9cab8627ba~mv2.png"
+        },
+        {
+          "type": "text",
+          "value": "Un film de Maudette Petit et Ludovic Wagner."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_3a4769bcb8be4f22a62bd510f018cf3a~mv2.jpg",
+          "alt": "3983378.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "« À terre promise »"
+        },
+        {
+          "type": "text",
+          "value": "Alex, ancien boxeur professionnel devenu ouvrier dans une petite ville rurale,"
+        },
+        {
+          "type": "text",
+          "value": "voit son quotidien bouleversé lorsque sa sœur jumelle lui demande d'héberger"
+        },
+        {
+          "type": "text",
+          "value": "un migrant et sa fille, poursuivis par des hommes armés. Pris malgré lui dans un engrenage dangereux, il doit faire face à des choix difficiles et à des combats bien au-delà du ring. À terre promise est un récit dramatique mêlant tension, humanité et questions"
+        },
+        {
+          "type": "text",
+          "value": "de société."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_50c6792d483b48e7954b537f98227c05f000.jpg",
+          "alt": "À terre promise Bande-annonce VF-720p.mp4"
+        },
+        {
+          "type": "heading",
+          "value": "Rencontre avec Lionel Bernardin"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ece8a7511d4c4f2bb85482829d0bff6d~mv2.png",
+          "alt": "616a2389625568ee098b48e5 (1)_edited.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Originaire d'Angoulême, Lionel Bernardin est réalisateur"
+        },
+        {
+          "type": "text",
+          "value": "et scénariste. Avec À terre promise, il propose une œuvre qui mêle tension dramatique et questions humaines. Présent au Festival ZikaMansle 2027, il viendra à la rencontre"
+        },
+        {
+          "type": "text",
+          "value": "du public pour partager son expérience et faire découvrir"
+        },
+        {
+          "type": "text",
+          "value": "son univers cinématographique. Une belle occasion de découvrir les coulisses de la création"
+        },
+        {
+          "type": "text",
+          "value": "d'un film et d'échanger avec celui qui l'a imaginé."
+        },
+        {
+          "type": "heading",
+          "value": "Informations pratiques"
+        },
+        {
+          "type": "heading",
+          "value": "Dimanche 25 Avril 2027 Salle Gautier Capuçon Mansle les Fontaines Accès libre et ouvert à tous"
+        }
+      ]
+    },
+    {
+      "slug": "zika-ludik",
+      "title": "ZikaLudik",
+      "url": "https://www.zikamansle.fr/zika-ludik",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ba95c4babff84c7da325206f37df07f3~mv2.png",
+          "alt": "Paysage graphique du village au coucher du soleil.png"
+        },
+        {
+          "type": "heading",
+          "value": "ZikaLudik"
+        },
+        {
+          "type": "heading",
+          "value": "Le plaisir de jouer n'a pas d'âge !"
+        },
+        {
+          "type": "text",
+          "value": "Le samedi 24 avril 2027, de 14 h à 17 h,"
+        },
+        {
+          "type": "text",
+          "value": "le Square de Verdun se transforme en"
+        },
+        {
+          "type": "text",
+          "value": "un véritable espace de jeux et de convivialité ! Avec ZikaLudik, le Festival ZikaMansle invite"
+        },
+        {
+          "type": "text",
+          "value": "toutes les générations à se retrouver autour"
+        },
+        {
+          "type": "text",
+          "value": "de jeux en bois, de jeux traditionnels"
+        },
+        {
+          "type": "text",
+          "value": "et de jeux de société. Que vous soyez stratège, curieux, joueur passionné ou simplement à la recherche d'un bon moment"
+        },
+        {
+          "type": "text",
+          "value": "en famille, venez découvrir de nouvelles façons"
+        },
+        {
+          "type": "text",
+          "value": "de vous amuser. Ici, le plus important n'est pas de gagner,"
+        },
+        {
+          "type": "text",
+          "value": "mais de partager !"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_3bd4855dd8c3475d9af4a761f0e5596f~mv2.jpg"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_5097217371d047cabdcab1edc88b8db4~mv2.jpg",
+          "alt": "bpa.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "Brins de Jeux"
+        },
+        {
+          "type": "text",
+          "value": "Le plaisir de jouer et de partager"
+        },
+        {
+          "type": "text",
+          "value": "Avec Brins de Jeux, place à la découverte, à la curiosité et aux moments de convivialité autour du jeu ! À ZikaLudik, retrouvez cet acteur de l'univers ludique pour découvrir différentes propositions de jeux et partager un moment agréable, que vous veniez seul, en famille"
+        },
+        {
+          "type": "text",
+          "value": "ou entre amis."
+        },
+        {
+          "type": "link",
+          "value": "Visiter leur site",
+          "url": "https://www.facebook.com/profile.php?id=61561877038458"
+        },
+        {
+          "type": "heading",
+          "value": "Billard à Palets Aimantés (BPA)"
+        },
+        {
+          "type": "text",
+          "value": "Une innovation Charentaise à découvrir"
+        },
+        {
+          "type": "text",
+          "value": "Né en Charente, le Billard à Palets Aimantés (BPA) est un jeu original et innovant qui mêle adresse, précision, stratégie et convivialité !"
+        },
+        {
+          "type": "text",
+          "value": "Grâce à son concept de palets aimantés, il propose une expérience ludique surprenante, accessible aux petits comme aux grands."
+        },
+        {
+          "type": "text",
+          "value": "À ZikaLudik, venez découvrir cette invention charentaise, tester votre adresse et partager des parties pleines de défis et de bonne humeur !"
+        },
+        {
+          "type": "text",
+          "value": "Une belle occasion pour ZikaMansle de mettre à l'honneur l'innovation et le savoir-faire de notre territoire !"
+        },
+        {
+          "type": "heading",
+          "value": "Les Ludistes Charentais"
+        },
+        {
+          "type": "text",
+          "value": "Des passionnés pour vous faire découvrir le jeu sous toutes ses formes"
+        },
+        {
+          "type": "text",
+          "value": "Basés à La Rochette, les Ludistes Charentais rassemblent des passionnés qui partagent leur goût du jeu de société, dans une ambiance ouverte et conviviale. Jeux de plateau, jeux d'ambiance, jeux de stratégie et découvertes :"
+        },
+        {
+          "type": "text",
+          "value": "leur univers est aussi varié que passionnant."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f33e6138429b429d9621b0f1dc9d365b~mv2.jpg",
+          "alt": "73eddb05-cb59-4207-bcff-31e6e8bc5695.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "ZikaRun le Festival continue aussi sur écran !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_5aeb82eb0d564b0688aeb3b02845a7e6~mv2.png",
+          "alt": "Zikarun, l’aventure musicale démarre !.png"
+        },
+        {
+          "type": "text",
+          "value": "Vous connaissez ZikaRun ?"
+        },
+        {
+          "type": "text",
+          "value": "Créé dans l'univers de ZikaMansle,"
+        },
+        {
+          "type": "text",
+          "value": "ce jeu numérique vous propose de retrouver Zika"
+        },
+        {
+          "type": "text",
+          "value": "à travers cinq niveaux et différents défis ! Une autre manière de découvrir l'univers"
+        },
+        {
+          "type": "text",
+          "value": "du Festival et de prolonger l'aventure"
+        },
+        {
+          "type": "text",
+          "value": "*avant même le mois d'avril."
+        },
+        {
+          "type": "link",
+          "value": "Jouer à ZikaRun",
+          "url": "https://www.zikamansle.fr/zikarun"
+        },
+        {
+          "type": "heading",
+          "value": "Envie de prolonger l'aventure ?"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle vous réserve aussi d'autres aventures ! Au Parc Floral Jean-Pierre Lanson, partez à la découverte des énigmes imaginées"
+        },
+        {
+          "type": "text",
+          "value": "pour le festival avec Les Indices Créés. Et découvrez également le jeu de piste gratuit « À la recherche de la plume de Zika »,"
+        },
+        {
+          "type": "text",
+          "value": "une façon originale d'explorer le patrimoine de Mansle-les-Fontaines. Les expériences immersives du Parc Floral sont sur réservation"
+        },
+        {
+          "type": "text",
+          "value": "selon leurs modalités officielles."
+        },
+        {
+          "type": "link",
+          "value": "Découvrir les expériences immersives",
+          "url": "https://www.zikamansle.fr/experiences-decouvertes"
+        },
+        {
+          "type": "heading",
+          "value": "Et la fête continue !"
+        },
+        {
+          "type": "text",
+          "value": "Après un après-midi de jeux et de découvertes, le Festival ZikaMansle poursuit ses festivités ! À 17 h, ZikaParade investit les rues de Mansle-les-Fontaines pour une grande déambulation musicale et festive. Puis place à la soirée concerts à la Salle Gautier Capuçon !"
+        },
+        {
+          "type": "link",
+          "value": "Découvrir ZikaParade",
+          "url": "https://www.zikamansle.fr/zika-parade"
+        },
+        {
+          "type": "link",
+          "value": "Découvrir la soirée concerts",
+          "url": "https://www.zikamansle.fr/programmation"
+        }
+      ]
+    },
+    {
+      "slug": "concours-photo-regards-sur-mansle",
+      "title": "Concours Photo",
+      "url": "https://www.zikamansle.fr/concours-photo-regards-sur-mansle",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ba95c4babff84c7da325206f37df07f3~mv2.png",
+          "alt": "Paysage graphique du village au coucher du soleil.png"
+        },
+        {
+          "type": "heading",
+          "value": "REGARDS SUR MANSLE-LES-FONTAINES"
+        },
+        {
+          "type": "text",
+          "value": "Le concours photo officiel du Festival ZikaMansle."
+        },
+        {
+          "type": "text",
+          "value": "Capturez l'âme de notre ville à travers votre objectif"
+        },
+        {
+          "type": "text",
+          "value": "et participez à l'aventure artistique du festival."
+        },
+        {
+          "type": "link",
+          "value": "Découvrir le concours",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_2584360e83814286beea097ac8941885.pdf"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_6e18f5e8f7da44478c53ef6f6f4549b3~mv2.jpg",
+          "alt": "AFF CONCOURS PHOTO.jpg"
+        },
+        {
+          "type": "text",
+          "value": "Participation ouverte à tous les photographes amateurs résidant en Charente."
+        },
+        {
+          "type": "text",
+          "value": "Les clichés doivent impérativement illustrer le thème « Regards sur Mansle-les-Fontaines »."
+        },
+        {
+          "type": "text",
+          "value": "Date limite d'envoi des candidatures : 31 Janvier 2027."
+        },
+        {
+          "type": "text",
+          "value": "Les photographies seront exposées durant toute la durée du Festival ZikaMansle"
+        },
+        {
+          "type": "link",
+          "value": "Inscription",
+          "url": "https://docs.google.com/forms/d/e/1FAIpQLSd0o3Rf_BOLmMdlRlPHEqdGiuq9uukUXhhOLc8QBs5EHrzuiQ/viewform?usp=publish-editor"
+        },
+        {
+          "type": "heading",
+          "value": "RÈGLEMENT"
+        },
+        {
+          "type": "link",
+          "value": "RÈGLEMENT",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_91e22e7bdfa24f0093ac133ee9b4c8b4.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "le-festival",
+      "title": "Le Festival",
+      "url": "https://www.zikamansle.fr/le-festival",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_6010875e3ac74b0380df068a8e013add~mv2.png",
+          "alt": "Affiche rétro du pont illuminé.png"
+        },
+        {
+          "type": "heading",
+          "value": "Le Festival ZikaMansle"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/4d3d85_472d987cc0ae4c0991d78e31f04735cb~mv2.jpg",
+          "alt": "flower.jpg"
+        },
+        {
+          "type": "link",
+          "value": "attitude-podcast_Morning-Festival_ZIKAMANSLE-210926.mp3",
+          "url": "https://music.wixstatic.com/mp3/685632_ce55c054b82b4657ae799d4ee657e8fa.mp3"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle est un festival culturel qui se tient à Mansle-les-Fontaines en Charente."
+        },
+        {
+          "type": "text",
+          "value": "Pendant deux jours, la ville se transforme en terrain de jeu festif"
+        },
+        {
+          "type": "text",
+          "value": "avec concerts, parade, village associatif et animations pour tous les publics."
+        },
+        {
+          "type": "text",
+          "value": "Pensé comme un rendez-vous convivial et intergénérationnel,"
+        },
+        {
+          "type": "text",
+          "value": "le festival met en avant des artistes aux univers variés"
+        },
+        {
+          "type": "text",
+          "value": "et crée des moments de partage entre habitants, visiteurs, associations"
+        },
+        {
+          "type": "text",
+          "value": "et partenaires du territoire."
+        },
+        {
+          "type": "link",
+          "value": "Télécharger notre dossier de présentation",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_398e5818620e417da5f1bf24ec1691e2.pdf"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_0151ca62ad214bc3878235065503f11d~mv2.jpg",
+          "alt": "Picsart_26-10-01_00-52-52-239.jpg"
+        },
+        {
+          "type": "heading",
+          "value": "Notre histoire"
+        },
+        {
+          "type": "text",
+          "value": "Né de l’envie de faire vibrer Mansle-les-Fontaines au rythme de la Culture, le Festival ZikaMansle est porté par une équipe de passionnés"
+        },
+        {
+          "type": "text",
+          "value": "de culture et de vie locale."
+        },
+        {
+          "type": "text",
+          "value": "La première édition 2027 marque"
+        },
+        {
+          "type": "text",
+          "value": "une nouvelle étape :"
+        },
+        {
+          "type": "text",
+          "value": "une programmation ambitieuse, des animations pour tous les âges et une volonté affirmée de faire du festival un temps fort du territoire charentais."
+        },
+        {
+          "type": "text",
+          "value": "Entouré d'un soixantaine de bénévoles, mais aussi d’associations locales et de partenaires engagés, le festival grandit avec et pour celles et ceux"
+        },
+        {
+          "type": "text",
+          "value": "qui le font vivre."
+        },
+        {
+          "type": "heading",
+          "value": "Nos valeurs"
+        },
+        {
+          "type": "text",
+          "value": "Ce qui guide le Festival ZikaMansle"
+        },
+        {
+          "type": "text",
+          "value": "Proposer un événement ouvert au plus grand nombre, avec une attention particulière portée aux familles et aux publics éloignés de l’offre culturelle."
+        },
+        {
+          "type": "text",
+          "value": "Créer un cadre chaleureux où habitants, artistes, bénévoles et partenaires se rencontrent et échangent."
+        },
+        {
+          "type": "text",
+          "value": "Mettre en lumière Mansle-les-Fontaines, la Charente et les acteurs du territoire à travers les partenariats, la programmation et les animations."
+        },
+        {
+          "type": "text",
+          "value": "Défendre la place de la culture comme moteur de lien social, de curiosité et de découverte."
+        },
+        {
+          "type": "heading",
+          "value": "Un festival ancré à Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle est avant tout"
+        },
+        {
+          "type": "text",
+          "value": "une aventure humaine et collective,"
+        },
+        {
+          "type": "text",
+          "value": "portée par des passionnés qui aiment leur territoire et souhaitent avant tout le faire rayonner."
+        },
+        {
+          "type": "text",
+          "value": "Profondément ancré dans la vie locale,"
+        },
+        {
+          "type": "text",
+          "value": "notre festival met à l’honneur les commerçants, artisans, prestataires et associations"
+        },
+        {
+          "type": "text",
+          "value": "qui souhaitent s'imppliquer dans un projet local"
+        },
+        {
+          "type": "text",
+          "value": "et contribuent chaque jour au dynamisme"
+        },
+        {
+          "type": "text",
+          "value": "de notre région."
+        },
+        {
+          "type": "text",
+          "value": "Plus qu’un simple événement, c’est une occasion de se retrouver, de partager, de créer des liens"
+        },
+        {
+          "type": "text",
+          "value": "et de faire vivre ensemble notre territoire."
+        },
+        {
+          "type": "text",
+          "value": "Un festival imaginé ici, construit ensemble"
+        },
+        {
+          "type": "text",
+          "value": "et ouvert à tous !"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/11062b_9bab534d344d4c7f8bac6fd217e36aa7~mv2.jpg",
+          "alt": "Nature in Bloom"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/11062b_1332f4b2531841b0812ef2094f60c4b2~mv2.jpg",
+          "alt": "Silent Horizon"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/11062b_6ac63895329a4a2092faebdd1f16e9ce~mv2.jpg",
+          "alt": "Still Life"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/11062b_096606ac7df0431aa696df4882393a45~mv2.jpg",
+          "alt": "Linear Landscape"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_04907227d115406cbf1e897cf963ec22~mv2.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "expositions-patrimoine",
+      "title": "Expositions & Patrimoine",
+      "url": "https://www.zikamansle.fr/expositions-patrimoine",
+      "blocks": [
+        {
+          "type": "heading",
+          "value": "EXPOSITIONS & PATRIMOINE"
+        },
+        {
+          "type": "heading",
+          "value": "L'art, l'histoire et le patrimoine s'invitent au festival !"
+        },
+        {
+          "type": "text",
+          "value": "Et si ZikaMansle était aussi l'occasion de regarder notre territoire autrement ? Expositions, photographie, patrimoine, création artistique et découvertes culturelles :"
+        },
+        {
+          "type": "text",
+          "value": "laissez-vous surprendre par toutes les richesses de Mansle-les-Fontaines et de la Charente !"
+        },
+        {
+          "type": "heading",
+          "value": "Une ville, des histoires, des découvertes"
+        },
+        {
+          "type": "text",
+          "value": "Pendant le Festival ZikaMansle, la culture prend vie dans différents lieux de Mansle-les-Fontaines."
+        },
+        {
+          "type": "text",
+          "value": "De l'histoire des Femmes en Charente à la richesse de l'architecture romane, en passant par les paysages du fleuve"
+        },
+        {
+          "type": "text",
+          "value": "et le regard des photographes, cette première édition invite le public"
+        },
+        {
+          "type": "text",
+          "value": "à découvrir toute la diversité de notre patrimoine."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_4410941c96d54b009fd112735eddf653~mv2.png",
+          "alt": "Exposition Femmes en Charente.png"
+        },
+        {
+          "type": "heading",
+          "value": "L'Art Roman en Poitou-Charentes"
+        },
+        {
+          "type": "heading",
+          "value": "Un patrimoine architectural à redécouvrir"
+        },
+        {
+          "type": "text",
+          "value": "Églises, chapiteaux sculptés, façades de pierre : l'art roman est profondément ancré dans l'histoire de la Charente."
+        },
+        {
+          "type": "text",
+          "value": "À travers 14 panneaux, cette exposition invite le public à découvrir"
+        },
+        {
+          "type": "text",
+          "value": "les caractéristiques et la richesse de cet héritage architectural. Lieu et dates prochainement annoncés."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_7e0cdb07863a49609932cea2597cd2ba~mv2.png",
+          "alt": "arton72-0b515.png"
+        },
+        {
+          "type": "heading",
+          "value": "Femmes en Charente, du Moyen Âge à nos jours"
+        },
+        {
+          "type": "heading",
+          "value": "Des siècles d'histoire au féminin"
+        },
+        {
+          "type": "text",
+          "value": "L'histoire de la Charente s'est aussi écrite au féminin !"
+        },
+        {
+          "type": "text",
+          "value": "Du Moyen Âge à nos jours, les femmes ont joué un rôle essentiel dans la vie économique, sociale, culturelle et quotidienne"
+        },
+        {
+          "type": "text",
+          "value": "de notre territoire."
+        },
+        {
+          "type": "text",
+          "value": "Une occasion de mieux comprendre les évolutions de la société. Du 5 avril au 10 mai 2027 Médiathèque de Mansle-les-Fontaines"
+        },
+        {
+          "type": "text",
+          "value": "Exposition des Archives départementales de la Charente."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_f24c14a63b344036b450427098e4d5ff~mv2.png",
+          "alt": "Affiche de l’exposition Art roman sollicitudes.png"
+        },
+        {
+          "type": "heading",
+          "value": "Le paysage au fil du fleuve"
+        },
+        {
+          "type": "heading",
+          "value": "La Charente à travers le regard des habitants"
+        },
+        {
+          "type": "text",
+          "value": "Une sélection de regards photographiques consacrés aux paysages"
+        },
+        {
+          "type": "text",
+          "value": "du fleuve Charente, issue d'un concours photographique."
+        },
+        {
+          "type": "text",
+          "value": "Un regard sensible sur notre environnement. Proposé par le CAUE 16."
+        },
+        {
+          "type": "link",
+          "value": "Voir sur le plan",
+          "url": "https://www.zikamansle.fr/infos-pratiques"
+        },
+        {
+          "type": "link",
+          "value": "Présentation du projet",
+          "url": "https://www.caue16.fr/le-paysage-au-fil-du-fleuve"
+        },
+        {
+          "type": "heading",
+          "value": "À vous de capturer notre territoire !"
+        },
+        {
+          "type": "text",
+          "value": "Vous aimez photographier les paysages, les monuments ou les lieux qui vous entourent ? Participez au concours photo ZikaMansle ! Remise des prix le dimanche 25 avril 2027."
+        },
+        {
+          "type": "link",
+          "value": "Découvrir le concours photo",
+          "url": "https://www.zikamansle.fr/concours-photo-regards-sur-mansle"
+        },
+        {
+          "type": "heading",
+          "value": "La Culture continue au Festival ZikaMansle !"
+        },
+        {
+          "type": "heading",
+          "value": "RENCONTRES LITTÉRAIRES"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez les autrices Youna Wagner et Liliane Laviron Moulin le samedi 24 avril."
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://www.zikamansle.fr/rencontres-litteraires"
+        },
+        {
+          "type": "heading",
+          "value": "ZIKACINOCHE"
+        },
+        {
+          "type": "text",
+          "value": "Projections, rencontres et expositions"
+        },
+        {
+          "type": "heading",
+          "value": "EXPÉRIENCES IMMERSIVES"
+        },
+        {
+          "type": "text",
+          "value": "Énigmes au Parc Floral et jeu de piste"
+        },
+        {
+          "type": "text",
+          "value": "'À la recherche de la plume de Zika'."
+        },
+        {
+          "type": "heading",
+          "value": "La Culture appartient à tous"
+        },
+        {
+          "type": "text",
+          "value": "ZikaMansle est né d'une envie : faire vivre notre territoire, créer des rencontres et mettre en lumière toutes les formes de culture."
+        },
+        {
+          "type": "text",
+          "value": "La musique occupe une place importante, mais notre ambition va bien au-delà :"
+        },
+        {
+          "type": "text",
+          "value": "favoriser la transmission, la curiosité et l'ouverture aux autres."
+        }
+      ]
+    },
+    {
+      "slug": "zikarun",
+      "title": "ZikaRun Le jeu",
+      "url": "https://www.zikamansle.fr/zikarun",
+      "blocks": []
+    },
+    {
+      "slug": "partenaires",
+      "title": "Partenaires / Exposants",
+      "url": "https://www.zikamansle.fr/partenaires",
+      "blocks": [
+        {
+          "type": "heading",
+          "value": "Devenir partenaire du Festival ZikaMansle"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle se construit avec le soutien"
+        },
+        {
+          "type": "text",
+          "value": "de partenaires engagés sur le territoire."
+        },
+        {
+          "type": "text",
+          "value": "En associant votre image à l’événement, vous soutenez"
+        },
+        {
+          "type": "text",
+          "value": "la culture, la vie locale et profitez d’une visibilité forte"
+        },
+        {
+          "type": "text",
+          "value": "auprès d’un public varié."
+        },
+        {
+          "type": "link",
+          "value": "Télécharger le dossier partenaire",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_ea2faa686f7b4745ab7b00305ac2d84b.pdf"
+        },
+        {
+          "type": "link",
+          "value": "Devenez partenaire maintenant",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/offre-de-partenariat-zikamansle-2027?_gl=1%2a1oiam1o%2a_gcl_aw%2aR0NMLjE3NzY1MDUxMTAuQ2p3S0NBancxNHpQQmhBdUVpd0FQMy1FYjZrcmpXaTZfajNWc09hMEV2UDVCSEZpa2thY0pvV0xzc1BER0RNcVQ0d1MxWFZ3SEkwUF9ob0NyUzBRQXZEX0J3RQ..%2a_gcl_au%2aMTE4MTQ5Mzg0Mi4xNzczNDE3Nzc5LjE5NTYxMDMzNDIuMTc3ODA3NjM4Mi4xNzc4MDc4NDM0"
+        },
+        {
+          "type": "heading",
+          "value": "Nos offres de partenariat"
+        },
+        {
+          "type": "heading",
+          "value": "25 €"
+        },
+        {
+          "type": "text",
+          "value": "Logo sur le site web et nos réseauw sociaux"
+        },
+        {
+          "type": "heading",
+          "value": "50 €"
+        },
+        {
+          "type": "text",
+          "value": "Logo sur le site web et réseaux sociaux"
+        },
+        {
+          "type": "text",
+          "value": "Intégration sur les supports partenaires du festival"
+        },
+        {
+          "type": "heading",
+          "value": "100 €"
+        },
+        {
+          "type": "text",
+          "value": "Logo sur site web et réseaux sociaux"
+        },
+        {
+          "type": "text",
+          "value": "Logo sur supports de communication"
+        },
+        {
+          "type": "text",
+          "value": "Annonce micro pendant le festival"
+        },
+        {
+          "type": "text",
+          "value": "2 invitations offertes"
+        },
+        {
+          "type": "heading",
+          "value": "250 €"
+        },
+        {
+          "type": "text",
+          "value": "Tout le pack BRONZE"
+        },
+        {
+          "type": "text",
+          "value": "4 invitations offertes"
+        },
+        {
+          "type": "text",
+          "value": "Possibilité de stand sur le festival"
+        },
+        {
+          "type": "heading",
+          "value": "500 €"
+        },
+        {
+          "type": "text",
+          "value": "Tout le pack ARGENT"
+        },
+        {
+          "type": "text",
+          "value": "6 invitations offertes"
+        },
+        {
+          "type": "text",
+          "value": "Possibilités de naming (buvette, restauration…)"
+        },
+        {
+          "type": "text",
+          "value": "Stand offert sur le festival"
+        },
+        {
+          "type": "heading",
+          "value": "1000 € et +"
+        },
+        {
+          "type": "text",
+          "value": "Tout le pack OR"
+        },
+        {
+          "type": "text",
+          "value": "Naming majeur (scène /Village,…)"
+        },
+        {
+          "type": "text",
+          "value": "8 invitations offertes"
+        },
+        {
+          "type": "text",
+          "value": "Visibilité maximale avec mise en avant spécifique"
+        },
+        {
+          "type": "heading",
+          "value": "Vos avantages"
+        },
+        {
+          "type": "text",
+          "value": "✔"
+        },
+        {
+          "type": "text",
+          "value": "Visibilité sur nos supports de communication"
+        },
+        {
+          "type": "text",
+          "value": "(affiches, réseaux sociaux, site web)."
+        },
+        {
+          "type": "text",
+          "value": "Présence sur le site et sur certains espaces du festival."
+        },
+        {
+          "type": "text",
+          "value": "Association à un événement culturel fédérateur"
+        },
+        {
+          "type": "text",
+          "value": "et intergénérationnel."
+        },
+        {
+          "type": "text",
+          "value": "Possibilités d’activités sur place"
+        },
+        {
+          "type": "text",
+          "value": "(stand, animation, distribution)."
+        },
+        {
+          "type": "heading",
+          "value": "Espace Exposants"
+        },
+        {
+          "type": "text",
+          "value": "Le Festival ZikaMansle ouvre ses portes aux créateurs et artisans passionnés."
+        },
+        {
+          "type": "text",
+          "value": "Nous vous proposons un espace dédié pour exposer votre savoir-faire"
+        },
+        {
+          "type": "text",
+          "value": "et rencontrer un public curieux et festif au cœur de notre événement culturel."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_2784090a18f74077b5a955f2a1d1a236~mv2.png",
+          "alt": "Offre créateurs Zikaparade.png"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_67af6ee56f624802966dfb8669d395dd~mv2.png",
+          "alt": "Offre créateur soirée concerts.png"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_8f42677c5f0541b79fc51841f9d61865~mv2.png",
+          "alt": "Offre créateurs Zikacinoche.png"
+        },
+        {
+          "type": "link",
+          "value": "Je réserve mon stand",
+          "url": "https://www.helloasso.com/associations/zikamansle/evenements/offres-createurs-artisans?_gl=1%2a1bgqvh8%2a_gcl_aw%2aR0NMLjE3NzY1MDUxMTAuQ2p3S0NBancxNHpQQmhBdUVpd0FQMy1FYjZrcmpXaTZfajNWc09hMEV2UDVCSEZpa2thY0pvV0xzc1BER0RNcVQ0d1MxWFZ3SEkwUF9ob0NyUzBRQXZEX0J3RQ..%2a_gcl_au%2aMTE4MTQ5Mzg0Mi4xNzczNDE3Nzc5LjE5NTYxMDMzNDIuMTc3ODA3NjM4Mi4xNzc4MDc4NDM0"
+        },
+        {
+          "type": "text",
+          "value": "Pour respecter notre espace buvette/restauration ainsi que les commerçants voisins,"
+        },
+        {
+          "type": "text",
+          "value": "les stands de vente de nourriture et/ou de boisson ne sont pas autorisés sur le festival."
+        },
+        {
+          "type": "heading",
+          "value": "Contact partenariats/ ExPOSANTS"
+        },
+        {
+          "type": "text",
+          "value": "Vous souhaitez devenir partenaire et/ou exposants,"
+        },
+        {
+          "type": "text",
+          "value": "ou bien en savoir plus sur nos offres ? Contactez-nous :"
+        },
+        {
+          "type": "text",
+          "value": "Email : zikamansle@gmail.com"
+        },
+        {
+          "type": "link",
+          "value": "Email : zikamansle@gmail.com",
+          "url": "mailto:zikamansle@gmail.com"
+        }
+      ]
+    },
+    {
+      "slug": "rencontres-litteraires",
+      "title": "Rencontres littéraires",
+      "url": "https://www.zikamansle.fr/rencontres-litteraires",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_fd09d407bfab445f9acf175243f05251~mv2.png",
+          "alt": "Village au bord de l’eau coloré.png"
+        },
+        {
+          "type": "heading",
+          "value": "Rencontres littéraires"
+        },
+        {
+          "type": "heading",
+          "value": "Les mots aussi font leur festival !"
+        },
+        {
+          "type": "text",
+          "value": "Les livres nous font voyager, réfléchir, rêver et parfois voir le monde autrement."
+        },
+        {
+          "type": "text",
+          "value": "À ZikaMansle, la littérature prend elle aussi toute sa place !"
+        },
+        {
+          "type": "text",
+          "value": "Venez à la rencontre d'autrices passionnées, découvrez leurs univers"
+        },
+        {
+          "type": "text",
+          "value": "et partagez un moment privilégié autour des mots, de l'écriture et de la lecture."
+        },
+        {
+          "type": "heading",
+          "value": "Des livres, des histoires et des rencontres"
+        },
+        {
+          "type": "text",
+          "value": "Un festival, c'est aussi un lieu où les histoires se racontent et se partagent."
+        },
+        {
+          "type": "text",
+          "value": "Pour sa première édition, ZikaMansle ouvre une place à la littérature et invite le public"
+        },
+        {
+          "type": "text",
+          "value": "à rencontrer celles qui donnent vie aux mots."
+        },
+        {
+          "type": "text",
+          "value": "Au fil des échanges, les visiteurs pourront découvrir des parcours d'écriture,"
+        },
+        {
+          "type": "text",
+          "value": "des inspirations, des œuvres et des univers personnels."
+        },
+        {
+          "type": "text",
+          "value": "Que vous soyez lecteur passionné, amateur de découvertes ou simplement curieux,"
+        },
+        {
+          "type": "text",
+          "value": "ces rencontres sont l'occasion de partager un moment culturel"
+        },
+        {
+          "type": "text",
+          "value": "et humain au cœur de Mansle-les-Fontaines."
+        },
+        {
+          "type": "heading",
+          "value": "Rencontre avec Youna Wagner - Oawicca"
+        },
+        {
+          "type": "heading",
+          "value": "Entre littérature fantastique, mondes imaginaires et poésie"
+        },
+        {
+          "type": "heading",
+          "value": "Jeune autrice passionnée par l'écriture, Youna Wagner, connue sous le pseudonyme littéraire d'Oawicca, entraîne ses lecteurs dans des univers où l'imagination et la créativité occupent une place centrale."
+        },
+        {
+          "type": "heading",
+          "value": "À travers ses romans, notamment Les Élus de Paramoni, elle développe des mondes imaginaires, des personnages et des histoires qui témoignent de son goût pour la littérature de l'imaginaire."
+        },
+        {
+          "type": "heading",
+          "value": "Mais sa plume sait aussi se faire plus intime et sensible. En avril 2025, elle publie le poème « Je ne me souviens plus de ta voix » dans la revue littéraire Sac de Lettres de l'Université de Limoges. Un texte émouvant consacré à la mémoire, l'absence et aux souvenirs d'un être cher."
+        },
+        {
+          "type": "heading",
+          "value": "Entre aventures imaginaires et émotions personnelles, Oawicca explore différentes facettes de l'écriture et partage son amour des mots et des histoires."
+        },
+        {
+          "type": "heading",
+          "value": "Retrouvez Youna Wagner le samedi 24 avril 2027 lors des Rencontres littéraires du Festival ZikaMansle, pour découvrir son univers, ses projets romanesques et échanger avec elle autour de sa passion pour l'écriture."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_0c5e52b215044c8d80c6dbb48cc3d843~mv2.png",
+          "alt": "yw.png"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_719419862d4d43389afc8fd9fd46bd9b~mv2.png",
+          "alt": "llm.png"
+        },
+        {
+          "type": "heading",
+          "value": "Rencontre avec Liliane Laviron Moulin"
+        },
+        {
+          "type": "heading",
+          "value": "Une plume engagée au coeur des relations humaines"
+        },
+        {
+          "type": "heading",
+          "value": "Autrice de l'essai De la lune de miel à la lune de fiel, paru en 2021 aux éditions Le Lys Bleu, Liliane Laviron Moulin aborde par l'écriture des sujets profondément humains."
+        },
+        {
+          "type": "heading",
+          "value": "À travers un travail nourri de recherches, de lectures spécialisées et de témoignages, elle explore les mécanismes de l'emprise psychologique, les relations amoureuses destructrices et les difficultés rencontrées par les personnes qui en sont victimes."
+        },
+        {
+          "type": "heading",
+          "value": "Son ouvrage de 192 pages se veut à la fois un outil de compréhension, de sensibilisation et d'alerte, destiné aux personnes concernées comme à leur entourage."
+        },
+        {
+          "type": "heading",
+          "value": "Avec une démarche tournée vers la réflexion et la transmission, Liliane Laviron Moulin montre comment l'écriture peut contribuer à mettre des mots sur des expériences difficiles et à ouvrir le dialogue."
+        },
+        {
+          "type": "heading",
+          "value": "Retrouvez Liliane Laviron Moulin le samedi 24 avril 2027 lors des Rencontres littéraires du Festival ZikaMansle, pour découvrir son ouvrage, son parcours d'autrice et échanger avec elle autour des thèmes qui nourrissent son écriture."
+        },
+        {
+          "type": "heading",
+          "value": "Rendez-vous le samedi 24 avril !"
+        },
+        {
+          "type": "heading",
+          "value": "MATIN"
+        },
+        {
+          "type": "heading",
+          "value": "APRÈS-MIDI"
+        },
+        {
+          "type": "text",
+          "value": "Lieu : Médiathèque de Mansle-les-Fontaines. Rencontres littéraires au programme."
+        },
+        {
+          "type": "text",
+          "value": "Poursuite des rencontres littéraires dans le cadre"
+        },
+        {
+          "type": "text",
+          "value": "du festival. Lieu : ZikaVillage"
+        },
+        {
+          "type": "heading",
+          "value": "Les livres à découvrir"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_3fba2cab8bfc4112948059e6579d6dba~mv2.png",
+          "alt": "Les Élus de Paramoni"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_3f59b048aa4a4e179d5a0afaae7e79c2~mv2.png",
+          "alt": "De la lune de miel à la lune de fiel"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_3fba2cab8bfc4112948059e6579d6dba~mv2.png"
+        },
+        {
+          "type": "heading",
+          "value": "La littérature au cœur de Mansle"
+        },
+        {
+          "type": "text",
+          "value": "Lieu de découverte, d'échange et d'accès à la culture, la Médiathèque de Mansle-les-Fontaines accueillera les rencontres littéraires du samedi matin."
+        },
+        {
+          "type": "text",
+          "value": "Un cadre naturel pour rapprocher les autrices"
+        },
+        {
+          "type": "text",
+          "value": "et les lecteurs, favoriser la curiosité et donner"
+        },
+        {
+          "type": "text",
+          "value": "toute sa place au plaisir des mots."
+        },
+        {
+          "type": "text",
+          "value": "À travers ces rendez-vous, ZikaMansle souhaite également valoriser les lieux culturels du territoire"
+        },
+        {
+          "type": "text",
+          "value": "et encourager leur découverte."
+        },
+        {
+          "type": "link",
+          "value": "Voir le plan interactif",
+          "url": "https://www.zikamansle.fr/infos-pratiques"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_0165599c3c4742f3a93b52dffe9987e7~mv2.png",
+          "alt": "mediatheque-manslelesfontaines-93897.png"
+        },
+        {
+          "type": "link",
+          "value": "Explorer",
+          "url": "https://www.zikamansle.fr/expositions-patrimoine"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez « Femmes en Charente », l'art roman et le paysage"
+        },
+        {
+          "type": "text",
+          "value": "au fil du fleuve."
+        },
+        {
+          "type": "heading",
+          "value": "Et si vous prolongiez la découverte ?"
+        },
+        {
+          "type": "link",
+          "value": "Voir les films",
+          "url": "https://www.zikamansle.fr/zika-cinoche"
+        },
+        {
+          "type": "text",
+          "value": "Le festival fait son cinéma a"
+        },
+        {
+          "type": "text",
+          "value": "vec les projections de Mathilde"
+        },
+        {
+          "type": "text",
+          "value": "et À terre promise."
+        },
+        {
+          "type": "link",
+          "value": "Tout voir",
+          "url": "https://www.zikamansle.fr/le-festival"
+        },
+        {
+          "type": "text",
+          "value": "Consultez tous les rendez-vous"
+        },
+        {
+          "type": "text",
+          "value": "du week-end des 24 et 25 avril 2027."
+        },
+        {
+          "type": "heading",
+          "value": "Donner toute leur place aux mots"
+        },
+        {
+          "type": "text",
+          "value": "ZikaMansle est aussi né de la volonté de rendre la culture accessible, de valoriser"
+        },
+        {
+          "type": "text",
+          "value": "les talents et de créer des occasions de se rencontrer."
+        },
+        {
+          "type": "text",
+          "value": "En accueillant des autrices et en ouvrant le festival à la littérature, nous souhaitons permettre à chacun de découvrir de nouveaux horizons et de partager"
+        },
+        {
+          "type": "text",
+          "value": "le plaisir des livres."
+        },
+        {
+          "type": "text",
+          "value": "Parce que la culture rassemble, questionne,"
+        },
+        {
+          "type": "text",
+          "value": "inspire et fait grandir nos territoires."
+        }
+      ]
+    },
+    {
+      "slug": "zik-armonie-le-village-prevention-sante-bien-etre",
+      "title": "ZikArmonie – Le village prévention",
+      "url": "https://www.zikamansle.fr/zik-armonie-le-village-prevention-sante-bien-etre",
+      "blocks": [
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_fd09d407bfab445f9acf175243f05251~mv2.png",
+          "alt": "Village au bord de l’eau coloré.png"
+        },
+        {
+          "type": "heading",
+          "value": "ZikArmonie"
+        },
+        {
+          "type": "text",
+          "value": "Au cœur du Festival ZikaMansle, ZikArmonie est un espace gratuit où prévention, santé, bien-être, citoyenneté et environnement se rencontrent"
+        },
+        {
+          "type": "text",
+          "value": "dans une ambiance conviviale et festive."
+        },
+        {
+          "type": "text",
+          "value": "Pensé pour tous les publics, ce village proposera des animations, des rencontres"
+        },
+        {
+          "type": "text",
+          "value": "et des expériences accessibles à tous."
+        },
+        {
+          "type": "link",
+          "value": "Découvrir le projet",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_ca484a85ce894db99c04e7095969a3ff.pdf"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_7b69a2f995874c1ca3c4cd244e8ed3e7~mv2.png",
+          "alt": "ChatGPT Image 21 juil. 2026, 20_02_26.png"
+        },
+        {
+          "type": "heading",
+          "value": "Qu’est-ce que ZikArmonie ?"
+        },
+        {
+          "type": "text",
+          "value": "ZikArmonie est né d'une volonté simple :"
+        },
+        {
+          "type": "text",
+          "value": "proposer une autre façon de faire de la prévention. Ici, pas de discours moralisateurs."
+        },
+        {
+          "type": "text",
+          "value": "Nous souhaitons créer un lieu vivant où chacun peut découvrir, expérimenter, échanger et apprendre grâce à des animations ludiques et à la présence d'associations et de professionnels engagés. L'objectif est de faire de la prévention une expérience positive, accessible et conviviale."
+        },
+        {
+          "type": "heading",
+          "value": "Des animations GRATUITES pour tous"
+        },
+        {
+          "type": "heading",
+          "value": "Un festival où chacun a sa place"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ead91a7e9d7044649c88450ecf008530~mv2.png",
+          "alt": "ChatGPT Image 26 juil. 2026, 03_34_21.png"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_d573e51dea7a4c88b00db8a7d97ee981~mv2.png",
+          "alt": "ChatGPT Image 26 juil. 2026, 03_30_28.png"
+        },
+        {
+          "type": "text",
+          "value": "Parce que la fête doit être un espace de liberté et de sécurité pour toutes"
+        },
+        {
+          "type": "text",
+          "value": "et tous, ZikaMansle s'engage activement dans la prévention et la lutte contre toutes les formes de violences sexistes et sexuelles (VHSS), de harcèlement et de discrimination."
+        },
+        {
+          "type": "text",
+          "value": "Cet engagement se traduit par des actions concrètes, une équipe formée et un accueil bienveillant"
+        },
+        {
+          "type": "text",
+          "value": "pour garantir une expérience sereine à chaque festivalier."
+        },
+        {
+          "type": "link",
+          "value": "Consulter notre protocole VHSS",
+          "url": "https://www.zikamansle.fr/_files/ugd/685632_15ae6761a88b4e5397f3549d73e4b129.pdf"
+        },
+        {
+          "type": "heading",
+          "value": "Nos partenaires"
+        },
+        {
+          "type": "text",
+          "value": "Découvrez les structures qui s'engagent aux côtés de ZikArmonie."
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_ae5620f1cb774bba8f5ac5b156a11ceb~mv2.jpg",
+          "alt": "France ADOT 16"
+        },
+        {
+          "type": "image",
+          "value": "https://static.wixstatic.com/media/685632_c484d1574988480b86ec74b9d8ccf59e~mv2.jpg",
+          "alt": "Collectif Ekinox"
+        },
+        {
+          "type": "link",
+          "value": "En savoir plus",
+          "url": "https://static.wixstatic.com/media/685632_56fef598c8b44339bd5eac9797b250d4~mv2.png"
+        },
+        {
+          "type": "heading",
+          "value": "Vous souhaitez participer ?"
+        },
+        {
+          "type": "text",
+          "value": "Vous représentez une association, une institution, une entreprise ou une structure engagée dans la prévention, la santé, le bien-être, l'environnement ou la sécurité ? Rejoignez l'aventure ZikArmonie et contribuez à faire de ce village un espace unique au cœur du festival."
+        },
+        {
+          "type": "link",
+          "value": "Nous contacter",
+          "url": "mailto:zikamansle@gmail.com"
+        }
+      ]
+    }
+  ]
+}
