@@ -175,14 +175,27 @@ async function enqueue(db,a,reason){
  }
  return memberIds.length;
 }
+// Envoi désactivé par défaut. En staging, seuls les IDs explicites de test
+// reçoivent des push; en production, chaque membre concerné et abonné peut en recevoir.
+export function teamPushConfigured(env){
+ return env.TEAM_PUSH_ENABLED==='true'&&Boolean(env.DB&&env.VAPID_PRIVATE_JWK&&env.VAPID_PUBLIC_KEY)&&
+  (env.APP_ENV!=='staging'||Boolean(String(env.TEAM_PUSH_TEST_MEMBER_IDS||'').trim()));
+}
+export function teamPushRecipientAllowed(env,memberId){
+ if(!teamPushConfigured(env)||!memberId)return false;
+ if(env.APP_ENV!=='staging')return true;
+ return String(env.TEAM_PUSH_TEST_MEMBER_IDS||'').split(',').map(x=>x.trim()).filter(Boolean).includes(memberId);
+}
+
 export async function drainTeamPush(env,maximum=40){
  // Never send in staging or when explicitly disabled; jobs stay in the queue.
- if(env.APP_ENV==='staging'||env.TEAM_PUSH_ENABLED!=='true'||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY||!env.DB)return {sent:0,disabled:true};
+ if(!teamPushConfigured(env))return {sent:0,disabled:true};
  const db=env.DB,jobs=await all(db,"SELECT * FROM team_push_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
  let sent=0;
  for(const job of jobs){
   const claimed=await db.prepare("UPDATE team_push_jobs SET status='processing' WHERE id=? AND status='pending'").bind(job.id).run();if(!claimed.meta.changes)continue;
   const a=await one(db,'SELECT * FROM team_activities WHERE id=?',job.activity_id),m=await one(db,'SELECT active FROM team_members WHERE id=?',job.member_id);
+  if(!teamPushRecipientAllowed(env,job.member_id)){await db.prepare("UPDATE team_push_jobs SET status='pending' WHERE id=?").bind(job.id).run();continue;}
   const stillLinked=await one(db,'SELECT member_id FROM team_push_links WHERE member_id=? AND subscription_id=?',job.member_id,job.subscription_id);
   const intended=a&&m?.active&&stillLinked&&(await audienceMembers(db,a)).includes(job.member_id);
   const allowedState=(a?.status==='published'&&job.reason!=='cancelled')||(a?.status==='cancelled'&&job.reason==='cancelled');
@@ -210,9 +223,7 @@ export async function drainTeamPush(env,maximum=40){
  * volontairement leur appareil à ZikaTeam. Une seule alerte par appareil.
  */
 export async function notifyTeamChat(env,ctx,message){
- if(!env.DB||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY)return {sent:0,disabled:true};
- const staging=env.APP_ENV==='staging';
- if(staging?env.PUSH_TEST_ENABLED!=='true':env.TEAM_PUSH_ENABLED!=='true')return {sent:0,disabled:true};
+ if(!teamPushConfigured(env))return {sent:0,disabled:true};
  const db=env.DB;
  const channel=message.channel,channelId=message.channelId||null;
  const members=await all(db,"SELECT id,email FROM team_members WHERE active=1 AND id<>? LIMIT 200",ctx.member.id);
@@ -220,7 +231,7 @@ export async function notifyTeamChat(env,ctx,message){
  // lié pour ne pas lancer une notification de groupe à tous les bénévoles.
  let sent=0;
  for(const recipient of members){
-  if(staging&&recipient.email!==String(env.ADMIN_EMAIL||'').toLowerCase().trim())continue;
+  if(!teamPushRecipientAllowed(env,recipient.id))continue;
   const recipientCtx={admin:recipient.email===String(env.ADMIN_EMAIL||'').toLowerCase().trim(),member:recipient,pending:false,leadPoles:[],memberships:[]};
   recipientCtx.memberships=await all(db,'SELECT pole_id,role FROM team_memberships WHERE member_id=?',recipient.id);
   recipientCtx.leadPoles=recipientCtx.memberships.filter(x=>x.role==='lead').map(x=>x.pole_id);
@@ -249,7 +260,7 @@ export async function notifyTeamChat(env,ctx,message){
 
 // Rappels horaires, exclusivement pour les destinataires encore autorisés.
 export async function scheduleTeamReminders(env,maximum=40){
- if(env.APP_ENV==='staging'||env.TEAM_PUSH_ENABLED!=='true'||!env.DB||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY)return {sent:0,disabled:true};
+ if(!teamPushConfigured(env))return {sent:0,disabled:true};
  const db=env.DB,clock=now();
  for(const [kind,hours] of [['24h',24],['2h',2]]){
   const from=new Date(clock+hours*3600000-30*60000).toISOString();
@@ -258,6 +269,7 @@ export async function scheduleTeamReminders(env,maximum=40){
   for(const activity of activities){
    const members=await audienceMembers(db,activity);
    for(const memberId of members){
+    if(!teamPushRecipientAllowed(env,memberId))continue;
     const declined=await one(db,"SELECT answer FROM team_activity_rsvps WHERE activity_id=? AND member_id=?",activity.id,memberId);
     if(declined?.answer==='no')continue;
     const subs=await all(db,'SELECT subscription_id FROM team_push_links WHERE member_id=?',memberId);
@@ -271,13 +283,19 @@ export async function scheduleTeamReminders(env,maximum=40){
   const lock=await db.prepare("UPDATE team_reminder_jobs SET status='processing' WHERE activity_id=? AND subscription_id=? AND kind=? AND status='pending'").bind(job.activity_id,job.subscription_id,job.kind).run();
   if(!lock.meta.changes)continue;
   const a=await one(db,'SELECT * FROM team_activities WHERE id=?',job.activity_id);
+  if(!teamPushRecipientAllowed(env,job.member_id)){await db.prepare("UPDATE team_reminder_jobs SET status='pending' WHERE activity_id=? AND subscription_id=? AND kind=?").bind(job.activity_id,job.subscription_id,job.kind).run();continue;}
   const linked=await one(db,"SELECT l.member_id FROM team_push_links l JOIN team_members m ON m.id=l.member_id WHERE l.member_id=? AND l.subscription_id=? AND m.active=1",job.member_id,job.subscription_id);
   const audience=a?.status==='published'&&(await audienceMembers(db,a)).includes(job.member_id);
   const r=await one(db,'SELECT answer FROM team_activity_rsvps WHERE activity_id=? AND member_id=?',job.activity_id,job.member_id);
   const sub=await one(db,'SELECT endpoint,p256dh,auth FROM push_subscriptions WHERE id=?',job.subscription_id);
+  const prefs=await one(db,'SELECT activity_enabled,quiet_enabled,quiet_start,quiet_end,sound_mode,vibrate FROM team_notification_preferences WHERE member_id=?',job.member_id);
+  const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false});
+  const start=prefs?.quiet_start||'22:00',end=prefs?.quiet_end||'08:00';
+  const quiet=prefs?.quiet_enabled&&(start<=end?(local>=start&&local<end):(local>=start||local<end));
+  if(quiet){await db.prepare("UPDATE team_reminder_jobs SET status='pending' WHERE activity_id=? AND subscription_id=? AND kind=?").bind(job.activity_id,job.subscription_id,job.kind).run();continue;}
   let code=0;
-  if(linked&&audience&&r?.answer!=='no'&&sub){
-   const data={title:'ZikaTeam · Rappel '+(job.kind==='24h'?'demain':'dans 2 h'),body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites'};
+  if(linked&&audience&&r?.answer!=='no'&&sub&&prefs?.activity_enabled!==0){
+   const data={title:'ZikaTeam · Rappel '+(job.kind==='24h'?'demain':'dans 2 h'),body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites',silent:prefs?.sound_mode==='none',vibrate:prefs?.vibrate!==0?[120,70,120]:[]};
    try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},data,env)}catch{}
   }
   const ok=code>=200&&code<300;
