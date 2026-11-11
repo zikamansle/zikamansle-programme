@@ -1,0 +1,40 @@
+name: Find mobile admin navigation and hosting
+on:
+  push:
+    branches: [prepare/google-play-android-2026]
+    paths: ['.github/workflows/audit-app-admin-entry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect live app frontend nav and deployment headers
+        run: |
+          python3 - <<'PY'
+          import requests,re
+          b='https://app.zikamansle.fr'
+          s=requests.Session()
+          s.headers.update({'User-Agent':'Mozilla/5.0 Chrome/140 Safari/537.36'})
+          for path in ['/', '/mobile.js', '/model.js', '/notifications.js','/admin-notifications.js','/config.js','/manifest.webmanifest']:
+            try:
+              r=s.get(b+path,timeout=15)
+              print('FILE',path,'status',r.status_code,'content-type',r.headers.get('content-type'),'server',r.headers.get('server'),'cf-ray',bool(r.headers.get('cf-ray')),'x-vercel-id',bool(r.headers.get('x-vercel-id')),'x-powered-by',r.headers.get('x-powered-by'))
+              if r.status_code!=200: continue
+              txt=r.text
+              print('SIZE',len(txt))
+              if path=='/':
+                print('SCRIPT_PATHS',re.findall(r'<script[^>]+src=["\\\']([^"\\\']+)',txt,re.I)[:20])
+              if path.endswith('.js') and path not in ['/notifications.js','/admin-notifications.js']:
+                matches=list(re.finditer(r'plus|admin|partenaires|actualit|param[eè]tres|navigation|menu|supabase|fetch\\s*\\(',txt,re.I))
+                print('MATCHES',len(matches))
+                for m in matches[:32]:
+                  frag=txt[max(0,m.start()-135):m.end()+180].replace('\\n',' ')
+                  print('SNIP',re.sub(r'eyJ[A-Za-z0-9._-]{40,}','[REDACTED]',frag)[:390])
+              if path=='/admin-notifications.js':
+                print('ADMIN_FUNCTIONS',re.findall(r'function\\s+([A-Za-z_$][\\w$]*)|/api/[\\w/-]+',txt)[:35])
+                print('AUTH_MARKERS',[(word,word.lower() in txt.lower()) for word in ['oauth','login','whoami','admin','token','subscribe','publish','broadcast']])
+            except Exception as e:print('ERR',path,str(e)[:200])
+          PY
