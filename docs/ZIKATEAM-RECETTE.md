@@ -47,3 +47,12 @@ Cette matrice distingue **fonction codée** et **test utilisateur réel**. Une c
 ## Sécurité de déploiement
 
 Ne pas déployer, fusionner vers `main`, modifier `app.zikamansle.fr`, modifier les DNS ou activer les notifications de groupe avant la recette complète. Ne jamais utiliser de données personnelles de bénévoles pour les tests automatiques.
+
+## Corrections intégrées après inventaire
+
+- La génération des rappels ne dépend plus du paramètre `TEAM_ACCESS_AUD` lorsque la connexion utilise Supabase.
+- `APP_ENV=staging` interdit explicitement l'émission de notifications et de rappels, même si un commutateur d'envoi était activé par erreur.
+- Un workflow indépendant `.github/workflows/test-zikateam-feature.yml` lance `npm ci`, `npm test` et la compilation sèche à chaque mise à jour des sources ZikaTeam, **sans secret Cloudflare ni déploiement**.
+- Tests supplémentaires des règles de confidentialité et de l'interdiction des notifications staging.
+
+**Attention :** l'existence d'un workflow ne constitue pas une preuve que ses exécutions ont réussi. Son résultat doit être consulté dans l'onglet Actions de GitHub avant validation.
