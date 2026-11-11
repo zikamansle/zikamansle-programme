@@ -83,6 +83,42 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal(msgRead.status,200);
   assert.equal(msgRead.payload.messages.at(-1).author,'Administration');
   assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='general').unread,0,'ouverture du salon marque les messages lus');
+  // Photo personnelle : elle reste privée sans consentement et devient avatar du groupe après choix Oui.
+  const storage=new Map();
+  env.BUCKET={
+   put:async(key,bytes)=>{storage.set(key,bytes)},
+   get:async key=>storage.has(key)?{body:storage.get(key)}:null,
+   delete:async key=>{storage.delete(key)}
+  };
+  const photo=new Uint8Array(40);photo.set([255,216,255],0);
+  async function filePost(email,path,bytes,mime,name){
+   const res=await handleZikaTeam(new Request('https://example.org'+path,{
+    method:'POST',headers:{'Cf-Access-Jwt-Assertion':email,origin:'https://example.org','Content-Type':mime,'X-File-Name':encodeURIComponent(name)},body:bytes
+   }),env);
+   return {status:res.status,payload:await res.json()};
+  }
+  const photoUpload=await filePost(B,'/zikateam/api/photo?member='+member,photo,'image/jpeg','avatar.jpg');
+  assert.equal(photoUpload.status,200,'le bénévole ajoute lui-même sa photo');
+  assert.equal((await invoke(B,'/zikateam/api/me')).payload.member.has_photo,true);
+  const msgPrivate=await invoke(L,'/zikateam/api/messages?channel=general');
+  assert.equal(msgPrivate.status,200);
+  assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/photo/'+member,{headers:{'Cf-Access-Jwt-Assertion':L}}),env)).status,403,'aucune photo affichée sans consentement');
+  await okay(B,{op:'consents.save',consents:{image:true,phone:false,email:false}});
+  await okay(B,{op:'message.send',channel:'pole',channelId:pole,body:'Avec mon avatar'});
+  const avatarMessage=(await invoke(L,'/zikateam/api/messages?channel=pole&id='+pole)).payload.messages.at(-1);
+  assert.equal(avatarMessage.has_photo,1,'avatar visible dans le groupe autorisé après consentement');
+  assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/photo/'+member,{headers:{'Cf-Access-Jwt-Assertion':L}}),env)).status,200);
+  assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/photo/'+member,{headers:{'Cf-Access-Jwt-Assertion':O}}),env)).status,403,'personne hors du pôle exclue de la photo');
+  const mediaUpload=await filePost(B,'/zikateam/api/chat-media?channel=pole&id='+pole,photo,'image/jpeg','souvenir.jpg');
+  assert.equal(mediaUpload.status,200,'envoi de média dans son groupe');
+  const mediaList=(await invoke(L,'/zikateam/api/messages?channel=pole&id='+pole)).payload.messages;
+  assert.equal(mediaList.at(-1).media_id,mediaUpload.payload.id,'pièce jointe liée au message');
+  assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/chat-media/'+mediaUpload.payload.id,{headers:{'Cf-Access-Jwt-Assertion':O}}),env)).status,403,'média interdit hors du groupe');
+  assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/chat-media/'+mediaUpload.payload.id,{headers:{'Cf-Access-Jwt-Assertion':L}}),env)).status,200,'média accessible aux membres du groupe');
+  await okay(B,{op:'consents.save',consents:{image:false,phone:false,email:false}});
+  const avatarRevoked=(await invoke(L,'/zikateam/api/messages?channel=pole&id='+pole)).payload.messages.find(m=>m.id===avatarMessage.id);
+  assert.equal(avatarRevoked.has_photo,0,'retrait du droit à l’image immédiatement respecté');
+
 
   // Le partage des coordonnées est choisi par la personne, et ne concerne que son pôle.
   await okay(A,{op:'contact.set',memberId:member,phone:'0600000016',city:'Mansle-les-Fontaines'});
