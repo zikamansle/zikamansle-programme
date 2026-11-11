@@ -147,8 +147,9 @@ async function getManage(db,ctx){
  const listMemberships=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):[];
  const listRoles=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,role FROM team_member_roles'):[];
  const consentsAdmin=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,kind,granted,updated_at FROM team_member_consents'):[];
+ const savedLists=ctx.admin||ctx.secretariat?await all(db,'SELECT id,title,columns_json,member_ids_json,created_by,created_at,updated_at FROM team_saved_lists ORDER BY updated_at DESC LIMIT 100'):[];
  const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts,listMemberships,listRoles,consentsAdmin});
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -528,6 +529,26 @@ async function signingAction(db,ctx,d){
 }
 
 async function adminAction(db,ctx,d){
+ if(d.op==='list.save'){
+  if(!ctx.admin&&!ctx.secretariat)return fail('Listes réservées à l’administration et au secrétariat.',403);
+  const title=clean(d.title,110),columns=Array.isArray(d.columns)?d.columns:[],ids=Array.isArray(d.memberIds)?d.memberIds:[];
+  const validColumns=['name','quality','poles','paid','phone','email','address','postal_code','city','paid_on'];
+  if(title.length<2||!columns.length||columns.length>10||columns.some(k=>!validColumns.includes(k))||new Set(columns).size!==columns.length)return fail('Nom ou colonnes de liste invalides.',400);
+  if(ids.length>500||ids.some(x=>!idok(x))||new Set(ids).size!==ids.length)return fail('Sélection de bénévoles invalide.',400);
+  for(const id of ids)if(!await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',id))return fail('Un bénévole sélectionné n’est plus actif.',409);
+  if(d.id!==undefined&&!idok(d.id))return fail('Identifiant de liste invalide.',400);
+  const id=d.id||uuid(),existing=d.id?await one(db,'SELECT id,created_at FROM team_saved_lists WHERE id=?',id):null;
+  if(d.id&&!existing)return fail('Liste introuvable.',404);
+  await db.prepare('INSERT INTO team_saved_lists(id,title,columns_json,member_ids_json,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,columns_json=excluded.columns_json,member_ids_json=excluded.member_ids_json,updated_at=excluded.updated_at').bind(id,title,JSON.stringify(columns),JSON.stringify(ids),ctx.email,existing?.created_at||now(),now()).run();
+  await audit(db,ctx.email,'list.save',id,title);return reply({ok:true,id});
+ }
+ if(d.op==='list.delete'){
+  if(!ctx.admin&&!ctx.secretariat)return fail('Listes réservées à l’administration et au secrétariat.',403);
+  if(!idok(d.id))return fail('Liste invalide.',400);
+  const deleted=await db.prepare('DELETE FROM team_saved_lists WHERE id=?').bind(d.id).run();
+  if(!deleted.meta?.changes)return fail('Liste introuvable.',404);
+  await audit(db,ctx.email,'list.delete',d.id);return reply({ok:true});
+ }
  if(d.op==='member.name.set'){
   if(!ctx.admin&&!ctx.secretariat)return fail('Modification de fiche réservée à l’administration et au secrétariat.',403);
   if(!idok(d.memberId)||!clean(d.name,110)||clean(d.name,110).length<2)return fail('Nom de bénévole invalide.',400);
