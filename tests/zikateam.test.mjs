@@ -81,7 +81,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal(unreadBefore.rooms.find(x=>x.channel==='general').unread,1,'nouveau message non lu');
   const msgRead=await invoke(B,'/zikateam/api/messages?channel=general');
   assert.equal(msgRead.status,200);
-  assert.equal(msgRead.payload.messages.at(-1).author_id,adminMemberId);
+  assert.equal(msgRead.payload.messages.at(-1).author,'Administration');
   assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='general').unread,0,'ouverture du salon marque les messages lus');
 
   // Le partage des coordonnées est choisi par la personne, et ne concerne que son pôle.
