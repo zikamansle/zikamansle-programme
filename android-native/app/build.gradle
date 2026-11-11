@@ -9,6 +9,9 @@ if (!launchUrl.startsWith('https://')) {
     throw new GradleException('ZikaMansle requires an HTTPS launch URL')
 }
 
+// Public Firebase project identifiers can be supplied by a CI build or local Gradle properties.
+// No Firebase credential is embedded in the repository or required for baseline builds.
+def firebaseString = name -> (project.findProperty(name) ?: System.getenv(name) ?: '').toString()
 android {
     namespace 'fr.zikamansle.app'
     compileSdk 36
@@ -20,6 +23,11 @@ android {
         versionCode 4
         versionName '1.0.3'
         resValue 'string', 'zika_launch_url', launchUrl
+        resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID')
+        resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY')
+        resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID')
+        resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID')
+        resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL')
     }
 
     buildTypes {
@@ -41,4 +49,6 @@ android {
 
 dependencies {
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation platform('com.google.firebase:firebase-bom:35.1.0')
+    implementation 'com.google.firebase:firebase-messaging'
 }
