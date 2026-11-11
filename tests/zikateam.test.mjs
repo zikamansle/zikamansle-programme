@@ -69,6 +69,22 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await api(S,{op:'pole.delete',id:pole})).status,403,'le secrétariat ne peut supprimer un pôle');
 
   await okay(A,{op:'assignment.set',memberId:other,poleId:outsidePole,role:'member'});
+  // Un bénévole contacte son responsable sans divulguer de numéro ni d'e-mail.
+  const beforePrivate=(await invoke(B,'/zikateam/api/chat-summary')).payload.rooms;
+  assert.equal(beforePrivate.some(x=>x.channel==='direct'),false);
+  assert.equal((await api(B,{op:'message.send',channel:'direct',channelId:other,body:'Interdit'})).status,403,'pas de message privé à un bénévole non responsable');
+  await okay(B,{op:'message.send',channel:'direct',channelId:lead,body:'Bonjour, question sur mon pôle'});
+  let dm=(await invoke(L,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='direct'&&x.id===member);
+  assert.equal(dm.unread,1,'le responsable voit le message privé non lu');
+  const directRead=await invoke(L,'/zikateam/api/messages?channel=direct&id='+member);
+  assert.equal(directRead.status,200,'le responsable peut lire le message privé');
+  assert.equal(directRead.payload.messages.at(-1).body,'Bonjour, question sur mon pôle');
+  assert.equal((await invoke(L,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='direct'&&x.id===member).unread,0,'lecture privée remet la pastille à zéro');
+  await okay(L,{op:'message.send',channel:'direct',channelId:member,body:'Bonjour, je te réponds ici'});
+  const responsePrivate=await invoke(B,'/zikateam/api/messages?channel=direct&id='+lead);
+  assert.equal(responsePrivate.payload.messages.at(-1).body,'Bonjour, je te réponds ici');
+  assert.equal((await invoke(O,'/zikateam/api/messages?channel=direct&id='+lead)).status,403,'tiers exclu de la conversation privée');
+
   // Les conversations et les compteurs restent personnels aux groupes autorisés.
   assert.equal((await api(B,{op:'chat.icon.set',channel:'general',icon:'🎵'})).status,403,'un bénévole ne peut pas changer les icônes');
   await okay(A,{op:'chat.icon.set',channel:'general',icon:'🎵'});
