@@ -8,7 +8,7 @@ activities = Path("android-startup-activity.txt").read_text(errors="replace")
 # The native package can exit after handing a Trusted Web Activity to Chrome.
 # Its process ID need not persist after a successful handoff.
 fatal = re.search(
-    r"FATAL EXCEPTION.{0,2000}Process: fr\\.zikamansle\\.app\\.debug",
+    r"FATAL EXCEPTION.{0,2000}Process: fr\.zikamansle\.app\.debug",
     log,
     re.S,
 )
