@@ -28,11 +28,13 @@ async function identify(request,env,verified){
  if(!identity)return null;
  const email=identity.email;
  const admin=email===env.ADMIN_EMAIL.toLowerCase().trim();
- const member=await one(env.DB,'SELECT * FROM team_members WHERE email=? AND active=1',email);
- if(!admin&&!member)return null;
+ const member=await one(env.DB,'SELECT * FROM team_members WHERE email=?',email);
+ const join=member&&!member.active?await one(env.DB,'SELECT status FROM team_join_requests WHERE email=?',email):null;
+ const pending=!admin&&Boolean(member&&member.active===0&&join?.status==='pending');
+ if(!admin&&!member?.active&&!pending)return null;
  const memberships=await roles(env.DB,member?.id);
  const secretariat=Boolean(member&&await one(env.DB,"SELECT member_id FROM team_staff_roles WHERE member_id=? AND role='secretariat'",member.id));
- return {email,admin,member,secretariat,memberships,leadPoles:memberships.filter(m=>m.role==='lead').map(m=>m.pole_id)};
+ return {email,admin,member,pending,secretariat:pending?false:secretariat,memberships:pending?[]:memberships,leadPoles:pending?[]:memberships.filter(m=>m.role==='lead').map(m=>m.pole_id)};
 }
 async function selectedPoles(db,activityId){return (await all(db,'SELECT pole_id FROM team_activity_poles WHERE activity_id=?',activityId)).map(x=>x.pole_id)}
 async function audienceMembers(db,activity){
@@ -73,9 +75,15 @@ async function getMine(db,ctx){
  const currentCharter=c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null;
  // Une identité vérifiée sans charte acceptée ne reçoit ni équipes ni convocations.
  if(!accepted)return reply({
-  email:ctx.email,admin:ctx.admin,secretariat:false,
+  email:ctx.email,admin:ctx.admin,pending:ctx.pending,secretariat:false,
   member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,
   leadPoles:[],poles:[],charter:currentCharter,charterAccepted:false,charterAcceptedAt:null,activities:[]
+ });
+ if(ctx.pending)return reply({
+  email:ctx.email,admin:false,pending:true,secretariat:false,
+  member:{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email},
+  leadPoles:[],poles:[],charter:currentCharter,charterAccepted:true,
+  charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:[]
  });
  const poles=ctx.member?await all(db,"SELECT p.id,p.name,p.description,tm.role,(SELECT group_concat(m.name,', ') FROM team_memberships l JOIN team_members m ON m.id=l.member_id WHERE l.pole_id=p.id AND l.role='lead' AND m.active=1) AS leaders FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",ctx.member.id):[];
  for(const p of poles){
@@ -84,7 +92,7 @@ async function getMine(db,ctx){
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
- return reply({email:ctx.email,admin:ctx.admin,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -118,7 +126,8 @@ async function getManage(db,ctx){
  }
  const logs=ctx.admin?await all(db,'SELECT actor_email,action,entity_id,detail,created_at FROM team_audit ORDER BY created_at DESC LIMIT 60'):[];
  const secretariatIds=ctx.admin?(await all(db,"SELECT member_id FROM team_staff_roles WHERE role='secretariat'")).map(x=>x.member_id):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds});
+ const pendingRequests=ctx.admin?await all(db,"SELECT email,name,requested_at FROM team_join_requests WHERE status='pending' ORDER BY requested_at ASC LIMIT 250"):[];
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -299,6 +308,7 @@ async function memberAction(db,ctx,d){
   return reply({ok:true});
  }
  if(!await requireCharter(db,ctx))return fail('Veuillez accepter la charte avant de répondre ou de discuter.',409);
+ if(ctx.pending)return fail('Ta demande attend la validation par l’administration. Le salon général est accessible en lecture seule.',403);
  if(d.op==='activity.rsvp'){
   if(!idok(d.activityId)||!['yes','no','maybe'].includes(d.answer))return fail('Réponse invalide.');
   const a=await one(db,'SELECT * FROM team_activities WHERE id=?',d.activityId);if(!a||a.status!=='published'||!(await audienceMembers(db,a)).includes(memberId))return fail('Convocation indisponible.',403);
@@ -350,6 +360,23 @@ async function memberAction(db,ctx,d){
  return fail('Action non reconnue.',404);
 }
 async function adminAction(db,ctx,d){
+ if(d.op==='member.review'){
+  if(!ctx.admin)return fail('Réservé à l’administration.',403);
+  const email=clean(d.email,254).toLowerCase(),approve=d.approve===true;
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||typeof d.approve!=='boolean')return fail('Demande ou décision invalide.');
+  const application=await one(db,"SELECT status FROM team_join_requests WHERE email=?",email);
+  if(application?.status!=='pending')return fail('Cette demande n’est plus en attente.',409);
+  const member=await one(db,'SELECT id FROM team_members WHERE email=? AND active=0',email);
+  if(!member)return fail('Bénévole en attente introuvable.',404);
+  if(approve){
+   const changes={...d,id:member.id,email,active:true};
+   const saved=await saveMember(db,ctx,changes,true);
+   if(saved.status!==200)return saved;
+  }
+  await db.prepare("UPDATE team_join_requests SET status=?,reviewed_at=?,reviewed_by=? WHERE email=? AND status='pending'").bind(approve?'approved':'rejected',now(),ctx.email,email).run();
+  await audit(db,ctx.email,approve?'member.approve':'member.reject',member.id,email);
+  return reply({ok:true,id:member.id,status:approve?'approved':'rejected'});
+ }
  if(d.op==='secretariat.set'){
   if(!ctx.admin)return fail('Seule l’administration désigne le secrétariat.',403);
   if(!idok(d.memberId)||typeof d.enabled!=='boolean')return fail('Bénévole ou choix invalide.');
