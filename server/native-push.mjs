@@ -25,11 +25,11 @@ export function classifyFirebaseCredentials(raw){
  if(!credentials||typeof credentials!=='object'||Array.isArray(credentials))
   return {stage:'CONFIG_NOT_OBJECT'};
  if(credentials.project_id!==PROJECT)return {stage:'CONFIG_WRONG_PROJECT'};
- if(!/^firebase-adminsdk-[^@]+@zikamansle-d0c4e\\.iam\\.gserviceaccount\\.com$/.test(credentials.client_email||''))
+ if(!/^firebase-adminsdk-[^@]+@zikamansle-d0c4e\.iam\.gserviceaccount\.com$/.test(credentials.client_email||''))
   return {stage:'CONFIG_WRONG_ACCOUNT'};
  if(typeof credentials.private_key!=='string'||!credentials.private_key.trim())
   return {stage:'CONFIG_NO_PRIVATE_KEY'};
- if(!/^-----BEGIN PRIVATE KEY-----\\s/.test(credentials.private_key)||!/-----END PRIVATE KEY-----\\s*$/.test(credentials.private_key))
+ if(!/^-----BEGIN PRIVATE KEY-----\s/.test(credentials.private_key)||!/-----END PRIVATE KEY-----\s*$/.test(credentials.private_key))
   return {stage:'CONFIG_PRIVATE_KEY_FORMAT'};
  return {stage:'CONFIG_PARSED',credentials};
 }
