@@ -115,6 +115,19 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const msgPrivate=await invoke(L,'/zikateam/api/messages?channel=general');
   assert.equal(msgPrivate.status,200);
   assert.equal((await handleZikaTeam(new Request('https://example.org/zikateam/photo/'+member,{headers:{'Cf-Access-Jwt-Assertion':L}}),env)).status,403,'aucune photo affichée sans consentement');
+  // Préférences individuelles : seuls les membres validés peuvent les enregistrer.
+  const prefs={chat_mode:'grouped',sound_mode:'none',vibrate:false,activity_enabled:true,urgent_enabled:true,quiet_enabled:true,quiet_start:'21:30',quiet_end:'07:15'};
+  assert.equal((await api(O,{op:'notification.settings',preferences:{...prefs,sound_mode:'invalid'}})).status,400);
+  await okay(B,{op:'notification.settings',preferences:prefs});
+  const savedPrefs=(await invoke(B,'/zikateam/api/me')).payload.notificationPrefs;
+  assert.equal(savedPrefs.sound_mode,'none');
+  assert.equal(savedPrefs.vibrate,false);
+  assert.equal(savedPrefs.quiet_start,'21:30');
+  await okay(B,{op:'notification.chat.mute',channel:'pole',channelId:pole,muted:true});
+  assert.ok((await invoke(B,'/zikateam/api/me')).payload.mutedChats.some(x=>x.channel==='pole'&&x.channel_id===pole));
+  assert.equal((await api(B,{op:'notification.chat.mute',channel:'pole',channelId:outsidePole,muted:true})).status,403);
+  await okay(B,{op:'notification.chat.mute',channel:'pole',channelId:pole,muted:false});
+  assert.ok(!(await invoke(B,'/zikateam/api/me')).payload.mutedChats.some(x=>x.channel_id===pole));
   await okay(B,{op:'consents.save',consents:{image:true,phone:false,email:false}});
   await okay(B,{op:'message.send',channel:'pole',channelId:pole,body:'Avec mon avatar'});
   const avatarMessage=(await invoke(L,'/zikateam/api/messages?channel=pole&id='+pole)).payload.messages.at(-1);
