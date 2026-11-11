@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPair, SignJWT} from 'jose';
 import {verifyAdminToken,isAdmin} from '../server/admin-auth.mjs';
-import worker from '../worker/index.mjs';
+import worker, {adminAssetRequest} from '../worker/index.mjs';
 const {privateKey,publicKey}=await generateKeyPair('RS256');
 const env={ACCESS_TEAM_DOMAIN:'zika-test.cloudflareaccess.com',ACCESS_AUD:'test-audience',ADMIN_EMAIL:'owner@example.test'};
 async function token(changes={}) {
@@ -38,6 +38,14 @@ test('admin is only exposed under the guarded prefix; old links redirect',async(
   assert.equal(r.status,403,action);
  }
  assert.equal(assets,0);
+});
+test('admin HTML is read at the canonical asset path to prevent redirect loops',()=>{
+ const original=new Request('https://test/administration/notifications?source=menu',{headers:{'Cf-Access-Jwt-Assertion':'signed-jwt'}});
+ const asset=adminAssetRequest(original);
+ assert.equal(new URL(asset.url).pathname,'/admin-notifications');
+ assert.equal(new URL(asset.url).search,'?source=menu');
+ assert.equal(asset.headers.get('Cf-Access-Jwt-Assertion'),'signed-jwt');
+ assert.notEqual(new URL(asset.url).pathname,'/admin-notifications.html');
 });
 test('staging never sends even if a production subscription is imported',async()=>{
  const r=await worker.fetch(new Request('https://test/api/push/send',{method:'POST'}),{DB:{},PUSH_SEND_ENABLED:'false'});assert.equal(r.status,503);
