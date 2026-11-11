@@ -82,3 +82,17 @@ test('listes personnalisées sauvegardées côté serveur et réutilisables',()=
 });
 
 // Publication autorisée uniquement sur le Worker isolé de test ; application publique inchangée.
+
+test('photo de profil, pastille avatar et chat façon groupes mobiles',()=>{
+ assert.ok(client.includes('Ma photo de profil'));
+ assert.ok(client.includes('Ajouter ou changer ma photo'));
+ assert.ok(client.includes('function chatAvatar(m)'));
+ assert.ok(client.includes('class="team-chat-avatar"'));
+ assert.ok(client.includes('team-chat-room'));
+ assert.ok(client.includes('team-unread'));
+ assert.ok(client.includes('teamChatAttachment'));
+ assert.ok(server.includes('async function chatSummary('));
+ assert.ok(server.includes('async function permittedChat('));
+ assert.ok(server.includes('async function uploadChatMedia('));
+ assert.ok(server.includes('async function getChatMedia('));
+});
