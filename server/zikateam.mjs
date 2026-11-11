@@ -373,13 +373,12 @@ async function memberAction(db,ctx,d){
   const c=await charter(db);if(!c)return fail('La charte officielle n’a pas encore été publiée.',409);
   if(d.version!==c.version)return fail('La charte a été actualisée, relisez sa nouvelle version.',409);
   if(d.agree!==true)return fail('Vous devez confirmer explicitement la lecture et l’acceptation.',400);
-  if(d.consents!==undefined){
-   if(!d.consents||typeof d.consents!=='object'||['image','phone','email'].some(k=>typeof d.consents[k]!=='boolean'))return fail('Réponds Oui ou Non aux trois autorisations.',400);
-   for(const kind of ['image','phone','email']){
-    await db.prepare('INSERT INTO team_member_consents(member_id,kind,granted,version,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id,kind) DO UPDATE SET granted=excluded.granted,version=excluded.version,updated_at=excluded.updated_at').bind(memberId,kind,d.consents[kind]?1:0,'2026-11-11',now()).run();
-   }
-   await audit(db,ctx.email,'consents.first',memberId);
+  // Réponse Oui ou Non obligatoire aux trois questions ; le consentement positif ne l'est jamais.
+  if(!d.consents||typeof d.consents!=='object'||['image','phone','email'].some(k=>typeof d.consents[k]!=='boolean'))return fail('Réponds obligatoirement Oui ou Non au droit à l’image, au téléphone et à l’e-mail.',400);
+  for(const kind of ['image','phone','email']){
+   await db.prepare('INSERT INTO team_member_consents(member_id,kind,granted,version,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id,kind) DO UPDATE SET granted=excluded.granted,version=excluded.version,updated_at=excluded.updated_at').bind(memberId,kind,d.consents[kind]?1:0,'2026-11-11',now()).run();
   }
+  await audit(db,ctx.email,'consents.first',memberId);
   const saved=await db.prepare('INSERT OR IGNORE INTO team_charter_acceptances(member_id,version,accepted_at) VALUES(?,?,?)').bind(memberId,c.version,now()).run();
   if(saved.meta.changes)await audit(db,ctx.email,'charter.accept',memberId,c.version);
   return reply({ok:true});
