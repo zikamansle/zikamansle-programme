@@ -24,7 +24,7 @@ test('les coordonnées consenties ne sont servies qu’aux responsables du pôle
 
 test('la première inscription demande identité, code et validation admin',()=>{
  assert.ok(client.includes('name="name" minlength="2" maxlength="110" autocomplete="name" required'));
- assert.ok(client.includes("await api('auth/verify',{email:state.loginEmail,name:state.loginName,code:code.trim()})"));
+ assert.ok(client.includes("await api('auth/verify',{email:state.loginEmail,name:state.loginName,code:code.trim(),inviteCode:state.inviteCode})"));
  assert.ok(server.includes('ctx.pending'));
 });
 
@@ -172,3 +172,12 @@ test('la publication d’une réunion utilise deux actions explicites',()=>{
 // Staging : publication directe des réunions, notifications implicites après enregistrement.
 
 // Publication autorisée : palette plus vive, réunions et émargements testés sur staging uniquement.
+
+test('invitation et préférences de notifications visibles sur les fiches',()=>{
+ assert.ok(client.includes('teamInviteForm'));
+ assert.ok(client.includes('teamNotificationsForm'));
+ assert.ok(client.includes('data-chat-mute'));
+ assert.ok(client.includes('name="inviteCode"'));
+ assert.ok(server.includes("d.op==='notification.settings'"));
+ assert.ok(server.includes("d.op==='notification.chat.mute'"));
+});
