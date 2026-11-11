@@ -689,8 +689,8 @@ async function adminAction(db,ctx,d){
  if(d.op==='list.save'){
   if(!ctx.admin&&!ctx.secretariat)return fail('Listes réservées à l’administration et au secrétariat.',403);
   const title=clean(d.title,110),columns=Array.isArray(d.columns)?d.columns:[],ids=Array.isArray(d.memberIds)?d.memberIds:[];
-  const validColumns=['name','quality','poles','paid','phone','email','address','postal_code','city','paid_on'];
-  if(title.length<2||!columns.length||columns.length>10||columns.some(k=>!validColumns.includes(k))||new Set(columns).size!==columns.length)return fail('Nom ou colonnes de liste invalides.',400);
+  const validColumns=['name','quality','poles','paid','phone','email','address','postal_code','city','paid_on','image_consent','phone_consent','email_consent'];
+  if(title.length<2||!columns.length||columns.length>13||columns.some(k=>!validColumns.includes(k))||new Set(columns).size!==columns.length)return fail('Nom ou colonnes de liste invalides.',400);
   if(ids.length>500||ids.some(x=>!idok(x))||new Set(ids).size!==ids.length)return fail('Sélection de bénévoles invalide.',400);
   for(const id of ids)if(!await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',id))return fail('Un bénévole sélectionné n’est plus actif.',409);
   if(d.id!==undefined&&!idok(d.id))return fail('Identifiant de liste invalide.',400);
