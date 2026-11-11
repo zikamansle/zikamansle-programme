@@ -110,10 +110,10 @@ function attendanceBlock(a){
 }
 function activityCard(a,manageable=false){
  const color=a.status==='cancelled'?'bad':a.status==='published'?'ok':'warn';
- const buttons=(a.status==='published'&&state.me.member&&!manageable)?'<div class="team-row">'+[['yes','Présent'],['no','Absent'],['maybe','À confirmer']].map(([v,l])=>'<button class="team-button '+(a.my_response===v?'':'light')+'" data-rsvp="'+esc(a.id)+'" data-answer="'+v+'" aria-pressed="'+(a.my_response===v)+'">'+l+'</button>').join('')+'</div>':'';
+ const buttons=(a.status==='published'&&state.me.member&&!manageable)?'<div class="team-row" role="group" aria-label="Répondre à la convocation">'+[['yes','Présent'],['no','Absent'],['maybe','À confirmer']].map(([v,l])=>'<button type="button" class="team-button '+(a.my_response===v?'':'light')+'" data-rsvp="'+esc(a.id)+'" data-answer="'+v+'" aria-pressed="'+(a.my_response===v)+'">'+l+'</button>').join('')+'</div><p class="team-small team-muted" data-rsvp-feedback="'+esc(a.id)+'" role="status" aria-live="polite">Ma réponse : <strong>'+esc(responseName[a.my_response]||'Sans réponse')+'</strong></p>':'';
  const poles=(state.manage?.poles||state.me.poles||[]).filter(p=>a.poles?.includes(p.id)).map(p=>p.name);
  const shifts=a.shifts?.length?'<div class="team-item"><h3>Créneaux / postes</h3>'+a.shifts.map(s=>'<div class="team-between" style="padding:9px 0;border-bottom:1px solid #e2ecf3"><div><b>'+esc(s.label)+'</b><div class="team-small">'+shortdt(s.starts_at)+' → '+shortdt(s.ends_at)+'<br>'+s.signed_count+' / '+s.capacity+' inscrit(s)</div></div>'+(!manageable&&a.status==='published'&&state.me.member?'<button class="team-button light" data-shift-sign="'+s.id+'" data-remove="'+(a.my_shifts?.includes(s.id)?'1':'0')+'">'+(a.my_shifts?.includes(s.id)?'Me désinscrire':'M’inscrire')+'</button>':'')+'</div>').join('')+'</div>':'';
- return '<article id="teamActivity-'+esc(a.id)+'" class="team-item"><div class="team-between"><div><span class="team-pill">'+esc(a.custom_kind||kindName[a.kind]||'Activité')+'</span><span class="team-pill '+color+'">'+esc(statusName[a.status])+'</span></div>'+(manageable?'<button class="team-button light" data-edit-activity="'+a.id+'">Modifier</button>':'')+'</div><h3>'+esc(a.title)+'</h3><p><strong>'+esc(dt(a.starts_at))+'</strong><br>Jusqu’au '+esc(shortdt(a.ends_at))+' · '+esc(a.place||'Lieu à préciser')+'</p>'+(poles.length?'<p>'+pills(poles)+'</p>':'')+(a.details?'<p>'+esc(a.details)+'</p>':'')+(a.agenda?'<details><summary><strong>Ordre du jour / consignes</strong></summary><p style="white-space:pre-wrap">'+esc(a.agenda)+'</p></details>':'')+(a.agenda_document_id?'<p><a class="team-link" target="_blank" rel="noopener" href="/zikateam/document/'+esc(a.agenda_document_id)+'">Document joint (PDF) ↗</a></p>':'')+shifts+tasksBlock(a,manageable)+buttons+(manageable?attendanceBlock(a)+'<p class="team-small">'+(a.invitedCount??0)+' personnes concernées · '+(a.responses||[]).filter(x=>x.answer==='yes').length+' présent(s), '+(a.responses||[]).filter(x=>x.answer==='no').length+' absent(s), '+(a.responses||[]).filter(x=>x.answer==='maybe').length+' à confirmer</p>'+(a.responses?.length?'<details><summary>Voir les réponses</summary><ul>'+a.responses.map(r=>'<li>'+esc(r.name)+' : '+esc(responseName[r.answer])+'</li>').join('')+'</ul></details>':''):'')+'</article>';
+ return '<article id="teamActivity-'+esc(a.id)+'" class="team-item"><div class="team-between"><div><span class="team-pill">'+esc(a.custom_kind||kindName[a.kind]||'Activité')+'</span><span class="team-pill '+color+'">'+esc(statusName[a.status])+'</span></div>'+(manageable?'<button class="team-button light" data-edit-activity="'+a.id+'">Modifier</button>':'')+'</div><h3>'+esc(a.title)+'</h3><p><strong>'+esc(dt(a.starts_at))+'</strong><br>Jusqu’au '+esc(shortdt(a.ends_at))+' · '+esc(a.place||'Lieu à préciser')+'</p>'+(poles.length?'<p>'+pills(poles)+'</p>':'')+(a.details?'<p>'+esc(a.details)+'</p>':'')+(a.agenda?'<details><summary><strong>Ordre du jour / consignes</strong></summary><p style="white-space:pre-wrap">'+esc(a.agenda)+'</p></details>':'')+(a.agenda_document_id?'<p><a class="team-link" target="_blank" rel="noopener" href="/zikateam/document/'+esc(a.agenda_document_id)+'">Document joint (PDF) ↗</a></p>':'')+shifts+tasksBlock(a,manageable)+buttons+(manageable?attendanceBlock(a)+(state.me.admin||state.me.secretariat?'<button type="button" class="team-button orange" data-signing-from-activity="'+esc(a.id)+'">🖊 Préparer l’émargement de cette réunion</button>':'')+'<p class="team-small">'+(a.invitedCount??0)+' personnes concernées · '+(a.responses||[]).filter(x=>x.answer==='yes').length+' présent(s), '+(a.responses||[]).filter(x=>x.answer==='no').length+' absent(s), '+(a.responses||[]).filter(x=>x.answer==='maybe').length+' à confirmer</p>'+(a.responses?.length?'<details><summary>Voir les réponses</summary><ul>'+a.responses.map(r=>'<li>'+esc(r.name)+' : '+esc(responseName[r.answer])+'</li>').join('')+'</ul></details>':''):'')+'</article>';
 }
 function myActivities(limit=0){const a=[...(state.me.activities||[])].sort((x,y)=>x.starts_at.localeCompare(y.starts_at));const results=limit?a.slice(0,limit):a;return results.length?results.map(x=>activityCard(x)).join(''):'<p class="team-muted">Aucune convocation à venir. Les réunions et missions apparaîtront ici dès leur publication.</p>'}
 function activities(){return noticeCenter()+'<div class="team-card"><h2>Mon agenda ZikaTeam</h2><p>Réunions, stands, montage et missions de mes pôles. Choisis ta disponibilité pour chaque activité.</p>'+(!state.me.charterAccepted?'<div class="team-warning">Accepte d’abord la charte pour confirmer ta présence.</div>':'')+myActivities()+'</div>'}
@@ -343,7 +343,7 @@ function manageAttendance(){
  const people=signingMembers();
  const pending=selected?.attendees.filter(a=>!a.signed_at)||[];
  const signed=selected?.attendees.filter(a=>a.signed_at)||[];
- const create='<section class="team-card team-accent-blue"><h2>Créer une nouvelle feuille d’émargement</h2><p>La séance peut être créée puis complétée avec les participants réellement présents, avant de leur faire signer le téléphone.</p><form id="signingCreateForm" class="team-form"><label>Objet de la réunion<input name="title" maxlength="180" required placeholder="Ex. Réunion des responsables ZikaMansle"></label><div class="team-split"><label>Date et heure<input name="startsAt" type="datetime-local" required></label><label>Lieu<input name="place" maxlength="180" required placeholder="Ex. Salle Gautier Capuçon"></label></div><button class="team-button orange" type="submit">Créer la feuille d’émargement</button></form></section>';
+ const create='<section class="team-card team-accent-blue"><h2>Créer une nouvelle feuille d’émargement</h2><p>La séance peut être créée puis complétée avec les participants réellement présents, avant de leur faire signer le téléphone.</p><form id="signingCreateForm" class="team-form"><label>Objet de la réunion<input name="title" maxlength="180" required placeholder="Ex. Réunion des responsables ZikaMansle" value="'+esc(state.signingDraft?.title||'')+'"></label><div class="team-split"><label>Date et heure<input name="startsAt" type="datetime-local" value="'+esc(state.signingDraft?.startsAt||'')+'" required></label><label>Lieu<input name="place" maxlength="180" value="'+esc(state.signingDraft?.place||'')+'" required placeholder="Ex. Salle Gautier Capuçon"></label></div><button class="team-button orange" type="submit">Créer la feuille d’émargement</button></form></section>';
  const sessionList='<section class="team-card team-accent-teal"><h2>Feuilles d’émargement enregistrées</h2>'+(data.sessions.length?data.sessions.map(s=>'<div class="team-member-card"><div><strong>'+esc(s.title)+'</strong><p class="team-small">'+esc(dt(s.starts_at))+' · '+esc(s.place)+'</p><span class="team-pill '+(s.closed_at?'ok':'warn')+'">'+s.attendees.filter(m=>m.signed_at).length+'/'+s.attendees.length+' signatures'+(s.closed_at?' · Clôturée':' · En cours')+'</span></div><button class="team-button light" type="button" data-signing-open="'+s.id+'">Consulter</button><button class="team-button danger" type="button" data-signing-delete="'+s.id+'" title="Supprimer la feuille">Supprimer</button></div>').join(''):'<p>Aucune feuille créée pour le moment.</p>')+'</section>';
  let current='';
  if(selected){
@@ -840,6 +840,15 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
  if(b.dataset.printTeam){printTeam(b.dataset.printTeam);return;}
  if(b.hasAttribute('data-back-edit')){const type=b.dataset.backEdit;if(type==='activity')state.editActivity=null;if(type==='pole')state.editPole=null;if(type==='member')state.editMember=null;if(type==='shift')state.editShift=null;render();return;}
  if(b.hasAttribute('data-signing-back')){state.signingCurrent=null;state.signingSelection=[];render();return;}
+ if(b.dataset.signingFromActivity){
+  const a=state.manage?.activities?.find(x=>x.id===b.dataset.signingFromActivity);
+  if(!a||!state.me?.admin&&!state.me?.secretariat){toast('Réunion non accessible.');return;}
+  const matching=state.signing?.sessions?.find(x=>x.title===a.title&&x.starts_at===a.starts_at);
+  state.tab='gestion';state.managementTab='emargements';state.signingMember=null;
+  if(matching){state.signingCurrent=matching.id;state.signingDraft=null;toast('Feuille d’émargement existante retrouvée.');}
+  else{state.signingCurrent=null;state.signingDraft={title:a.title,startsAt:inputDate(a.starts_at),place:a.place||'À préciser'};toast('Feuille préremplie : vérifie puis crée-la.');}
+  render();window.scrollTo({top:0,behavior:'smooth'});return;
+ }
  if(b.dataset.signingDelete){
   const session=state.signing?.sessions.find(x=>x.id===b.dataset.signingDelete);if(!session)return;
   const count=session.attendees.filter(x=>x.signed_at).length;
@@ -938,7 +947,29 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
  if(b.dataset.checkin){await perform(async()=>command('checkin.set',{activityId:b.dataset.checkin,memberId:b.dataset.member,present:b.dataset.present==='1'}));return;}
  if(b.dataset.deleteTask){if(!confirm('Supprimer cette tâche ?'))return;await perform(async()=>command('task.delete',{id:b.dataset.deleteTask}));return;}
  if(b.dataset.taskStatus){await perform(async()=>command('task.status',{id:b.dataset.taskStatus,status:b.dataset.status}));return;}
- if(b.dataset.rsvp){await perform(async()=>{await command('activity.rsvp',{activityId:b.dataset.rsvp,answer:b.dataset.answer})});return;}
+ if(b.dataset.rsvp){
+  if(state.busy){toast('Réponse en cours, patiente quelques instants.');return;}
+  const activityId=b.dataset.rsvp,answer=b.dataset.answer;
+  const labels={yes:'Présent',no:'Absent',maybe:'À confirmer'};
+  if(!labels[answer]){toast('Réponse inconnue.');return;}
+  const message=root.querySelector('[data-rsvp-feedback="'+activityId+'"]');
+  state.busy=true;
+  const buttons=[...root.querySelectorAll('button[data-rsvp="'+activityId+'"]')];
+  buttons.forEach(x=>x.disabled=true);
+  if(message)message.textContent='⏳ Enregistrement de ma réponse…';
+  try{
+   const saved=await command('activity.rsvp',{activityId,answer});
+   if(!saved.ok)throw Error('Le serveur n’a pas confirmé la réponse.');
+   const activity=state.me?.activities?.find(a=>a.id===activityId);
+   if(activity)activity.my_response=answer;
+   if(message){message.textContent='✅ Réponse enregistrée : '+labels[answer];message.style.color='#146b4a';}
+   buttons.forEach(x=>{x.setAttribute('aria-pressed',String(x.dataset.answer===answer));x.classList.toggle('light',x.dataset.answer!==answer);});
+   toast('✅ Réponse à la réunion : '+labels[answer]);
+   try{await refresh();}catch{toast('Réponse confirmée, actualise ton agenda pour la retrouver.');}
+  }catch(error){if(message){message.textContent='❌ '+(error?.message||'Échec de l’enregistrement');message.style.color='#a92336';}toast(error?.message||'Réponse non enregistrée.');}
+  finally{state.busy=false;buttons.forEach(x=>{if(x.isConnected)x.disabled=false;});}
+  return;
+ }
  if(b.dataset.shiftSign){await perform(async()=>{await command('shift.signup',{shiftId:b.dataset.shiftSign,remove:b.dataset.remove==='1'})});return;}
  if(b.hasAttribute('data-test-receipt-push')){
   const status=document.getElementById('teamPushStatus');
@@ -1119,7 +1150,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.id==='signingCreateForm')return perform(async()=>{
   const d=fromForm(f);
   const saved=await command('signing.create',{title:d.title,place:d.place,startsAt:new Date(d.startsAt).toISOString()});
-  state.signingCurrent=saved.id;state.signingSelection=[];state.managementTab='emargements';
+  state.signingCurrent=saved.id;state.signingSelection=[];state.signingDraft=null;state.managementTab='emargements';
  });
  if(f.id==='signingAddForm')return perform(async()=>{
   const ids=[...f.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(x=>x.value);
