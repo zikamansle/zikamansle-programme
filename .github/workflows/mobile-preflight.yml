@@ -1,15 +1,7 @@
 name: Mobile app preflight
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-  pull_request:
-    paths:
-      - 'app.js'
-      - 'sw.js'
-      - 'manifest.webmanifest'
-      - 'android-playstore/**'
-      - '.github/workflows/mobile-preflight.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
