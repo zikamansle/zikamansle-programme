@@ -112,7 +112,7 @@ function messages(){
  +'<aside class="team-wa-sidebar"><header class="team-wa-sidebar-head"><div><h2>Discussions</h2><p>Mes groupes ZikaTeam</p></div>'+(state.chatUnread?'<span class="team-unread">'+Math.min(state.chatUnread,99)+(state.chatUnread>99?'+':'')+'</span>':'')+'</header><div class="team-wa-roomlist">'+(roomsView||'<p class="team-wa-empty">Aucun groupe accessible.</p>')+'</div></aside>'
  +'<section class="team-wa-thread"><header class="team-wa-thread-head"><button class="team-wa-back" type="button" data-chat-back aria-label="Revenir à la liste des groupes">←</button><span class="team-wa-head-avatar">'+roomIcon(active)+'</span><div class="team-wa-thread-title"><h2>'+esc(active?.title||'Choisir un groupe')+'</h2><p>'+esc(active?'Conversation du groupe':'Sélectionne une conversation')+'</p></div>'+peopleView+iconEditor+'</header>'
  +'<div class="team-wa-timeline" id="teamMessages" role="log" aria-live="polite" aria-label="Messages">'+(active?(bubbles||'<p class="team-wa-empty">Aucun message pour le moment. Écris le premier !</p>'):'<p class="team-wa-empty">Choisis une discussion à gauche pour commencer.</p>')+'</div>'
- +(active?'<form id="messageForm" class="team-wa-composer"><label class="team-wa-file" title="Joindre une photo ou un PDF">📎<input id="teamChatAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-label="Joindre une photo ou un PDF" hidden></label><label class="team-wa-input"><span class="team-wa-input-label">Votre message</span><textarea name="body" rows="2" maxlength="1400" required placeholder="Écrire un message…" aria-label="Écrire un message"></textarea></label><button class="team-wa-send" type="submit">Envoyer <span aria-hidden="true">➤</span></button></form>':'')
+ +(active?'<form id="messageForm" class="team-wa-composer"><label class="team-wa-file" title="Joindre une photo ou un PDF">📎<input id="teamChatAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-label="Joindre une photo ou un PDF" hidden></label><label class="team-wa-input"><span class="team-wa-input-label">Votre message · Entrée pour envoyer, Maj + Entrée pour une nouvelle ligne</span><textarea name="body" rows="2" maxlength="1400" required placeholder="Écrire un message…" aria-label="Écrire un message"></textarea></label><button class="team-wa-send" type="submit">Envoyer <span aria-hidden="true">➤</span></button></form>':'')
  +'</section></section>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
@@ -730,6 +730,16 @@ root.addEventListener('change',async e=>{
  if(e.target.id==='teamAdhesionFilter'){state.adhesionFilter=e.target.value;render();return;}
  if(e.target.id==='teamChannel'){const [channel,id]=e.target.value.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}}});
 root.addEventListener('input',e=>{if(e.target.id==='teamDirectorySearch')state.directorySearch=e.target.value;if(e.target.matches('#teamCustomListForm input[name="title"]'))state.listTitle=e.target.value;});
+// Entrée envoie le message ; Maj + Entrée ajoute une nouvelle ligne.
+// Respecter les compositions de texte (claviers mobiles, accents et IME).
+root.addEventListener('keydown',e=>{
+ const field=e.target;
+ if(!field.matches?.('#messageForm textarea[name="body"]')||e.key!=='Enter'||e.shiftKey||e.isComposing||e.keyCode===229||e.ctrlKey||e.altKey||e.metaKey)return;
+ e.preventDefault();
+ if(state.busy||!field.value.trim())return;
+ const form=field.closest('form');
+ if(form?.requestSubmit)form.requestSubmit();
+});
 root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy)return;
  if(f.id==='teamLoginPassword'){
   state.busy=true;try{await freeLoginPassword(f.elements.email.value,f.elements.password.value)}catch(err){state.loginEmail=f.elements.email.value;loginScreen(err.message)}finally{state.busy=false}return;
