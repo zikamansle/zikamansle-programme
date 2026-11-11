@@ -30,3 +30,5 @@ test('les signatures d’émargement sont enregistrées et imprimables',()=>{
  assert.ok(client.includes('teamSigningCanvas'));
  assert.ok(client.includes('function printSigningSession()'));
 });
+
+// Ces tests protègent le staging ZikaTeam sans ouvrir l'application publique.
