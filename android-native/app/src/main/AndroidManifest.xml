@@ -4,12 +4,24 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
+        android:name=".ZikaApplication"
         android:allowBackup="false"
         android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
         android:label="@string/app_name"
         android:icon="@android:drawable/sym_def_app_icon"
         android:theme="@style/Theme.ZikaMansle"
         android:usesCleartextTraffic="false">
+
+        <!-- Native entry point: permission is owned by ZikaMansle, never by a Chrome tab. -->
+        <activity
+            android:name=".ZikaLauncherActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ZikaMansle">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
 
         <activity
             android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
@@ -28,11 +40,6 @@
             <meta-data
                 android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
                 android:value="webview" />
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
 
             <!-- Verify official ZikaMansle domain to enable Android app attribution of Web Push. -->
             <intent-filter android:autoVerify="true">
@@ -57,6 +64,14 @@
             android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize" />
+        <service
+            android:name=".ZikaMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <!-- Delegates Chrome Web Push to ZikaMansle Android notification channel. -->
         <service
             android:name="com.google.androidbrowserhelper.trusted.DelegationService"
