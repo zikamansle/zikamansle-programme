@@ -231,3 +231,9 @@ test('la fiche bénévole est enregistrée sans blocage de validation HTML nativ
  assert.ok(client.includes("La fiche est enregistrée, mais certaines affectations aux pôles"));
  assert.ok(client.includes("const active=f.querySelector('input[name=\"active\"]')"));
 });
+
+test('les adresses e-mail contenant la lettre s restent valides dans le formulaire bénévole',()=>{
+ const emailCheck=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ assert.equal(emailCheck.test('zikamansle@gmail.com'),true);
+ assert.ok(client.includes(emailCheck.toString()));
+});
