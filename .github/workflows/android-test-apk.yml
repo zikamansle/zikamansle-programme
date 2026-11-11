@@ -1,16 +1,6 @@
 name: Build ZikaMansle Android test APK
 
 on:
-  push:
-    branches:
-      - prepare/google-play-android-2026
-    paths:
-      - 'android-native/**'
-      - '.github/workflows/android-test-apk.yml'
-  pull_request:
-    paths:
-      - 'android-native/**'
-      - '.github/workflows/android-test-apk.yml'
   workflow_dispatch:
 
 permissions:
