@@ -11,6 +11,8 @@ if (!launchUrl.startsWith('https://')) {
 
 // Public Firebase project identifiers can be supplied by a CI build or local Gradle properties.
 // No Firebase credential is embedded in the repository or required for baseline builds.
+// Harmless UI marker: hide install prompts when the site is loaded inside our APK.
+def nativeLaunch = url -> url + (url.contains('?') ? '&' : '?') + 'zika_native=1'
 def firebaseString = name -> (project.findProperty(name) ?: System.getenv(name) ?: '').toString()
 android {
     namespace 'fr.zikamansle.app'
@@ -22,7 +24,7 @@ android {
         targetSdk 36
         versionCode 4
         versionName '1.0.3'
-        resValue 'string', 'zika_launch_url', launchUrl
+        resValue 'string', 'zika_launch_url', nativeLaunch(launchUrl)
 
     }
 
@@ -38,7 +40,7 @@ android {
             resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID') ?: 'zikamansle-d0c4e'
             resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe'
             // Only the *debug* APK points at the independent Cloudflare test copy.
-            resValue 'string', 'zika_launch_url', (project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString()
+            resValue 'string', 'zika_launch_url', nativeLaunch((project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString())
         }
         release {
             // Release builds are deliberately unsigned. Create a private signing
