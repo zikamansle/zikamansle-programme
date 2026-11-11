@@ -39,7 +39,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           path=Path('android-native/app/src/debug/res/drawable-nodpi/zika_icon.png')
-          if not path.read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n'):
+          if not path.read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a')):
               raise SystemExit('Official Zika icon could not be verified as PNG')
           PY
       - name: Compile unsigned-debug-test app
