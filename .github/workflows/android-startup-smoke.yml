@@ -68,6 +68,8 @@ jobs:
         if: always()
         with:
           name: zikamansle-android-startup-screen
-          path: |\n            zika_android_startup.png\n            zika_logcat.txt
+          path: |
+            zika_android_startup.png
+            zika_logcat.txt
           if-no-files-found: warn
           retention-days: 7
