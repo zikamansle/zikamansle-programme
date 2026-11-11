@@ -47,7 +47,7 @@ test('un appareil déjà autorisé est lié automatiquement au compte actif',()=
 test('les réunions destinées aux pôles restent ciblées et la publication avertit les abonnés',()=>{
  assert.match(serverSource,/if\(activity\.audience==='all'\)/);
  assert.match(serverSource,/activity\.audience==='leaders'/);
- assert.match(serverSource,/activity\.audience==='poles'/);
+ assert.match(serverSource,/if\(d\.audience==='poles'\)/);
  assert.match(serverSource,/enqueue\(db,result,'created'\)/);
  assert.match(clientSource,/activitySaveFeedback/);
 });
