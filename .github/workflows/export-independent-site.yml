@@ -1,8 +1,5 @@
 name: Exporter la partie publique ZikaMansle vers GitHub
 on:
-  push:
-    branches: [migration/zikamansle-independent]
-    paths: ['.github/workflows/export-independent-site.yml']
   workflow_dispatch:
 permissions:
   contents: write
