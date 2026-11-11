@@ -17,25 +17,31 @@ L'ancien schéma ZikaTeam de la migration `0004_zikateam_secure.sql` est conserv
 
 La suppression d'un pôle est une **archive réversible** pour préserver les historiques. La version de charte est immuable : toute nouvelle version doit être explicitement acceptée. Les documents acceptés sont des PDF de maximum 8 Mo, conservés dans R2 privé et servis uniquement aux personnes autorisées.
 
-## Authentification — action indispensable du propriétaire
+## Connexion gratuite pour tous (Supabase Auth + SMTP gratuit)
 
-Il faut configurer **une deuxième application Cloudflare Zero Trust → Access → Applications → Self-hosted**, distincte de celle de l'administration des notifications :
+La branche de test utilise désormais **`TEAM_AUTH_PROVIDER=supabase`**. La page `/zikateam` affiche un écran de connexion e-mail sans Cloudflare Access. Les participants reçoivent un **code à six chiffres** et la session est conservée dans des cookies `HttpOnly`, `Secure`, `SameSite=Lax`. Chaque appel privé est vérifié directement par Supabase Auth puis filtré avec les rôles de D1 ; l'adresse déclarée par le visiteur n'accorde jamais de droits.
 
-- Nom : « ZikaTeam – bénévoles »
-- Domaine : `zikamansle-app-staging.zikamansle.workers.dev`
-- Chemins protégés : `/zikateam*` (page et API)
-- Méthode : One-Time PIN par e-mail ou identité compatible
-- Règle Access : autoriser uniquement les comptes prévus pour ZikaTeam ; le serveur applique en plus une liste de bénévoles actifs `team_members`. Une identité non inscrite est rejetée, même après connexion Access.
-- Relever le **Application Audience Tag** (AUD) de cette nouvelle application, sans le confondre avec `ACCESS_AUD` de l'administration des notifications.
-- Définir `TEAM_ACCESS_AUD` comme variable de l'environnement GitHub `zikamansle-staging` et redéployer. Le Worker l'utilise pour vérifier cryptographiquement le jeton ; à défaut, toute connexion à ZikaTeam est refusée.
-- Garder `ACCESS_TEAM_DOMAIN` commun au même tenant Cloudflare et `ADMIN_EMAIL` comme seule identité administratrice générale.
+**Aucune limite de 50 membres** : le projet Supabase `ZikaMansle-Programme` existe déjà et l'offre Free comprend 50 000 utilisateurs actifs par mois à la date du 11 novembre 2026. Les quotas gratuits, dont 500 Mo de base et la mise en pause des projets inactifs, restent applicables. Le Worker Cloudflare et sa base D1 restent utilisés pour l'organisation ; seul l'authentificateur change.
 
-La page d'administration des notifications `/administration/notifications` conserve ses protections et permissions existantes. Ne pas protéger tout le Worker par Access : les visiteurs doivent consulter l'application publique sans connexion.
+**Compte e-mail gratuit nécessaire pour l'envoi des codes :**
+
+1. Créer un compte **Brevo Gratuit** (300 e-mails par jour, sous réserve de son quota actuel). Faire valider un expéditeur du domaine `zikamansle.fr` et suivre les instructions Brevo pour les DNS SPF/DKIM dans Cloudflare. Une adresse expéditrice doit être autorisée ; ne pas utiliser une adresse non contrôlée.
+2. Dans le projet Supabase `ZikaMansle-Programme` → Authentication → SMTP Settings, activer **Custom SMTP** avec le serveur, port, utilisateur, **clé SMTP privée** et expéditeur fournis par Brevo. **Ne jamais committer cette clé ni l'envoyer dans une conversation publique.**
+3. Dans Supabase → Authentication → Email Templates → **Magic Link**, personnaliser le modèle pour afficher `{{ .Token }}` afin d'envoyer le **code à six chiffres** plutôt qu'un simple lien.
+4. Vérifier dans Supabase que le fournisseur Email est activé et que la création de comptes est autorisée : le Worker ne demande un code que pour les e-mails figurant dans `team_members` (ou l'e-mail administrateur `ADMIN_EMAIL`), sans ouvrir l'accès de ZikaTeam aux autres comptes Supabase.
+5. Les variables **publiques** `TEAM_SUPABASE_URL` et `TEAM_SUPABASE_PUBLISHABLE_KEY` reprennent les valeurs déjà présentes dans `public/config.js`. Ne jamais remplacer la clé publishable par une clé `service_role`.
+6. Annuler le formulaire de création d'une nouvelle application **Cloudflare Access** pour `/zikateam*` ou supprimer cette **seule application ZikaTeam** si elle a déjà été créée ; sinon elle bloquerait la connexion de la majorité des bénévoles. **Conserver l'application Access existante `/administration/notifications`**. Les autorisations admin / responsables / secrétariat / bénévoles sont toujours gérées dans ZikaTeam.
+7. Sauvegarder et migrer D1 avant publication : la table `team_auth_attempts` (migration 0104) limite les demandes et essais de connexion. Tester le code sur une adresse de membre volontaire avant de donner l'accès au public.
+
+Les codes e-mail ne sont pas envoyés par défaut par Supabase vers des adresses externes à l'équipe du projet sans SMTP personnalisé. Cette configuration Brevo est **indispensable** à une utilisation réelle.
+
+**Sécurité :** pas d'inscription libre dans ZikaTeam, demandes de codes contrôlées par l'existence d'une fiche D1 active ; limite par e-mail et IP ; retour d'identité uniquement après validation par Supabase ; seules les activités pertinentes sont visibles ; chaque mutation exige une origine identique au site. Les cookies ne sont pas lisibles en JavaScript. La révocation d'un compte dans D1 lui retire immédiatement l'accès, même si sa session Supabase subsiste.
+
 
 ## Base, tests et déploiement
 
 1. Sauvegarder D1 et R2 staging.
-2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql`, `drizzle/0101_team_operations.sql`, `drizzle/0102_zikateam_legacy_import.sql`, puis `drizzle/0103_zikateam_secretariat.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
+2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql`, `drizzle/0101_team_operations.sql`, `drizzle/0102_zikateam_legacy_import.sql`, `drizzle/0103_zikateam_secretariat.sql`, puis `drizzle/0104_zikateam_free_auth.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
 3. Exécuter `npm ci`, `npm test` et `npm run build`. La compilation `build` est un dry-run, pas une publication.
 4. Déployer la **branche cible de test**, sans pointer de domaine personnalisé et sans fusion avec `main`. Le workflow `deploy-staging.yml` reste verrouillé par la variable `ZIKA_DEPLOY_ENABLED` et ne se déclenche automatiquement que sur `migration/application-autonome`.
 5. Vérifier depuis un téléphone puis un ordinateur : accès admin, accès responsable, **secrétariat** et bénévole, refus hors équipe, PDF, charte, présence, créneaux, messagerie, tâches et pointage. Vérifier la nomination et révocation du Secrétariat, les feuilles imprimables et l’export CSV.
