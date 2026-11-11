@@ -513,6 +513,7 @@ function render(){
  }
  if(state.me.pending&&state.tab!=='fiche')state.tab='fiche';
  root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)();
+ if(state.tab==='messages'){const pane=$('teamMessages');if(pane)pane.scrollTop=pane.scrollHeight;}
  if(state.signingMember)setupSigningCanvas();
 }
 async function refresh(){
@@ -542,7 +543,17 @@ async function refreshChatSummary(){
  const allowed=state.chatRooms.some(x=>x.channel===state.chatChannel&&(x.id||null)===(state.chatId||null));
  if(!allowed){state.chatChannel=state.chatRooms[0]?.channel||'general';state.chatId=state.chatRooms[0]?.id||null;state.messages=[];}
 }
-async function refreshMessages(){if(state.me?.pending){state.messages=[];return;}const params=new URLSearchParams({channel:state.chatChannel});if(state.chatId)params.set('id',state.chatId);const response=await api('messages?'+params);state.messages=response.messages||[];await refreshChatSummary();if(state.tab==='messages')render();}
+async function refreshMessages(){
+ if(state.me?.pending){state.messages=[];return;}
+ const channel=state.chatChannel,id=state.chatId;
+ const params=new URLSearchParams({channel});if(id)params.set('id',id);
+ const response=await api('messages?'+params);
+ if(state.chatChannel!==channel||state.chatId!==id)return;
+ state.messages=response.messages||[];
+ if(state.tab==='messages'){render();const pane=$('teamMessages');if(pane)pane.scrollTop=pane.scrollHeight;}
+ // Le compteur n'empêche plus l'ouverture du tchat ni l'apparition du champ.
+ void refreshChatSummary().then(()=>{if(state.tab==='messages'){const active=state.chatRooms.find(x=>x.channel===channel&&(x.id||null)===(id||null));if(active?.unread){active.unread=0;}}}).catch(()=>{});
+}
 const fromForm=f=>Object.fromEntries(new FormData(f).entries());
 async function uploadTeamPhoto(memberId,file){
  if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Sélectionne une photo JPEG, PNG ou WebP.');
@@ -735,7 +746,15 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.id==='charterAccept')return perform(async()=>command('charter.accept',{version:state.me.charter.version,agree:f.elements.agree.checked,consents:consentPayload(f)}));
  if(f.id==='consentForm')return perform(async()=>command('consents.save',{consents:consentPayload(f)}));
  if(f.id==='teamSelfContactForm')return perform(async()=>{const d=fromForm(f);await command('contact.self',{phone:d.phone});});
- if(f.id==='messageForm')return perform(async()=>{await command('message.send',{channel:state.chatChannel,channelId:state.chatId,body:fromForm(f).body});await refreshMessages()});
+ if(f.id==='messageForm'){
+  const body=fromForm(f).body?.trim();if(!body)return;
+  const send=f.querySelector('button[type="submit"]');if(send){send.disabled=true;send.textContent='Envoi…';}
+  state.busy=true;
+  try{await command('message.send',{channel:state.chatChannel,channelId:state.chatId,body});await refreshMessages();}
+  catch(error){toast('Message non envoyé : '+(error.message||'Connexion indisponible'));if(send){send.disabled=false;send.textContent='Envoyer ➤';}}
+  finally{state.busy=false}
+  return;
+ }
  if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
  if(f.id==='poleForm')return perform(async()=>{const d=fromForm(f);await command('pole.save',{id:d.id||undefined,name:d.name,description:d.description});state.editPole=null});
  if(f.id==='teamMyProfileForm')return perform(async()=>{if(!state.me.admin)throw Error('Action réservée à l’administration.');const d=fromForm(f);await command('member.save',{id:state.me.member?.id||undefined,name:d.name,email:state.me.email,active:true});state.tab='fiche';});
