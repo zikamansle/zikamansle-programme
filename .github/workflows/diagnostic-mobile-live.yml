@@ -1,9 +1,7 @@
 name: Diagnostic appli mobile ZikaMansle (site public)
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths: ['.github/workflows/diagnostic-mobile-live.yml']
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
