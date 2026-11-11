@@ -84,7 +84,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(O,'/zikateam/api/me')).payload.activities.length,0);
   assert.equal((await api(O,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403);
   await okay(A,{op:'charter.save',version:'2',title:'Charte',content:'Charte actualisée et acceptation renouvelée'});
-  assert.equal((await api(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,409);
+  assert.equal((await api(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403,'la charte actualisée bloque les actions non acceptées');
   assert.equal((await api(B,{op:'charter.accept',version:'2'})).status,400,'acceptation explicite obligatoire');
   await okay(B,{op:'charter.accept',version:'2',agree:true});
   await okay(L,{op:'charter.accept',version:'2',agree:true});
@@ -93,7 +93,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities[0].my_response,'yes');
   assert.equal((await api(A,{op:'charter.save',version:'2',title:'Charte',content:'Texte modifié'})).status,409);
   const task=await okay(L,{op:'task.save',activityId:act.id,title:'Installer les barnums',assigned_to:member,status:'todo'});
-  assert.equal((await api(O,{op:'task.status',id:task.id,status:'done'})).status,409);
+  assert.equal((await api(O,{op:'task.status',id:task.id,status:'done'})).status,403,'le bénévole hors du pôle ne peut modifier la tâche');
   await okay(B,{op:'task.status',id:task.id,status:'done'});
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities[0].tasks[0].status,'done');
   assert.equal((await api(L,{op:'checkin.set',activityId:act.id,memberId:other,present:true})).status,403);
