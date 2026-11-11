@@ -237,8 +237,8 @@ function manageMembers(){
   const member=d.members.find(m=>m.email===r.email)||{name:r.name,email:r.email};
   return '<form class="team-card team-accent-orange team-form" data-member-review="'+esc(r.email)+'"><div class="team-between"><h3>Demande de '+esc(member.name||r.email)+'</h3><span class="team-pill warn">À valider</span></div><p class="team-small">'+esc(r.email)+' · Demande du '+esc(shortdt(r.requested_at))+'</p><label>Nom et prénom<input name="name" maxlength="110" required value="'+esc(member.name||r.name)+'"></label>'+roleAssignmentFields(member)+'<div class="team-row"><button class="team-button orange" type="submit">Approuver et enregistrer les fonctions</button><button class="team-button danger" type="button" data-reject-member="'+esc(r.email)+'">Refuser la demande</button></div></form>';
  }).join(''):'<section class="team-card team-accent-teal"><p>Aucune nouvelle demande pour le moment.</p></section>';
- const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form" novalidate><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="submit" class="team-button orange" data-save-member>Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
- const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="submit" class="team-button orange" data-save-member-functions>Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
+ const form='<section class="team-card team-accent-blue">'+(chosen.id?'<button type="button" class="team-button light team-back" data-back-edit="member">← Retour sans modifier</button>':'')+'<h2>'+(chosen.id?'Modifier une fiche':'Ajouter un bénévole')+'</h2><form id="memberForm" class="team-form" novalidate><input type="hidden" name="id" value="'+esc(chosen.id||'')+'"><div class="team-split"><label>Nom et prénom<input name="name" maxlength="110" value="'+esc(chosen.name||'')+'" required></label><label>E-mail de connexion<input name="email" type="email" maxlength="254" value="'+esc(chosen.email||'')+'" required></label></div><label class="team-check"><input type="checkbox" name="active" '+(!chosen.id||chosen.active?'checked':'')+'> Fiche active</label>'+roleAssignmentFields(chosen)+'<div class="team-row"><button type="button" class="team-button orange" data-save-member>Enregistrer la fiche et les fonctions</button><button class="team-button light" type="button" data-reset-member>Nouvelle fiche</button></div></form></section>';
+ const secretaryForm=chosen.id?'<section class="team-card team-accent-blue"><button type="button" class="team-button light team-back" data-back-edit="member">← Retour aux bénévoles</button><h2>Fonctions de '+esc(chosen.name)+'</h2><p class="team-small">Tu peux désigner un dirigeant, un membre du bureau ou un responsable de plusieurs pôles. Les accès administrateur et secrétariat restent réservés à l’administration.</p><form id="teamMemberFunctionsForm" class="team-form"><input type="hidden" name="memberId" value="'+esc(chosen.id)+'">'+roleAssignmentFields(chosen)+'<button type="button" class="team-button orange" data-save-member-functions>Enregistrer les fonctions</button></form></section>':'<section class="team-card team-accent-teal"><h2>Désigner un responsable ou un dirigeant</h2><p>Choisis un bénévole ci-dessous puis clique sur « Modifier les fonctions ».</p></section>';
  const cards=members.map(m=>{
   const list=d.memberships.filter(x=>x.member_id===m.id),byPole=list.map(x=>(d.poles.find(p=>p.id===x.pole_id)?.name||'')+(x.role==='lead'?' (responsable)':'')).filter(Boolean);
   const label=[...(m.roles||[]).map(v=>v==='director'?'Dirigeant':'Bureau'),...((d.secretariatIds||[]).includes(m.id)?['Secrétariat']:[]),...byPole];
@@ -649,6 +649,81 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
+// Sauvegarde déclenchée directement par le bouton, sans dépendre d'un événement submit.
+async function saveVolunteerForm(f){
+ if(state.busy){toast('Une opération est déjà en cours.');return;}
+ try{
+
+  const button=f.querySelector('button[type="submit"]');
+  let feedback=f.querySelector('[data-member-save-feedback]');
+  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');f.append(feedback);}
+  const d=fromForm(f),name=String(d.name||'').trim(),email=String(d.email||'').trim().toLowerCase();
+  const report=(message,ok=false)=>{
+   feedback.textContent=(ok?'✅ ':'❌ ')+message;
+   feedback.style.color=ok?'#116b49':'#ad2034';feedback.style.fontWeight='700';
+   feedback.scrollIntoView({block:'center',behavior:'smooth'});
+  };
+  if(name.length<2)return report('Indique le nom et le prénom du bénévole.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return report('Vérifie l’adresse e-mail de connexion.');
+  const active=f.querySelector('input[name="active"]');
+  if(!active)return report('Champ fiche active introuvable. Recharge ZikaTeam.');
+  const changes=rolePayload(f);
+  if(!state.me?.admin)return report('Seul l’administrateur peut enregistrer une fiche complète. Le secrétariat utilise « Modifier les fonctions ».');
+  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
+  feedback.textContent='Enregistrement de la fiche et des fonctions…';
+  try{
+   const saved=await command('member.save',{id:d.id||undefined,name,email,active:active.checked,...changes});
+   if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé la sauvegarde de cette fiche.');
+   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
+   state.editMember=null;
+   report('Fiche, fonctions et pôles enregistrés dans la base.',true);
+   toast('✅ Fiche, fonctions et pôles enregistrés pour '+name+'.');
+   try{const data=await api('manage');state.manage=data;render();}
+   catch(error){toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');}
+  }catch(error){report('Enregistrement non confirmé : '+(error.message||'Erreur de service.'));}
+  finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
+  return;
+ }catch(error){
+  const feedback=f.querySelector('[data-member-save-feedback]');
+  if(feedback)feedback.textContent='❌ Erreur du formulaire : '+(error?.message||String(error));
+  toast('Erreur du formulaire : '+(error?.message||String(error)));
+  state.busy=false;
+ }
+}
+async function saveFunctionsForm(f){
+ if(state.busy){toast('Une opération est déjà en cours.');return;}
+ try{
+
+  const button=f.querySelector('[data-save-member-functions]');
+  let feedback=f.querySelector('[data-functions-save-feedback]');
+  if(!feedback){feedback=document.createElement('p');feedback.dataset.functionsSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','assertive');f.append(feedback);}
+  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
+  feedback.textContent='⏳ Vérification des pôles et fonctions…';
+  try{
+   const d=fromForm(f),changes=rolePayload(f);
+   const saved=await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});
+   if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
+   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
+   state.editMember=null;
+   feedback.textContent='✅ Fonctions et pôles enregistrés dans la base.';
+   feedback.style.color='#116b49';feedback.style.fontWeight='800';
+   toast('✅ Fonctions et pôles enregistrés.');
+   try{const data=await api('manage');state.manage=data;render();}catch(error){
+    toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');
+   }
+  }catch(error){
+   feedback.textContent='❌ '+(error.message||'Échec de sauvegarde.');
+   feedback.style.color='#ad2034';feedback.style.fontWeight='700';
+   feedback.scrollIntoView({block:'center'});
+  }finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer les fonctions';}}
+  return;
+ }catch(error){
+  const feedback=f.querySelector('[data-functions-save-feedback]');
+  if(feedback)feedback.textContent='❌ Erreur du formulaire : '+(error?.message||String(error));
+  toast('Erreur du formulaire : '+(error?.message||String(error)));
+  state.busy=false;
+ }
+}
 // Gestion prioritaire des boutons de sauvegarde : un appui doit déclencher
 // le formulaire avant les autres écouteurs, même sur un navigateur mobile.
 document.addEventListener('click',e=>{
@@ -659,9 +734,9 @@ document.addEventListener('click',e=>{
  if(!form){toast('Formulaire introuvable.');return;}
  let feedback=form.querySelector('[data-member-save-feedback], [data-functions-save-feedback]');
  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.style.cssText='font-size:16px;font-weight:800;color:#17364a;padding:12px;background:#fff4d8;border:2px solid #e8932a;border-radius:10px';button.closest('.team-row')?.after(feedback)||form.append(feedback);}
- feedback.textContent='⏳ Appui détecté : enregistrement en cours… Une réponse de confirmation ou d’erreur doit apparaître ensuite.';
+ feedback.textContent='⏳ Clic reçu. Transmission de la fiche au serveur…';
  if(state.busy){feedback.textContent='⌛ Une autre opération est en cours. Réessaie.';return;}
- form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+ (form.id==='memberForm'?saveVolunteerForm(form):saveFunctionsForm(form)).catch(error=>{feedback.textContent='❌ '+(error?.message||'Erreur de traitement.');state.busy=false;});
 },true);
 root.addEventListener('click',async e=>{const b=e.target.closest('button[data-save-member],button[data-save-member-functions],button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.matches('[data-save-member], [data-save-member-functions]')){
@@ -978,66 +1053,12 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   state.signingSelection=[];
  });
  if(f.id==='teamCustomListForm')return perform(async()=>{const d=fromForm(f);const columns=state.listColumns;if(!columns.length)throw Error('Choisis au moins une colonne.');const saved=await command('list.save',{id:state.listId||undefined,title:d.title,columns,memberIds:state.listSelected});state.listId=saved.id;state.listTitle=d.title;state.listColumns=columns;});
- if(f.id==='teamMemberFunctionsForm'){
-  const button=f.querySelector('[data-save-member-functions]');
-  let feedback=f.querySelector('[data-functions-save-feedback]');
-  if(!feedback){feedback=document.createElement('p');feedback.dataset.functionsSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','assertive');f.append(feedback);}
-  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
-  feedback.textContent='⏳ Vérification des pôles et fonctions…';
-  try{
-   const d=fromForm(f),changes=rolePayload(f);
-   const saved=await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});
-   if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
-   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
-   state.editMember=null;
-   feedback.textContent='✅ Fonctions et pôles enregistrés dans la base.';
-   feedback.style.color='#116b49';feedback.style.fontWeight='800';
-   toast('✅ Fonctions et pôles enregistrés.');
-   try{const data=await api('manage');state.manage=data;render();}catch(error){
-    toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');
-   }
-  }catch(error){
-   feedback.textContent='❌ '+(error.message||'Échec de sauvegarde.');
-   feedback.style.color='#ad2034';feedback.style.fontWeight='700';
-   feedback.scrollIntoView({block:'center'});
-  }finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer les fonctions';}}
-  return;
- }
+ if(f.id==='teamMemberFunctionsForm')return saveFunctionsForm(f);
  if(f.id==='teamInviteForm')return perform(async()=>{
   const d=fromForm(f),created=await command('invite.create',{name:d.name,email:d.email});
   state.invitationDraft={name:created.name,email:created.email,code:created.code,expiresAt:created.expiresAt};
  });
- if(f.id==='memberForm'){
-  const button=f.querySelector('button[type="submit"]');
-  let feedback=f.querySelector('[data-member-save-feedback]');
-  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');f.append(feedback);}
-  const d=fromForm(f),name=String(d.name||'').trim(),email=String(d.email||'').trim().toLowerCase();
-  const report=(message,ok=false)=>{
-   feedback.textContent=(ok?'✅ ':'❌ ')+message;
-   feedback.style.color=ok?'#116b49':'#ad2034';feedback.style.fontWeight='700';
-   feedback.scrollIntoView({block:'center',behavior:'smooth'});
-  };
-  if(name.length<2)return report('Indique le nom et le prénom du bénévole.');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return report('Vérifie l’adresse e-mail de connexion.');
-  const active=f.querySelector('input[name="active"]');
-  if(!active)return report('Champ fiche active introuvable. Recharge ZikaTeam.');
-  const changes=rolePayload(f);
-  if(!state.me?.admin)return report('Seul l’administrateur peut enregistrer une fiche complète. Le secrétariat utilise « Modifier les fonctions ».');
-  state.busy=true;if(button){button.disabled=true;button.textContent='Enregistrement en cours…';}
-  feedback.textContent='Enregistrement de la fiche et des fonctions…';
-  try{
-   const saved=await command('member.save',{id:d.id||undefined,name,email,active:active.checked,...changes});
-   if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé la sauvegarde de cette fiche.');
-   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
-   state.editMember=null;
-   report('Fiche, fonctions et pôles enregistrés dans la base.',true);
-   toast('✅ Fiche, fonctions et pôles enregistrés pour '+name+'.');
-   try{const data=await api('manage');state.manage=data;render();}
-   catch(error){toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');}
-  }catch(error){report('Enregistrement non confirmé : '+(error.message||'Erreur de service.'));}
-  finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
-  return;
- }
+ if(f.id==='memberForm')return saveVolunteerForm(f);
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
  if(f.id==='shiftForm')return perform(async()=>{const d=fromForm(f);await command('shift.save',{id:d.id||undefined,activityId:d.activityId,label:d.label,starts_at:new Date(d.starts_at).toISOString(),ends_at:new Date(d.ends_at).toISOString(),capacity:Number(d.capacity)});state.editShift=null});
  if(f.id==='charterForm')return perform(async()=>{const d=fromForm(f),pdf=f.elements.pdf.files[0];let documentId=state.me.charter?.document_id||null;if(pdf)documentId=await upload(pdf,'charter');await command('charter.save',{version:d.version,title:d.title,content:d.content,documentId})});
