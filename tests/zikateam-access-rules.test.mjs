@@ -129,3 +129,5 @@ test('personnalisation de l’icône sans rechargement bloquant',()=>{
  assert.ok(client.includes("room.image_id=null"));
  assert.ok(client.includes("room.image_id=data.id"));
 });
+
+// Vérifications ZikaTeam réussies : publication exclusivement sur staging après approbation.
