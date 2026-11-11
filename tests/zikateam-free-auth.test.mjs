@@ -114,6 +114,7 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.ok((await queue.json()).pendingRequests.some(p=>p.email===names.outsider));
   const okReview=await invoke('/zikateam/api/command',{op:'member.review',email:names.outsider,name:'Nouvelle bénévole',approve:true,roles:['director'],secretariat:true,poleRoles:[]},adminCookie);
   assert.equal(okReview.status,200,'acceptation et designation de la fonction');
+  const approvedId=(await okReview.json()).id;
   const approved=await invoke('/zikateam/api/me',undefined,outsiderCookie);
   const approvedPage=await approved.json();
   assert.equal(approvedPage.pending,false);
@@ -122,12 +123,12 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal(secretaryView.status,200,'secretaire autorisee a gerer annuaire et adhesions');
   const secData=await secretaryView.json();
   assert.ok(secData.contacts.some(p=>p.email===names.outsider));
-  assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:okReview.memberId||okReview.id,paid:true,paidOn:null,paymentMethod:'card'},outsiderCookie)).status,200,'date reglement facultative');
-  assert.equal((await invoke('/zikateam/api/command',{op:'contact.set',memberId:okReview.memberId||okReview.id,phone:'0601020304',address:'10 rue des Fleurs',postalCode:'16230',city:'Mansle-les-Fontaines'},outsiderCookie)).status,200);
+  assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:approvedId,paid:true,paidOn:null,paymentMethod:'card'},outsiderCookie)).status,200,'date reglement facultative');
+  assert.equal((await invoke('/zikateam/api/command',{op:'contact.set',memberId:approvedId,phone:'0601020304',address:'10 rue des Fleurs',postalCode:'16230',city:'Mansle-les-Fontaines'},outsiderCookie)).status,200);
   const complete=await (await invoke('/zikateam/api/manage',undefined,outsiderCookie)).json();
-  assert.equal(complete.dues.find(d=>d.member_id===(okReview.memberId||okReview.id)).payment_method,'card');
-  assert.equal(complete.contacts.find(d=>d.member_id===(okReview.memberId||okReview.id)).phone,'0601020304');
-  assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:okReview.memberId||okReview.id,paid:true},jar)).status,403,'un benevole ne peut modifier les adhesions');
+  assert.equal(complete.dues.find(d=>d.member_id===(approvedId)).payment_method,'card');
+  assert.equal(complete.contacts.find(d=>d.member_id===(approvedId)).phone,'0601020304');
+  assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:approvedId,paid:true},jar)).status,403,'un benevole ne peut modifier les adhesions');
   db.close();
  }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
 });
