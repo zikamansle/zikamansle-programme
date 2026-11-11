@@ -83,3 +83,9 @@ L’administrateur peut nommer un ou plusieurs bénévoles au **Secrétariat**, 
 - Le workflow dédié `.github/workflows/deploy-zikateam-staging.yml` est conditionné à `[staging-deploy-approved]` ; aucun run associé aux derniers commits n'a été observable via les accès GitHub disponibles.
 - Aucun test réel d'envoi de code, de connexion authentifiée, de signature sur téléphone ou de notifications n'a été validé. Les notifications générales restent désactivées.
 - Ne pas modifier `app.zikamansle.fr`, les DNS, ni les environnements de production à ce stade.
+
+### Notifications ciblées — contrôle de diffusion (11 novembre 2026)
+
+Le Worker peut notifier **chaque bénévole actif concerné et volontairement abonné** aux réunions, modifications, annulations, discussions autorisées et rappels. Les choix de notification personnels restent prioritaires. Les rappels respectent également le mode Ne pas déranger.
+
+Sécurité : `TEAM_PUSH_ENABLED=false` reste la valeur de départ. Pour tester en staging, fournir explicitement `TEAM_PUSH_TEST_MEMBER_IDS` (liste d'identifiants membres séparés par virgule), les clés VAPID valides et `TEAM_PUSH_ENABLED=true` ; seuls ces comptes de test recevront les push. Sans liste de test, le staging ne diffuse rien. Pour la production, le même mécanisme cible l'ensemble des destinataires autorisés, mais ne doit être activé qu'après une recette réussie, vérification des droits et des abonnements. Il n'y a aucun envoi à tous les bénévoles simplement parce que le code est déployé.
