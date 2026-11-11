@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -56,7 +56,7 @@ jobs:
       - name: Android launch smoke test (includes ManageDataLauncherActivity)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           script: |
@@ -78,7 +78,7 @@ jobs:
             if grep -E 'FATAL EXCEPTION|Unable to start activity|ClassNotFoundException' /tmp/zika-android-logcat.txt | grep -Eq 'Zika|ManageDataLauncherActivity'; then
               echo 'FAIL: ZikaMansle component could not start'; exit 1
             fi
-            echo 'PASS: Launcher started and no app crash detected on Android API 35'
+            echo 'PASS: Launcher started and no app crash detected on Android API 36'
       - name: Save Android startup diagnostics
         if: always()
         uses: actions/upload-artifact@v4
