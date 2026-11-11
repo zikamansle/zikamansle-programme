@@ -2,6 +2,7 @@ import {handle} from '../server/push-api.mjs';
 import {siteContent} from '../server/site-content.mjs';
 import {isAdmin} from '../server/admin-auth.mjs';
 import {handleNative} from '../server/native-push.mjs';
+import {handleZikaTeam, drainTeamPush} from '../server/zikateam.mjs';
 import catalog from '../public/data/site.json' with {type:'json'};
 
 const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(path);
@@ -18,7 +19,7 @@ export function adminAssetRequest(request) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, execution) {
     const url = new URL(request.url);
     const path = url.pathname;
     // Old bookmarks are redirected to a single protected administration prefix.
@@ -26,7 +27,12 @@ export default {
       return Response.redirect(new URL('/administration/notifications',url),302);
     }
     let response;
-    if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
+    if (path === '/zikateam.html') return Response.redirect(new URL('/zikateam',url),302);
+    if (path === '/administration/zikateam') return Response.redirect(new URL('/zikateam',url),302);
+    if (path === '/zikateam' || path.startsWith('/zikateam/')) {
+      response=await handleZikaTeam(request,env,execution);
+    }
+    else if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
       response = await handleNative(request,env,isAdmin);
     }
     else if (path.startsWith('/api/push/') || isAdminAPI(path)) {
@@ -42,7 +48,7 @@ export default {
     response = new Response(response.body,response);
     response.headers.set('X-Content-Type-Options','nosniff');
     response.headers.set('Referrer-Policy','strict-origin-when-cross-origin');
-    if (path.startsWith('/administration/')) response.headers.set('Cache-Control','no-store');
+    if (path.startsWith('/administration/') || path==='/zikateam' || path.startsWith('/zikateam/')) response.headers.set('Cache-Control','private, no-store');
     if (path === '/sw.js') {response.headers.set('Cache-Control','no-cache');response.headers.set('Service-Worker-Allowed','/');}
     return response;
   }
