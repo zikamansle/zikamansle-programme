@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {generateKeyPairSync} from 'node:crypto';
 import {jwtVerify,importSPKI} from 'jose';
-import {handleNative,sendFirebaseTest,firebasePreflight} from '../server/native-push.mjs';
+import {handleNative,sendFirebaseTest,firebasePreflight,classifyFirebaseCredentials} from '../server/native-push.mjs';
 
 const ROOT='https://zikamansle-app-staging.zikamansle.workers.dev';
 const token='FCM_TEST_'+('a'.repeat(100));
@@ -86,7 +86,7 @@ test('Firebase diagnostic does not send notifications and exposes only safe stat
  const e=env();
  assert.deepEqual(await firebasePreflight(e),{ready:false,stage:'CONFIG_MISSING'});
  e.FCM_SERVICE_ACCOUNT_JSON='{invalid json';
- assert.deepEqual(await firebasePreflight(e),{ready:false,stage:'CONFIG_INVALID'});
+ assert.deepEqual(await firebasePreflight(e),{ready:false,stage:'CONFIG_JSON_SYNTAX'});
  const {privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
  e.FCM_SERVICE_ACCOUNT_JSON=JSON.stringify({
   project_id:'zikamansle-d0c4e',
@@ -101,4 +101,18 @@ test('Firebase diagnostic does not send notifications and exposes only safe stat
  assert.deepEqual(urls,['https://oauth2.googleapis.com/token']);
  const denied=await firebasePreflight(e,async()=>new Response(null,{status:403}));
  assert.deepEqual(denied,{ready:false,stage:'OAUTH_403'});
+});
+
+test('Classify Firebase credentials without logging any private data',()=>{
+ const base={project_id:'zikamansle-d0c4e',client_email:'firebase-adminsdk-fbsvc@zikamansle-d0c4e.iam.gserviceaccount.com',
+  private_key:'-----BEGIN PRIVATE KEY-----\\nplaceholder\\n-----END PRIVATE KEY-----\\n'};
+ const stage=x=>classifyFirebaseCredentials(x).stage;
+ assert.equal(stage('{garbled'), 'CONFIG_JSON_SYNTAX');
+ assert.equal(stage('{}'), 'CONFIG_WRONG_PROJECT');
+ assert.equal(stage(JSON.stringify({...base,project_id:'another-project'})), 'CONFIG_WRONG_PROJECT');
+ assert.equal(stage(JSON.stringify({...base,client_email:'wrong@example.com'})), 'CONFIG_WRONG_ACCOUNT');
+ assert.equal(stage(JSON.stringify({...base,private_key:''})), 'CONFIG_NO_PRIVATE_KEY');
+ assert.equal(stage(JSON.stringify({...base,private_key:'not a private key'})), 'CONFIG_PRIVATE_KEY_FORMAT');
+ assert.equal(stage(JSON.stringify(base)), 'CONFIG_PARSED');
+ assert.equal(stage(JSON.stringify(JSON.stringify(base))), 'CONFIG_PARSED');
 });
