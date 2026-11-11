@@ -10,6 +10,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    # Never deploy on a push until the owner explicitly enables staging.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
