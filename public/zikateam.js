@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,adhesionFilter:'pending',directorySearch:''};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,messages:[],busy:false,freeLogin:false,loginEmail:'',codeSent:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[]};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -156,10 +156,72 @@ function printAttendance(a){
  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Émargement · '+esc(a.title)+'</title><style>body{font:12px Arial,sans-serif;color:#111;padding:15px}h1{font-size:20px}p{font-size:13px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #666;padding:12px 7px;text-align:left}td:last-child{width:140px}@media print{button{display:none}body{padding:0}}</style></head><body><h1>Feuille d’émargement — '+esc(a.title)+'</h1><p>ZikaMansle · '+esc(dt(a.starts_at))+' · '+esc(a.place||'Lieu non précisé')+'</p><p>Le pointage numérique est une indication de présence et ne remplace pas la signature manuscrite.</p><button onclick="window.print()">Imprimer cette feuille</button><table><thead><tr>'+attendanceRows(a)[0].map(v=>'<th>'+esc(v)+'</th>').join('')+'</tr></thead><tbody>'+content+'</tbody></table></body></html>';
  popup.document.open();popup.document.write(html);popup.document.close();
 }
+
+function signingMembers(){
+ const data=state.signing||{people:[],memberships:[]};
+ return data.people.filter(m=>state.signingFilter==='all'||state.signingFilter==='leaders'&&m.leader||
+ state.signingFilter==='bureau'&&m.bureau||state.signingFilter==='poles'&&data.memberships.some(x=>x.member_id===m.id&&x.pole_id===state.signingPole));
+}
+function signingSVG(points){
+ if(!points)return '';
+ let strokes;
+ try{strokes=JSON.parse(points)}catch{return ''}
+ if(!Array.isArray(strokes))return '';
+ const lines=strokes.filter(x=>Array.isArray(x)&&x.length>=2).map(line=>'<polyline points="'+line.filter(p=>Array.isArray(p)&&p.length===2&&p.every(n=>Number.isInteger(n)&&n>=0&&n<=1000)).map(p=>p.join(',')).join(' ')+'" fill="none" stroke="#152a44" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>').join('');
+ return '<svg viewBox="0 0 1000 400" role="img" aria-label="Signature manuscrite numérisée" style="width:170px;max-width:100%;height:62px">'+lines+'</svg>';
+}
+function exportSigningCSV(session){
+ const columns=['Nom et prénom','Qualité','Date de signature','État'];
+ const rows=[columns,...session.attendees.map(m=>[m.display_name,m.quality,m.signed_at?shortdt(m.signed_at):'',m.signed_at?'Signé':'Non signé'])];
+ const protect=x=>{const t=String(x??'');return /^[=+\-@\t\r]/.test(t)?"'"+t:t;};
+ const csv='\uFEFF'+rows.map(row=>row.map(x=>'"'+protect(x).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+ a.href=url;a.download='zikamansle-emargement-'+session.starts_at.slice(0,10)+'.csv';document.body.append(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function printSigningSession(session,mode){
+ const popup=window.open('','_blank');
+ if(!popup){toast('Autorise les fenêtres supplémentaires pour créer le document.');return;}
+ popup.opener=null;
+ const rows=session.attendees.map(m=>'<tr><td>'+esc(m.display_name)+'</td><td>'+esc(m.quality)+'</td><td>'+(m.signed_at?shortdt(m.signed_at):'Non signé')+'</td><td>'+(m.signature_points?signingSVG(m.signature_points):'<span style="color:#777">—</span>')+'</td></tr>').join('');
+ const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>ZikaMansle — Émargement '+esc(session.title)+'</title><style>@page{size:A4 landscape;margin:14mm}body{font:11px Arial,sans-serif;color:#162a40}h1{font-size:21px;margin:0 0 10px}p{font-size:13px;margin:5px 0}table{border-collapse:collapse;width:100%;table-layout:fixed;margin-top:20px}th,td{border:1px solid #8a9dab;padding:9px 7px;vertical-align:middle;overflow-wrap:anywhere}th{background:#edf5fa;text-align:left}th:first-child{width:25%}th:nth-child(2){width:25%}th:nth-child(3){width:19%}th:last-child{width:31%}tr{break-inside:avoid}button{padding:10px 16px;margin:12px 0}@media print{button,.hint{display:none}} </style></head><body><h1>ZikaMansle — Feuille d’émargement</h1><p><strong>Objet :</strong> '+esc(session.title)+'</p><p><strong>Date et heure :</strong> '+esc(dt(session.starts_at))+'</p><p><strong>Lieu :</strong> '+esc(session.place)+'</p><p><strong>Participants :</strong> '+session.attendees.length+' · <strong>Signatures :</strong> '+session.attendees.filter(x=>x.signed_at).length+' · <strong>État :</strong> '+(session.closed_at?'Clôturé':'En cours')+'</p><p class="hint">'+(mode==='pdf'?'Choisis « Enregistrer au format PDF » dans l’impression.':'Choisis ton imprimante pour éditer la feuille.')+'</p><button onclick="window.print()">Imprimer / enregistrer en PDF</button><table><thead><tr><th>Nom et prénom</th><th>Qualité</th><th>Signé le</th><th>Signature effectuée sur l’écran</th></tr></thead><tbody>'+rows+'</tbody></table><p style="margin-top:14px;font-size:10px;color:#596b7a">Émargement interne ZikaMansle · Signature manuscrite tracée sur écran, enregistrée avec date et heure de validation.</p></body></html>';
+ popup.document.open();popup.document.write(html);popup.document.close();
+}
+function signingScreen(){
+ const session=state.signing?.sessions.find(x=>x.id===state.signingCurrent);
+ const member=session?.attendees.find(m=>m.member_id===state.signingMember&&!m.signed_at);
+ if(!session||!member)return '';
+ return '<section class="team-signing-overlay" aria-label="Signature de présence"><div class="team-signing-panel"><p class="team-signing-eyebrow">ZikaMansle · Signature de présence</p><h2>'+esc(member.display_name)+'</h2><p><strong>'+esc(member.quality)+'</strong> · '+esc(session.title)+'</p><p>Je confirme ma présence à cette réunion en traçant ma signature ci-dessous.</p><div class="team-signing-pad"><canvas id="teamSigningCanvas" width="1000" height="400" aria-label="Tracer votre signature avec le doigt ou la souris"></canvas></div><p class="team-small">Signez avec votre doigt sur le téléphone ou avec la souris sur ordinateur.</p><div class="team-row"><button class="team-button light" type="button" data-signing-clear>Effacer et recommencer</button><button class="team-button orange" type="button" data-signing-confirm>Valider ma signature</button><button class="team-button light" type="button" data-signing-return>Retour à la feuille</button></div></div></section>';
+}
+function setupSigningCanvas(){
+ const canvas=document.getElementById('teamSigningCanvas');if(!canvas)return;
+ const ctx=canvas.getContext('2d');
+ const draw=()=>{ctx.clearRect(0,0,1000,400);ctx.strokeStyle='#132d49';ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';for(const stroke of state.signingStrokes){if(!stroke.length)continue;ctx.beginPath();ctx.moveTo(...stroke[0]);for(const p of stroke.slice(1))ctx.lineTo(...p);ctx.stroke();}};
+ draw();
+ let active=null;
+ const loc=e=>{const r=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1000,Math.round((e.clientX-r.left)*1000/r.width))),Math.max(0,Math.min(400,Math.round((e.clientY-r.top)*400/r.height)))];};
+ canvas.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();active=[];state.signingStrokes.push(active);canvas.setPointerCapture(e.pointerId);active.push(loc(e));draw()});
+ canvas.addEventListener('pointermove',e=>{if(!active)return;e.preventDefault();if(active.length>=1800)return;const pt=loc(e),prior=active.at(-1);if(!prior||Math.hypot(pt[0]-prior[0],pt[1]-prior[1])>=2)active.push(pt);draw()});
+ const release=e=>{if(!active)return;e.preventDefault();if(active.length===1)active.push([Math.min(1000,active[0][0]+1),active[0][1]]);active=null;draw()};
+ canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);
+}
 function manageAttendance(){
- const acts=state.manage.activities.filter(a=>a.status==='published');
- return '<section class="team-card"><h2>Secrétariat · feuilles d’émargement</h2><p class="team-muted">Pointage des présences sur place, téléchargement CSV et feuilles à imprimer pour recueillir les signatures. Les opérations sont tracées et restent visibles par l’administration.</p></section>'+
- (acts.length?acts.map(a=>'<section class="team-card"><div class="team-between"><div><h3>'+esc(a.title)+'</h3><p>'+esc(dt(a.starts_at))+' · '+esc(a.place||'Lieu à préciser')+'</p><p class="team-small">'+(a.invitedCount||0)+' bénévoles concernés · '+(a.attendance||[]).filter(m=>m.checked_in_at).length+' pointés présents</p></div><div class="team-row"><button class="team-button light" type="button" data-export-attendance="'+a.id+'">Exporter CSV</button><button class="team-button orange" type="button" data-print-attendance="'+a.id+'">Imprimer</button></div></div>'+attendanceBlock(a)+'</section>').join(''):'<section class="team-card"><p>Aucune activité publiée à émarger.</p></section>');
+ const data=state.signing||{sessions:[],people:[],memberships:[],poles:[]};
+ const selected=data.sessions.find(s=>s.id===state.signingCurrent);
+ const people=signingMembers();
+ const pending=selected?.attendees.filter(a=>!a.signed_at)||[];
+ const signed=selected?.attendees.filter(a=>a.signed_at)||[];
+ const create='<section class="team-card team-accent-blue"><h2>Créer une nouvelle feuille d’émargement</h2><p>La séance peut être créée puis complétée avec les participants réellement présents, avant de leur faire signer le téléphone.</p><form id="signingCreateForm" class="team-form"><label>Objet de la réunion<input name="title" maxlength="180" required placeholder="Ex. Réunion des responsables ZikaMansle"></label><div class="team-split"><label>Date et heure<input name="startsAt" type="datetime-local" required></label><label>Lieu<input name="place" maxlength="180" required placeholder="Ex. Salle Gautier Capuçon"></label></div><button class="team-button orange" type="submit">Créer la feuille d’émargement</button></form></section>';
+ const sessionList='<section class="team-card team-accent-teal"><h2>Feuilles d’émargement enregistrées</h2>'+(data.sessions.length?data.sessions.map(s=>'<div class="team-member-card"><div><strong>'+esc(s.title)+'</strong><p class="team-small">'+esc(dt(s.starts_at))+' · '+esc(s.place)+'</p><span class="team-pill '+(s.closed_at?'ok':'warn')+'">'+s.attendees.filter(m=>m.signed_at).length+'/'+s.attendees.length+' signatures'+(s.closed_at?' · Clôturée':' · En cours')+'</span></div><button class="team-button light" type="button" data-signing-open="'+s.id+'">Consulter</button></div>').join(''):'<p>Aucune feuille créée pour le moment.</p>')+'</section>';
+ let current='';
+ if(selected){
+  current='<section class="team-card team-accent-purple"><div class="team-between"><div><h2>'+esc(selected.title)+'</h2><p>'+esc(dt(selected.starts_at))+' · '+esc(selected.place)+'</p><p><strong>'+signed.length+'</strong> signatures enregistrées · '+pending.length+' personnes à signer</p></div><span class="team-pill '+(selected.closed_at?'ok':'warn')+'">'+(selected.closed_at?'Clôturée':'En cours')+'</span></div><div class="team-export-tools"><button type="button" class="team-button light" data-signing-export="csv">CSV</button><button type="button" class="team-button light" data-signing-export="print">Imprimer</button><button type="button" class="team-button orange" data-signing-export="pdf">Créer un PDF avec signatures</button>'+(selected.closed_at?'':'<button type="button" class="team-button danger" data-signing-close>Clôturer la feuille</button>')+'</div></section>';
+  if(!selected.closed_at){
+   current+='<section class="team-card team-accent-blue"><h2>Ajouter les participants présents</h2><p>Sélectionne les personnes présentes, y compris après la création de la feuille. Elles pourront ensuite signer une par une sur ce téléphone.</p><form id="signingAddForm" class="team-form"><label>Afficher les bénévoles<select id="teamSigningFilter"><option value="all" '+(state.signingFilter==='all'?'selected':'')+'>Tous les bénévoles</option><option value="leaders" '+(state.signingFilter==='leaders'?'selected':'')+'>Responsables uniquement</option><option value="bureau" '+(state.signingFilter==='bureau'?'selected':'')+'>Bureau uniquement</option><option value="poles" '+(state.signingFilter==='poles'?'selected':'')+'>Par pôle</option></select></label>'+(state.signingFilter==='poles'?'<label>Choisir un pôle<select id="teamSigningPole"><option value="">Choisir un pôle</option>'+data.poles.map(p=>'<option value="'+p.id+'" '+(state.signingPole===p.id?'selected':'')+'>'+esc(p.name)+'</option>').join('')+'</select></label>':'')+'<div class="team-row"><button type="button" class="team-button light" data-signing-all>Tout sélectionner</button><button type="button" class="team-button light" data-signing-none>Tout désélectionner</button></div><div class="team-signing-choices">'+people.map(m=>'<label class="team-check"><input type="checkbox" name="member" value="'+esc(m.id)+'" '+(state.signingSelection.includes(m.id)?'checked':'')+' '+(selected.attendees.some(x=>x.member_id===m.id)?'disabled':'')+'><span>'+esc(m.name)+'</span><small>'+esc(m.quality)+'</small></label>').join('')+'</div><button class="team-button orange" type="submit">Ajouter les personnes sélectionnées</button></form></section>';
+  }
+  current+='<section class="team-card"><h2>Personnes présentes et signatures</h2>'+(selected.attendees.length?'<div class="team-signing-rows">'+selected.attendees.map(m=>'<div class="team-member-card"><div><strong>'+esc(m.display_name)+'</strong><p class="team-small">'+esc(m.quality)+'</p>'+(m.signed_at?'<span class="team-pill ok">Signé le '+esc(shortdt(m.signed_at))+'</span>':'<span class="team-pill warn">Signature en attente</span>')+'</div><div class="team-row">'+(m.signature_points?signingSVG(m.signature_points):'')+(!m.signed_at&&!selected.closed_at?'<button class="team-button orange" type="button" data-signing-member="'+m.member_id+'">Faire signer</button><button class="team-button light" type="button" data-signing-remove="'+m.member_id+'">Retirer</button>':'')+'</div></div>').join('')+'</div>':'<p>Ajoute les participants pour commencer à recueillir leurs signatures.</p>')+'</section>';
+ }
+ return create+sessionList+current+(state.signingMember?signingScreen():'');
 }
 
 
@@ -268,8 +330,15 @@ function render(){
  }
  if(state.me.pending&&state.tab!=='fiche'&&state.tab!=='messages')state.tab='fiche';
  root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)();
+ if(state.signingMember)setupSigningCanvas();
 }
-async function refresh(){state.me=await api('me');if(state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length)state.managementTab='adhesions';render();}
+async function refresh(){
+ state.me=await api('me');
+ if(state.me.charterAccepted&&(state.me.admin||state.me.leadPoles.length||state.me.secretariat))state.manage=await api('manage');else state.manage=null;
+ if(state.me.charterAccepted&&(state.me.admin||state.me.secretariat))state.signing=await api('signing');else state.signing=null;
+ if(state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length&&state.managementTab==='activites')state.managementTab='emargements';
+ render();
+}
 async function refreshMessages(){if(state.me?.pending){state.chatChannel='general';state.chatId=null;}const params=new URLSearchParams({channel:state.chatChannel});if(state.chatId)params.set('id',state.chatId);const response=await api('messages?'+params);state.messages=response.messages||[];if(state.tab==='messages')render();}
 const fromForm=f=>Object.fromEntries(new FormData(f).entries());
 async function uploadTeamPhoto(memberId,file){
@@ -291,9 +360,39 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.hasAttribute('data-team-reset')){state.codeSent=false;loginScreen();return;}
  if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;loginScreen();return;}
+
+ if(b.dataset.signingOpen){
+  state.signingCurrent=b.dataset.signingOpen;state.signingMember=null;state.signingSelection=[];state.managementTab='emargements';render();return;
+ }
+ if(b.dataset.signingAll){state.signingSelection=signingMembers().map(m=>m.id).filter(id=>!state.signing.sessions.find(s=>s.id===state.signingCurrent)?.attendees.some(a=>a.member_id===id));render();return;}
+ if(b.dataset.signingNone){state.signingSelection=[];render();return;}
+ if(b.dataset.signingMember){state.signingMember=b.dataset.signingMember;state.signingStrokes=[];render();return;}
+ if(b.dataset.signingReturn!==undefined){state.signingMember=null;state.signingStrokes=[];render();return;}
+ if(b.dataset.signingClear!==undefined){state.signingStrokes=[];setupSigningCanvas();render();return;}
+ if(b.dataset.signingConfirm!==undefined){
+  if(!state.signingStrokes.length){toast('Trace ta signature avant de valider.');return;}
+  await perform(async()=>{
+   await command('signing.sign',{sessionId:state.signingCurrent,memberId:state.signingMember,strokes:state.signingStrokes});
+   state.signingMember=null;state.signingStrokes=[];
+  });return;
+ }
+ if(b.dataset.signingRemove){
+  if(!confirm('Retirer ce participant non signé de la feuille ?'))return;
+  await perform(async()=>command('signing.remove',{sessionId:state.signingCurrent,memberId:b.dataset.signingRemove}));return;
+ }
+ if(b.dataset.signingClose!==undefined){
+  if(!confirm('Clôturer définitivement cette feuille ? Vous ne pourrez plus ajouter de participant ni recueillir de nouvelles signatures.'))return;
+  await perform(async()=>command('signing.close',{sessionId:state.signingCurrent}));return;
+ }
+ if(b.dataset.signingExport){
+  const session=state.signing?.sessions.find(x=>x.id===state.signingCurrent);
+  if(!session)return;
+  b.dataset.signingExport==='csv'?exportSigningCSV(session):printSigningSession(session,b.dataset.signingExport);
+  return;
+ }
  if(b.dataset.rejectMember){
   if(!confirm('Refuser définitivement cette demande d’accès ZikaTeam ?'))return;
   await perform(async()=>command('member.review',{email:b.dataset.rejectMember,approve:false}));
@@ -343,6 +442,9 @@ root.addEventListener('change',async e=>{
   await perform(async()=>uploadTeamPhoto(e.target.dataset.photoMember,file));
   return;
  }
+ if(e.target.id==='teamSigningFilter'){state.signingFilter=e.target.value;state.signingSelection=[];render();return;}
+ if(e.target.id==='teamSigningPole'){state.signingPole=e.target.value;state.signingSelection=[];render();return;}
+ if(e.target.matches('#signingAddForm input[name="member"]')){state.signingSelection=[...e.target.form.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(x=>x.value);return;}
  if(e.target.id==='teamAdhesionFilter'){state.adhesionFilter=e.target.value;render();return;}
  if(e.target.id==='teamChannel'){const [channel,id]=e.target.value.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}}});
 root.addEventListener('input',e=>{if(e.target.id==='teamDirectorySearch')state.directorySearch=e.target.value;});
@@ -369,6 +471,16 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.hasAttribute('data-member-review'))return perform(async()=>{
   const roles=rolePayload(f);
   await command('member.review',{email:f.dataset.memberReview,approve:true,name:f.elements.name.value,...roles});
+ });
+ if(f.id==='signingCreateForm')return perform(async()=>{
+  const d=fromForm(f);
+  const saved=await command('signing.create',{title:d.title,place:d.place,startsAt:new Date(d.startsAt).toISOString()});
+  state.signingCurrent=saved.id;state.signingSelection=[];state.managementTab='emargements';
+ });
+ if(f.id==='signingAddForm')return perform(async()=>{
+  const ids=[...f.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(x=>x.value);
+  await command('signing.add',{sessionId:state.signingCurrent,memberIds:ids});
+  state.signingSelection=[];
  });
  if(f.id==='memberForm')return perform(async()=>{const d=fromForm(f);await command('member.save',{id:d.id||undefined,name:d.name,email:d.email,active:f.elements.active.checked,...rolePayload(f)});state.editMember=null});
  if(f.id==='taskForm')return perform(async()=>{const d=fromForm(f);await command('task.save',{activityId:d.activityId,title:d.title,details:d.details,assigned_to:d.assigned_to||null,status:d.status})});
