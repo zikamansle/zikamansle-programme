@@ -653,3 +653,11 @@ body{background:radial-gradient(ellipse at 6% 9%,#94e7ff 0,transparent 37%),radi
 #teamRoot .team-secretary-trial li strong{font-size:1.08rem}
 #teamRoot .team-secretary-trial li p{margin:.4rem 0 .8rem}
 #teamRoot .team-secretary-trial button{min-height:40px}
+
+/* Filtres cumulatifs des autorisations · secrétariat */
+#teamRoot .team-consent-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px;margin:12px 0 14px;border:2px solid #8ed7f3;border-radius:16px;background:linear-gradient(107deg,#d5f4ff,#efe0ff 55%,#ffebd2)}
+#teamRoot .team-consent-filters label{color:#154d78;font-weight:800}
+#teamRoot .team-consent-filters label:nth-child(2){color:#6d36a4}
+#teamRoot .team-consent-filters label:nth-child(3){color:#a44b18}
+#teamRoot .team-consent-filters select{display:block;width:100%;margin-top:6px;background:#fff;border:2px solid #99cce7;border-radius:9px;padding:9px;color:#193653}
+@media(max-width:760px){#teamRoot .team-consent-filters{grid-template-columns:1fr;gap:9px;padding:12px}}
