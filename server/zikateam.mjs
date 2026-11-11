@@ -131,8 +131,9 @@ async function getManage(db,ctx){
  const logs=ctx.admin?await all(db,'SELECT actor_email,action,entity_id,detail,created_at FROM team_audit ORDER BY created_at DESC LIMIT 60'):[];
  const secretariatIds=ctx.admin?(await all(db,"SELECT member_id FROM team_staff_roles WHERE role='secretariat'")).map(x=>x.member_id):[];
  const pendingRequests=ctx.admin?await all(db,"SELECT email,name,requested_at FROM team_join_requests WHERE status='pending' ORDER BY requested_at ASC LIMIT 250"):[];
- const dues=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.active,COALESCE(d.paid,0) AS paid,d.paid_on,d.updated_by,d.updated_at FROM team_members m LEFT JOIN team_membership_dues d ON d.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues});
+ const dues=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.active,COALESCE(d.paid,0) AS paid,d.paid_on,d.payment_method,d.updated_by,d.updated_at FROM team_members m LEFT JOIN team_membership_dues d ON d.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
+ const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,dues,contacts});
 }
 async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
@@ -396,17 +397,33 @@ async function adminAction(db,ctx,d){
   if(!idok(d.memberId)||typeof d.paid!=='boolean')return fail('Adhésion ou bénévole invalide.',400);
   const member=await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',d.memberId);
   if(!member)return fail('Bénévole actif introuvable.',404);
-  let paidOn=null;
+  let paidOn=null,paymentMethod=null;
   if(d.paid){
-   paidOn=typeof d.paidOn==='string'?d.paidOn.trim():'';
-   if(!/^\d{4}-\d{2}-\d{2}$/.test(paidOn)||new Date(paidOn+'T00:00:00Z').toISOString().slice(0,10)!==paidOn)return fail('Indique une date de cotisation valide.',400);
-   if(paidOn>new Date().toISOString().slice(0,10))return fail('La date de cotisation ne peut pas être dans le futur.',400);
+   const rawDate=typeof d.paidOn==='string'?d.paidOn.trim():'';
+   if(rawDate){
+    const ms=Date.parse(rawDate+'T00:00:00Z');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)||!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==rawDate)return fail('Date du règlement invalide.',400);
+    if(rawDate>new Date().toISOString().slice(0,10))return fail('La date du règlement ne peut pas être dans le futur.',400);
+    paidOn=rawDate;
+   }
+   const method=typeof d.paymentMethod==='string'?d.paymentMethod.trim():'';
+   if(method&&!['cash','card','check','transfer','other'].includes(method))return fail('Moyen de paiement invalide.',400);
+   paymentMethod=method||null;
   }
-  await db.prepare('INSERT INTO team_membership_dues(member_id,paid,paid_on,updated_at,updated_by) VALUES(?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET paid=excluded.paid,paid_on=excluded.paid_on,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(d.memberId,d.paid?1:0,paidOn,now(),ctx.email).run();
-  await audit(db,ctx.email,'dues.set',d.memberId,d.paid?'à jour '+paidOn:'non à jour');
+  await db.prepare('INSERT INTO team_membership_dues(member_id,paid,paid_on,payment_method,updated_at,updated_by) VALUES(?,?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET paid=excluded.paid,paid_on=excluded.paid_on,payment_method=excluded.payment_method,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(d.memberId,d.paid?1:0,paidOn,paymentMethod,now(),ctx.email).run();
+  await audit(db,ctx.email,'dues.set',d.memberId,d.paid?'À jour'+(paidOn?' — '+paidOn:''):'En attente');
   return reply({ok:true});
  }
-
+ if(d.op==='contact.set'){
+  if(!ctx.admin&&!ctx.secretariat)return fail('Coordonnées réservées au secrétariat et à l’administration.',403);
+  if(!idok(d.memberId))return fail('Bénévole invalide.',400);
+  if(!await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',d.memberId))return fail('Bénévole introuvable.',404);
+  const phone=clean(d.phone,40),address=clean(d.address,280),postal=clean(d.postalCode,16),city=clean(d.city,120);
+  if(postal&&!/^[\w -]{2,16}$/u.test(postal))return fail('Code postal invalide.',400);
+  await db.prepare('INSERT INTO team_member_contacts(member_id,phone,address,postal_code,city,updated_at,updated_by) VALUES(?,?,?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET phone=excluded.phone,address=excluded.address,postal_code=excluded.postal_code,city=excluded.city,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(d.memberId,phone,address,postal,city,now(),ctx.email).run();
+  await audit(db,ctx.email,'contact.set',d.memberId,'Coordonnées mises à jour');
+  return reply({ok:true});
+ }
  if(d.op==='member.review'){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const email=clean(d.email,254).toLowerCase(),approve=d.approve===true;
