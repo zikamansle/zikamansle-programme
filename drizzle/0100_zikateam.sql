@@ -1,6 +1,21 @@
 -- Transition non destructive depuis le ZikaTeam historique de la migration 0004.
 -- Les anciennes tables, leurs données et leurs références restent conservées.
 -- La nouvelle application utilise un modèle relationnel distinct.
+-- Les anciennes tables de discussions/affectations peuvent manquer sur un
+-- environnement de test initialisé partiellement. Les créer, vides, avant
+-- le renommage : aucune donnée préexistante n'est effacée.
+CREATE TABLE IF NOT EXISTS team_memberships (
+ email TEXT NOT NULL REFERENCES team_members(email) ON DELETE CASCADE,
+ channel_id TEXT NOT NULL REFERENCES team_channels(id) ON DELETE CASCADE,
+ PRIMARY KEY (email,channel_id)
+);
+CREATE TABLE IF NOT EXISTS team_messages (
+ id TEXT PRIMARY KEY NOT NULL,
+ channel_id TEXT NOT NULL REFERENCES team_channels(id),
+ author_email TEXT NOT NULL REFERENCES team_members(email),
+ body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 1500),
+ created_at INTEGER NOT NULL
+);
 ALTER TABLE team_messages RENAME TO team_messages_legacy;
 ALTER TABLE team_memberships RENAME TO team_memberships_legacy;
 ALTER TABLE team_members RENAME TO team_members_legacy;
