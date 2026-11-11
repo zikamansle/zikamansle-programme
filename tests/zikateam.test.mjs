@@ -52,10 +52,19 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const other=(await okay(A,{op:'member.save',name:'Autre bénévole',email:O})).id;
   const secretary=(await okay(A,{op:'member.save',name:'Secrétariat',email:S})).id;
   for(const email of [L,O,S,B])await okay(email,{op:'charter.accept',version:'1',agree:true});
+  // Seul l'administrateur peut supprimer définitivement un pôle vide.
+  const emptyPole=(await okay(A,{op:'pole.save',name:'Pôle provisoire à supprimer'})).id;
+  assert.equal((await api(L,{op:'pole.delete',id:emptyPole})).status,403);
+  await okay(A,{op:'pole.save',id:emptyPole,name:'Pôle provisoire renommé'});
+  await okay(A,{op:'pole.delete',id:emptyPole});
+  assert.equal((await api(A,{op:'pole.delete',id:emptyPole})).status,404);
   const pole=(await okay(A,{op:'pole.save',name:'ZikaVillage'})).id;
   const outsidePole=(await okay(A,{op:'pole.save',name:'Logistique'})).id;
   await okay(A,{op:'assignment.set',memberId:lead,poleId:pole,role:'lead'});
   await okay(A,{op:'assignment.set',memberId:member,poleId:pole,role:'member'});
+  assert.equal((await api(A,{op:'pole.delete',id:pole})).status,409,'un pôle avec des bénévoles est protégé contre une suppression');
+  assert.equal((await api(S,{op:'pole.delete',id:pole})).status,403,'le secrétariat ne peut supprimer un pôle');
+
   await okay(A,{op:'assignment.set',memberId:other,poleId:outsidePole,role:'member'});
   // Le partage des coordonnées est choisi par la personne, et ne concerne que son pôle.
   await okay(A,{op:'contact.set',memberId:member,phone:'0600000016',city:'Mansle-les-Fontaines'});
