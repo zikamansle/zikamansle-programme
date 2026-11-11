@@ -125,11 +125,11 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   // Parcours complet d'une candidature : charte, aucun accès aux discussions, approbation, droits et adhésions.
   const published=await invoke('/zikateam/api/command',{op:'charter.save',version:'2026',title:'Charte bénévoles',content:'Respect et entraide'},adminCookie);
   assert.equal(published.status,200,'la charte est publiable par l administrateur');
-  assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true},adminCookie)).status,200);
+  assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true,consents:{image:false,phone:false,email:false}},adminCookie)).status,200);
   const outsiderCookie='zika_team_access=token-outsider';
   const waitPage=await invoke('/zikateam/api/me',undefined,outsiderCookie);
   assert.equal((await waitPage.json()).charterAccepted,false);
-  assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true},outsiderCookie)).status,200);
+  assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true,consents:{image:false,phone:false,email:false}},outsiderCookie)).status,200);
   const signedPending=await invoke('/zikateam/api/me',undefined,outsiderCookie);
   assert.equal((await signedPending.json()).pending,true);
   assert.equal((await invoke('/zikateam/api/messages?channel=general',undefined,outsiderCookie)).status,403,'aucune lecture de discussion générale avant validation');
