@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Deploy only when explicitly enabled by the repository owner.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # Déploiement ponctuel du seul diagnostic Firebase dans le Worker de test.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Publier le diagnostic de refus Firebase staging') }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
