@@ -170,3 +170,5 @@ test('la publication d’une réunion utilise deux actions explicites',()=>{
 });
 
 // Staging : publication directe des réunions, notifications implicites après enregistrement.
+
+// Publication autorisée : palette plus vive, réunions et émargements testés sur staging uniquement.
