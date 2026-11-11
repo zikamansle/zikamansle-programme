@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Deploy only when explicitly enabled by the repository owner.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # One-off owner-requested staging fix. The main deploy gate remains disabled.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Publier une fois le correctif boucle admin ZikaMansle') }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
