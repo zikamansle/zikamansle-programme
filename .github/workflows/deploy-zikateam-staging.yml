@@ -39,6 +39,18 @@ jobs:
       - run: npm run build
       - name: Vérifier la cible et préserver l'accès administrateur
         run: node scripts/zikateam-staging-guard.mjs
+      - name: Vérifier que les 5 migrations suivantes sont strictement additives
+        run: |
+          node --input-type=module -e "
+            import {readFileSync} from 'node:fs';
+            for(const name of ['0105_team_photos_leaders_chat.sql','0106_team_member_roles.sql','0107_team_join_approval.sql','0108_membership_dues.sql','0109_team_member_contacts.sql']){
+              const sql=readFileSync('drizzle/'+name,'utf8').replace(/--[^\\n]*/g,'');
+              if(!/CREATE TABLE IF NOT EXISTS/.test(sql) || /\\b(?:DROP|ALTER|DELETE|UPDATE|INSERT|REPLACE|TRUNCATE)\\b/i.test(sql))throw Error('Migration non additive : '+name);
+              console.log('OK migration '+name);
+            }"
+      - name: Installer uniquement les migrations additives sur la base D1 de test
+        run: |
+          printf 'y\n' | npx wrangler d1 migrations apply zikamansle-app-staging --remote --config wrangler.jsonc
       - name: Déployer uniquement workers.dev, sans remplacer les variables du tableau de bord
         run: |
           printf 'y\n' | npx wrangler deploy --keep-vars --config wrangler.jsonc
