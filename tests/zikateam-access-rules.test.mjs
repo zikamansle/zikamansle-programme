@@ -237,3 +237,13 @@ test('les adresses e-mail contenant la lettre s restent valides dans le formulai
  assert.equal(emailCheck.test('zikamansle@gmail.com'),true);
  assert.ok(client.includes(emailCheck.toString()));
 });
+
+test('boutons fiche et fonctions enregistrent même sur navigateur mobile',()=>{
+ assert.ok(client.includes('data-save-member>Enregistrer la fiche et les fonctions'));
+ assert.ok(client.includes('data-save-member-functions>Enregistrer les fonctions'));
+ assert.ok(client.includes("f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))"));
+ assert.ok(client.includes("if(f.id==='teamMemberFunctionsForm')"));
+ assert.ok(client.includes("const saved=await command('member.functions.set'"));
+ assert.ok(client.includes("const data=await api('manage')"));
+ assert.ok(client.includes("Les fonctions n’ont pas été confirmées par la base."));
+});
