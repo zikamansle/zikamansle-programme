@@ -1,6 +1,6 @@
 # Vérification — migration non terminée
 
-État au 11 novembre 2026. Aucun changement du site publié, des DNS, des secrets en service ou des envois réels.
+État au 11 novembre 2026. Une copie de validation est publiée à https://zikamansle-app-staging.zikamansle.workers.dev ; aucun changement du site `app.zikamansle.fr`, de ses DNS, de ses secrets en service ou de ses notifications.
 
 | Élément | Résultat |
 |---|---|
@@ -20,9 +20,10 @@
 | Médias/liens externes | 175 URL répertoriées et références conservées ; téléchargement exhaustif et disponibilité non vérifiés |
 | Aperçu navigateur | Non vérifié : démarrage Wrangler local bloqué par uv_interface_addresses dans cet environnement |
 | GitHub | Branche dédiée migration/application-autonome créée dans zikamansle-programme ; dépôt distinct zikamansle-app non créé. Consulter le commit de la branche pour le code transféré. |
-| Compte Cloudflare utilisateur | Non configuré, aucun déploiement distant |
-| Clé privée VAPID actuelle | Masquée, non exportée ; obstacle à une reprise transparente des abonnements |
-| Android réel | Réception et identité d'émetteur non vérifiées |
+| Compte Cloudflare utilisateur | Worker staging, base D1 et bucket R2 créés ; déploiement réussi |
+| Clé privée VAPID actuelle | La clé de **production** reste masquée et non exportée. La copie staging a sa **propre** paire VAPID, stockée dans Cloudflare, jamais dans GitHub. |
+| Push staging | Tests individuels activés (`PUSH_TEST_ENABLED=true`) ; diffusion générale verrouillée (`PUSH_SEND_ENABLED=false`). Vérification réseau en ligne réussie sans envoyer de message. |
+| Android réel | Réception et identité d'émetteur non vérifiées ; essai sur le Redmi requis |
 
 ## Recette obligatoire avant toute bascule
 
