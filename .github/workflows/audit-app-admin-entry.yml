@@ -1,9 +1,7 @@
 name: Find mobile admin navigation and hosting
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths: ['.github/workflows/audit-app-admin-entry.yml']
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
