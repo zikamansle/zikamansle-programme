@@ -342,3 +342,34 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
 
 /* Badge des non-lus directement dans la navigation principale. */
 #teamRoot .team-tabs button .team-tab-unread{display:inline-grid;margin-left:9px;min-width:22px;height:22px;padding:0 5px;vertical-align:middle;background:#08a77b;box-shadow:0 2px 7px #075f4a44}
+
+/* Conversation utilisable immédiatement : zone d’écriture visible et stable. */
+#teamRoot .team-chat-shell{height:min(76dvh,740px);min-height:470px}
+#teamRoot .team-chat-main{height:100%;overflow:hidden;min-height:0}
+#teamRoot .team-chat-header{background:linear-gradient(110deg,#dff6ff,#fff1df 60%,#f2e8ff);flex-wrap:wrap;flex:none}
+#teamRoot .team-chat-header-icon{background:linear-gradient(130deg,#ffda8b,#ddc5ff);border:2px solid #fff;overflow:hidden}
+#teamRoot .team-chat-room-icon{overflow:hidden;background:linear-gradient(130deg,#d5f2ff,#ffe4ba)}
+#teamRoot .team-chat-header-icon img,#teamRoot .team-chat-room-icon img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+#teamRoot .team-chat-messages{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#teamRoot .team-chat-composer{flex:none;position:relative;z-index:2;background:linear-gradient(110deg,#fff9e8,#e5faff);border-top:3px solid #19a2b5;padding:12px;box-shadow:0 -3px 12px #105b8430}
+#teamRoot .team-chat-input textarea{border:2px solid #19a6b0;background:white;box-shadow:inset 0 1px 5px #236e8310;min-height:50px;font-size:16px}
+#teamRoot .team-chat-send{background:linear-gradient(125deg,#ffab41,#f57e23);min-height:50px;font-size:15px;font-weight:800}
+#teamRoot .team-chat-attach{background:#f1dcff;border:2px solid #c49ce6}
+#teamRoot .team-chat-help{flex:none;color:#3a6a7b}
+#teamRoot .team-chat-icon-editor{flex:1 1 100%;width:100%;border:1px solid #e2c7f6;border-radius:12px;background:#fff7fd;padding:8px 12px}
+#teamRoot .team-chat-icon-editor summary{cursor:pointer;color:#6b3595;font-weight:800}
+#teamRoot .team-chat-icon-choices{display:flex;flex-wrap:wrap;gap:5px;max-height:130px;overflow:auto;padding:10px 0}
+#teamRoot .team-icon-choice{font-size:23px;display:grid;place-items:center;width:43px;height:43px;border-radius:12px;border:1px solid #dfcbe7;background:#fff;cursor:pointer}
+#teamRoot .team-icon-choice:hover,#teamRoot .team-icon-choice:focus-visible{background:#e8dcff;border-color:#925fca;outline:2px solid #a568d0}
+#teamRoot .team-icon-image{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;font-weight:700;color:#67428f;cursor:pointer}
+#teamRoot .team-icon-image input{max-width:100%;font-size:12px}
+@media(max-width:730px){
+ #teamRoot .team-chat-shell{height:min(85dvh,750px);min-height:500px;display:flex;flex-direction:column}
+ #teamRoot .team-chat-sidebar{flex:none;max-height:185px}
+ #teamRoot .team-chat-rooms{max-height:125px}
+ #teamRoot .team-chat-main{flex:1 1 0;min-height:0}
+ #teamRoot .team-chat-messages{min-height:0;max-height:none}
+ #teamRoot .team-chat-composer{padding:8px;gap:6px}
+ #teamRoot .team-chat-input textarea{min-height:46px}
+ #teamRoot .team-chat-send{min-height:46px;padding:9px 11px}
+}
