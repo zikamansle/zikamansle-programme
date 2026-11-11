@@ -52,13 +52,13 @@ export async function getTeamSupabaseIdentity(request,env){
  const jar=cookies(request);
  if(!configured(env))return {identity:null,setCookies:[]};
  const primary=await verifiedUser(env,jar[accessCookie]);
- if(primary)return {identity:primary,setCookies:[]};
+ if(primary)return {identity:primary,setCookies:[],token:jar[accessCookie]};
  if(!jar[refreshCookie])return {identity:null,setCookies:[]};
  const refreshed=await provider(env,'/token?grant_type=refresh_token',{
   method:'POST',body:JSON.stringify({refresh_token:jar[refreshCookie]})});
  if(!refreshed?.ok)return {identity:null,setCookies:clear()};
  const identity=await verifiedUser(env,refreshed.data.access_token);
- return {identity,setCookies:identity?issue(refreshed.data):clear()};
+ return {identity,setCookies:identity?issue(refreshed.data):clear(),token:identity?refreshed.data.access_token:null};
 }
 async function readBody(request){
  if(request.headers.get('content-type')?.split(';')[0].trim()!=='application/json')return null;
@@ -103,7 +103,7 @@ export async function handleTeamLogin(request,env){
  if(!env.DB||!configured(env))return response({error:'Connexion gratuite ZikaTeam non configurée.'},503);
  const url=new URL(request.url),path=url.pathname;
  if(path==='/zikateam/api/auth/status'&&request.method==='GET')return response({ready:true,provider:'Supabase'});
- if(!['/zikateam/api/auth/request','/zikateam/api/auth/verify','/zikateam/api/auth/logout'].includes(path))return response({error:'Action de connexion inconnue.'},404);
+ if(!['/zikateam/api/auth/request','/zikateam/api/auth/verify','/zikateam/api/auth/logout','/zikateam/api/auth/password','/zikateam/api/auth/set-password'].includes(path))return response({error:'Action de connexion inconnue.'},404);
  if(request.method!=='POST')return response({error:'Méthode interdite.'},405);
  if(request.headers.get('origin')!==url.origin)return response({error:'Origine non autorisée.'},403);
  if(path==='/zikateam/api/auth/logout'){
@@ -111,10 +111,45 @@ export async function handleTeamLogin(request,env){
   if(jar[accessCookie])await provider(env,'/logout',{method:'POST',headers:{Authorization:'Bearer '+jar[accessCookie]}});
   return response({ok:true},200,clear());
  }
+ if(path==='/zikateam/api/auth/set-password'){
+  const body=await readBody(request);
+  const password=body?.password;
+  if(typeof password!=='string'||password.length<12||password.length>128||!/[a-zA-ZÀ-ÿ]/u.test(password)||!/[0-9]/.test(password))
+   return response({error:'Choisis un mot de passe de 12 caractères minimum, avec des lettres et des chiffres.'},400);
+  const session=await getTeamSupabaseIdentity(request,env);
+  if(!session.identity||!session.token)return response({error:'Vérifie ton identité avec le code reçu par e-mail avant de définir le mot de passe.'},401);
+  const userEmail=session.identity.email;
+  if(password.toLowerCase().includes(userEmail.split('@')[0])&&userEmail.split('@')[0].length>=4)return response({error:'Le mot de passe ne doit pas contenir ton adresse e-mail.'},400);
+  const member=await env.DB.prepare('SELECT active FROM team_members WHERE email=?').bind(userEmail).first();
+  const join=await env.DB.prepare('SELECT status FROM team_join_requests WHERE email=?').bind(userEmail).first();
+  const authorized=userEmail===cleanEmail(env.ADMIN_EMAIL||'')||member?.active===1||(member?.active===0&&join?.status==='pending');
+  if(!authorized)return response({error:'Ce compte ne peut pas accéder à ZikaTeam.'},403);
+  if(!await permitted(env,userEmail,request,'password-set'))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
+  const changed=await provider(env,'/user',{method:'PUT',body:JSON.stringify({password}),headers:{Authorization:'Bearer '+session.token}});
+  if(!changed?.ok)return response({error:changed?.status===422?'Ce mot de passe ne respecte pas les critères de sécurité. Choisis-en un autre.':'Impossible d’enregistrer le mot de passe. Réessaie après une nouvelle vérification par e-mail.'},changed?.status===422?422:503);
+  await env.DB.prepare('INSERT INTO team_auth_password_setup(email,set_at) VALUES(?,?) ON CONFLICT(email) DO UPDATE SET set_at=excluded.set_at').bind(userEmail,Date.now()).run();
+  return response({ok:true,message:'Ton mot de passe est enregistré. Tu pourras maintenant te connecter sans code e-mail.'},200,session.setCookies||[]);
+ }
  const body=await readBody(request);if(!body)return response({error:'Contenu invalide.'},400);
  const email=cleanEmail(body.email);
  if(!validEmail(email))return response({error:'Adresse e-mail invalide.'},400);
- if(!await permitted(env,email,request,path.endsWith('/request')?'otp':'verify'))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
+ const action=path.endsWith('/request')?'otp':path.endsWith('/password')?'password-login':'verify';
+ if(!await permitted(env,email,request,action))return response({error:'Trop de tentatives. Réessaie plus tard.'},429);
+ if(path==='/zikateam/api/auth/password'){
+  if(typeof body.password!=='string'||body.password.length>128||!body.password)return response({error:'Mot de passe invalide.'},400);
+  const authenticated=await provider(env,'/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:body.password})});
+  if(!authenticated?.ok)return response({error:'Adresse e-mail ou mot de passe incorrect. Tu peux retrouver ton accès avec un code e-mail.'},401);
+  const verified=await verifiedUser(env,authenticated.data.access_token);
+  if(!verified||verified.email!==email)return response({error:'Identité non vérifiée.'},403);
+  const registered=await env.DB.prepare('SELECT set_at FROM team_auth_password_setup WHERE email=?').bind(email).first();
+  const member=await env.DB.prepare('SELECT active FROM team_members WHERE email=?').bind(email).first();
+  const join=await env.DB.prepare('SELECT status FROM team_join_requests WHERE email=?').bind(email).first();
+  if(!registered||!(email===cleanEmail(env.ADMIN_EMAIL||'')||member?.active===1||member?.active===0&&join?.status==='pending'))
+   return response({error:'Ce compte n’est pas autorisé. Pour une première connexion, utilise le code reçu par e-mail.'},403);
+  const sessionCookies=issue(authenticated.data);
+  if(sessionCookies.length!==2)return response({error:'Session indisponible.'},503);
+  return response({ok:true},200,sessionCookies);
+ }
  if(path.endsWith('/request')){
   const result=await provider(env,'/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
   if(!result?.ok)return response({error:'Envoi du code indisponible. Vérifie les réglages SMTP de Supabase.'},503);
@@ -131,5 +166,5 @@ export async function handleTeamLogin(request,env){
  if(enrollment.status==='disabled')return response({error:'Ce compte est désactivé. Contacte l’association.'},403);
  const newCookies=issue(result.data);
  if(newCookies.length!==2)return response({error:'Session indisponible.'},503);
- return response({ok:true,enrollment:enrollment.status},200,newCookies);
+ return response({ok:true,enrollment:enrollment.status,needsPassword:true},200,newCookies);
 }
