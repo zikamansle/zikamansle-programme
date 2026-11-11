@@ -780,8 +780,9 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
   const locked=!accepted;
   const notice=currentCharter?'Charte obligatoire : veuillez la lire et l’accepter pour poursuivre.':'La charte officielle doit être publiée avant l’ouverture de ZikaTeam.';
-  if(path.startsWith('/zikateam/photo/')&&request.method==='GET')return locked?fail(notice,403):getTeamPhoto(env,ctx,path.split('/').pop());
+  if(path.startsWith('/zikateam/photo/')&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):getTeamPhoto(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/document/')&&request.method==='GET'){
+   if(ctx.pending&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail('Inscription en attente de validation.',403);
    if(locked&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail(notice,403);
    return getDocument(env,ctx,path.split('/').pop());
   }
@@ -790,8 +791,9 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(path==='/zikateam/api/messages'&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation : aucune conversation n’est accessible.',403):locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
-   if(path==='/zikateam/api/photo')return locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
+   if(path==='/zikateam/api/photo')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
    if(path==='/zikateam/api/upload'){
+    if(ctx.pending)return fail('Inscription en attente de validation.',403);
     if(locked&&!(ctx.admin&&!currentCharter&&url.searchParams.get('kind')==='charter'))return fail(notice,403);
     return upload(request,env,ctx,url);
    }
