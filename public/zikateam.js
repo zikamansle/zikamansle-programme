@@ -82,7 +82,7 @@ function teamNotificationSettings(){
  '<div class="team-split"><label>Silencieux à partir de<input type="time" name="quiet_start" value="'+esc(p.quiet_start)+'" required></label><label>Jusqu’à<input type="time" name="quiet_end" value="'+esc(p.quiet_end)+'" required></label></div>'+
  '<button class="team-button orange" type="submit">Enregistrer mes notifications</button></form>'+
  '<h3>Mettre un groupe en sourdine</h3>'+(rooms.length?rooms.map(room=>'<label class="team-check team-notification-group"><input type="checkbox" data-chat-mute="'+esc(room.channel+':'+(room.id||''))+'"'+checked(muted.some(x=>x.channel===room.channel&&(x.channel_id||'')===(room.id||'')))+'> '+esc(room.title)+'</label>').join(''):'<p class="team-small">Les groupes apparaissent une fois chargés.</p>')+
- '<p class="team-small team-muted">Le son et la vibration dépendent aussi des réglages Android et du navigateur. Les notifications sur téléphone nécessitent le service push. Les informations restent consultables dans ZikaTeam.</p><button type="button" class="team-button light" data-link-push>Activer les notifications sur cet appareil</button></section>';
+ '<p class="team-small team-muted">Le son et la vibration dépendent des réglages du téléphone. La réception des réunions nécessite une autorisation et un abonnement propre à chaque compte.</p><div class="team-row"><button type="button" class="team-button orange" data-link-push>Autoriser les notifications sur cet appareil</button><button type="button" class="team-button light" data-test-local-push>Tester l’affichage sur cet appareil</button></div><p id="teamPushStatus" role="status" aria-live="polite">Pour recevoir une convocation, autorise les notifications sur ce téléphone.</p><p class="team-small">Le test d’affichage est local : il ne prouve pas encore l’envoi automatique du serveur après publication.</p></section>';
 }
 function notificationWelcome(){
  if(typeof Notification==='undefined'||!('serviceWorker' in navigator))return '';
@@ -635,7 +635,7 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.hasAttribute('data-password-toggle')){
   const input=b.closest('.team-password-field')?.querySelector('input');
   if(!input)return;
@@ -776,7 +776,27 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-pa
  if(b.dataset.taskStatus){await perform(async()=>command('task.status',{id:b.dataset.taskStatus,status:b.dataset.status}));return;}
  if(b.dataset.rsvp){await perform(async()=>{await command('activity.rsvp',{activityId:b.dataset.rsvp,answer:b.dataset.answer})});return;}
  if(b.dataset.shiftSign){await perform(async()=>{await command('shift.signup',{shiftId:b.dataset.shiftSign,remove:b.dataset.remove==='1'})});return;}
- if(b.hasAttribute('data-link-push')){await perform(async()=>{if(!window.ZikaPush)throw Error('Notifications indisponibles.');const sub=await window.ZikaPush.enable();await command('push.link',{subscription:sub.toJSON()});toast('Ton appareil est associé à ton espace ZikaTeam.')});return;}
+ if(b.hasAttribute('data-test-local-push')){
+  const status=document.getElementById('teamPushStatus');b.disabled=true;
+  try{
+   if(!window.ZikaPush?.localTest)throw Error('Service de test indisponible.');
+   const message=await window.ZikaPush.localTest();
+   if(status)status.textContent=message;
+   toast('Test local demandé : consulte les notifications du téléphone.');
+  }catch(error){if(status)status.textContent='❌ '+error.message;toast(error.message);}
+  finally{b.disabled=false;}return;
+ }
+ if(b.hasAttribute('data-link-push')){
+  const status=document.getElementById('teamPushStatus');b.disabled=true;
+  try{
+   if(!window.ZikaPush)throw Error('Notifications indisponibles.');
+   const sub=await window.ZikaPush.enable();
+   await command('push.link',{subscription:sub.toJSON()});
+   if(status)status.textContent='✅ Appareil associé à ton compte ZikaTeam. Les alertes de tes réunions et missions pourront être reçues après activation du service d’envoi.';
+   toast('Appareil associé à ZikaTeam.');
+  }catch(error){if(status)status.textContent='❌ '+(error.message||'Activation impossible.');toast(error.message||'Activation impossible.');}
+  finally{b.disabled=false;}return;
+ }
  if(b.dataset.deletePole){
   if(!state.me.admin)return;
   const name=b.dataset.poleName||'ce pôle';
