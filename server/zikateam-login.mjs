@@ -108,10 +108,10 @@ export async function handleTeamLogin(request,env){
  if(path.endsWith('/request')){
   const result=await provider(env,'/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
   if(!result?.ok)return response({error:'Envoi du code indisponible. Vérifie les réglages SMTP de Supabase.'},503);
-  return response({ok:true,message:'Consulte tes e-mails pour trouver le code à six chiffres.'});
+  return response({ok:true,message:'Consulte tes e-mails pour trouver le code de connexion.'});
  }
  const code=typeof body.code==='string'?body.code.trim():'';
- if(!/^\d{6}$/.test(code))return response({error:'Entre le code à six chiffres reçu par e-mail.'},400);
+ if(!/^(?:\d{6}|\d{8})$/.test(code))return response({error:'Entre le code numérique à 6 ou 8 chiffres reçu par e-mail.'},400);
  const result=await provider(env,'/verify',{method:'POST',body:JSON.stringify({email,token:code,type:'email'})});
  if(!result?.ok)return response({error:'Code expiré ou incorrect.'},401);
  const user=await verifiedUser(env,result.data.access_token);
