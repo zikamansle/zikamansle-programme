@@ -649,6 +649,20 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
+// Gestion prioritaire des boutons de sauvegarde : un appui doit déclencher
+// le formulaire avant les autres écouteurs, même sur un navigateur mobile.
+document.addEventListener('click',e=>{
+ const button=e.target.closest?.('#teamRoot button[data-save-member], #teamRoot button[data-save-member-functions]');
+ if(!button)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ const form=button.closest('form');
+ if(!form){toast('Formulaire introuvable.');return;}
+ let feedback=form.querySelector('[data-member-save-feedback], [data-functions-save-feedback]');
+ if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.style.cssText='font-size:16px;font-weight:800;color:#17364a;padding:12px;background:#fff4d8;border:2px solid #e8932a;border-radius:10px';button.closest('.team-row')?.after(feedback)||form.append(feedback);}
+ feedback.textContent='⏳ Appui détecté : enregistrement en cours…';
+ if(state.busy){feedback.textContent='⌛ Une autre opération est en cours. Réessaie.';return;}
+ form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+},true);
 root.addEventListener('click',async e=>{const b=e.target.closest('button[data-save-member],button[data-save-member-functions],button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.matches('[data-save-member], [data-save-member-functions]')){
   e.preventDefault();
