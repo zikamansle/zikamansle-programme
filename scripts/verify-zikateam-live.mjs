@@ -16,6 +16,8 @@ await check('/zikateam',200,'ZikaTeam');
 const liveUI=await check('/zikateam.js',200,'Code à 8 chiffres');
 if(!liveUI.body.includes('pattern="[0-9]{6}|[0-9]{8}"'))throw new Error('Le formulaire publié refuse toujours 8 chiffres.');
 if(liveUI.body.includes('code à six chiffres'))throw new Error('Ancien écran de connexion encore publié.');
+if(!liveUI.body.includes('Créer ma fiche personnelle')||!liveUI.body.includes('teamMyProfileForm')||!liveUI.body.includes('Enregistrer ma fiche'))throw new Error('Le formulaire de fiche personnelle n est pas encore publié.');
+console.log('OK champs de la fiche personnelle publiés.');
 console.log('OK interface de saisie à 8 chiffres déployée.');
 await check('/zikateam.css',200);
 await check('/api/push/config',200);
