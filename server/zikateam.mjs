@@ -503,8 +503,13 @@ async function adminAction(db,ctx,d){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const version=clean(d.version,60),title=clean(d.title,140),content=clean(d.content,20000);
   if(!version||!title||!content)return fail('Version, titre et texte officiels requis.');
-  const old=await charter(db);if(old&&old.version===version&&(old.title!==title||old.content!==content||old.document_id!==(d.documentId||null)))return fail('Modifiez le numéro de version pour publier une charte modifiée.',409);
-  const doc=d.documentId||null;if(doc&&!(await one(db,"SELECT id FROM team_documents WHERE id=? AND kind='charter'",doc)))return fail('Document inconnu.');
+  const old=await charter(db),doc=d.documentId||null;
+  if(old?.version===version&&(old.title!==title||old.content!==content))return fail('Modifiez le numéro de version pour publier une charte modifiée.',409);
+  // Le PDF de la même charte peut être ajouté après sa première publication sans
+  // forcer de nouvelles signatures ; le contenu contractuel reste inchangé.
+  if(old?.version===version&&old.document_id&&old.document_id!==doc)return fail('Pour remplacer le PDF existant, publiez une nouvelle version.',409);
+  if(doc&&!(await one(db,"SELECT id FROM team_documents WHERE id=? AND kind='charter'",doc)))return fail('Document inconnu.');
+  if(old?.version===version&&old.document_id===doc)return reply({ok:true,unchanged:true});
   await db.prepare('INSERT INTO team_charter(id,version,title,content,document_id,published_at) VALUES(1,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version,title=excluded.title,content=excluded.content,document_id=excluded.document_id,published_at=excluded.published_at').bind(version,title,content,doc,now()).run();
   await audit(db,ctx.email,'charter.save',version);return reply({ok:true});
  }
