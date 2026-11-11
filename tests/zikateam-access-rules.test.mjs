@@ -208,7 +208,7 @@ test('secrétariat : filtrage consentements distincts et exports liés',()=>{
  for(const field of ['teamDirectoryImage','teamDirectoryPhone','teamDirectoryEmail','teamListImage','teamListPhone','teamListEmail']){
   assert.ok(client.includes(field),'contrôle '+field);
  }
- assert.ok(client.includes("'unset':'Non renseigné'"));
+ assert.ok(client.includes("unset:'Non renseigné'"));
  assert.ok(client.includes("consentMatches(m,'image',state.directoryImage)"));
  assert.ok(client.includes("consentMatches(m,'phone',state.listPhone)"));
  assert.ok(client.includes("consentLabel(consentValue(m,'image'))"));
