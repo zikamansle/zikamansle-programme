@@ -1,9 +1,7 @@
 name: Analyze live notification administration endpoints
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths: ['.github/workflows/audit-push-runtime.yml']
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
