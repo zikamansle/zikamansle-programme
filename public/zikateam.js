@@ -731,4 +731,29 @@ async function init(){
  }
 }
 init();
+// Actualiser discrètement les badges sans effacer le texte en cours de saisie.
+// Une lecture de la conversation est enregistrée seulement quand elle est ouverte.
+setInterval(async()=>{
+ if(!state.me?.charterAccepted||state.me.pending||state.busy||document.visibilityState!=='visible')return;
+ try{
+  const previous=state.chatUnread;
+  const current=state.chatRooms.find(r=>r.channel===state.chatChannel&&(r.id||null)===(state.chatId||null));
+  const displayed=state.messages.at(-1)?.created_at||0;
+  const draft=$('messageText')?.value||document.querySelector('#messageForm textarea[name="body"]')?.value||'';
+  await refreshChatSummary();
+  const next=state.chatRooms.find(r=>r.channel===state.chatChannel&&(r.id||null)===(state.chatId||null));
+  const newer=state.tab==='messages'&&next?.last?.created_at>displayed;
+  if(newer){
+   await refreshMessages();
+   const field=document.querySelector('#messageForm textarea[name="body"]');if(field)field.value=draft;
+   const pane=$('teamMessages');if(pane)pane.scrollTop=pane.scrollHeight;
+  }else if(state.tab==='messages'&&state.chatUnread!==previous){
+   render();
+   const field=document.querySelector('#messageForm textarea[name="body"]');if(field)field.value=draft;
+  }else if(state.chatUnread!==previous){
+   const tab=root.querySelector('button[data-tab="messages"]');
+   if(tab)tab.textContent='Discussions'+(state.chatUnread?' · '+(state.chatUnread>99?'99+':state.chatUnread):'');
+  }
+ }catch{}
+},20000);
 })();
