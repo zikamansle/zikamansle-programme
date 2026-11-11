@@ -1,0 +1,32 @@
+name: Tests ZikaTeam (sans deploiement)
+on:
+  push:
+    branches:
+      - feat/zikateam-fiches-notifications
+    paths:
+      - 'server/**'
+      - 'public/**'
+      - 'tests/**'
+      - 'worker/**'
+      - 'drizzle/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/test-zikateam-feature.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    name: Tests et compilation locale
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Interdire toute publication depuis cette workflow
+        run: echo "Aucun secret Cloudflare charge, aucune commande de deploiement executee."
