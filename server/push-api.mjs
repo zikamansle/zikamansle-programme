@@ -6,7 +6,7 @@ export async function handle(req,env,authorize=isAdmin){
  try{
  const action=new URL(req.url).pathname.split('/').pop(),db=env.DB;
  if(!db)return json({error:'Le service de notifications est temporairement indisponible.'},503);
- if(['send','selftest'].includes(action)&&env.PUSH_SEND_ENABLED!=='true')return json({error:'Envoi désactivé dans cet environnement de validation.'},503);
+ if(action==='selftest'&&env.PUSH_TEST_ENABLED!=='true'&&env.PUSH_SEND_ENABLED!=='true')return json({error:'Tests de notifications désactivés dans cet environnement.'},503);
  if(['subscribe','config','send','selftest'].includes(action)&&(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_JWK))return json({error:'Clés push non configurées.'},503);
  if(req.method==='GET'){
   if(action==='media'){
@@ -94,6 +94,8 @@ export async function handle(req,env,authorize=isAdmin){
  }
  if(action==='send'){
   const n=await db.prepare('SELECT * FROM push_notifications WHERE id=? AND archived=0').bind(data.id||'').first();if(!n)return json({error:'Message introuvable'},404);
+  // On staging, only a single-device, verified test draft can be sent. Never broadcast.
+  if(env.PUSH_SEND_ENABLED!=='true'&&!(env.PUSH_TEST_ENABLED==='true'&&n.test===1))return json({error:'Envoi général désactivé en version de test.'},503);
   const rows=(await db.prepare("SELECT d.subscription,s.endpoint,s.p256dh,s.auth FROM push_deliveries d LEFT JOIN push_subscriptions s ON s.id=d.subscription WHERE d.message=? AND d.status='pending' LIMIT 15").bind(n.id).all()).results;
   await Promise.all(rows.map(async s=>{
    const claim=await db.prepare("UPDATE push_deliveries SET status='sending' WHERE message=? AND subscription=? AND status='pending'").bind(n.id,s.subscription).run();if(!claim.meta.changes)return;
