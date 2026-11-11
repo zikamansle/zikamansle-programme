@@ -161,7 +161,7 @@ async function enqueue(db,a,reason){
 }
 export async function drainTeamPush(env,maximum=40){
  // Never send in staging or when explicitly disabled; jobs stay in the queue.
- if(env.TEAM_PUSH_ENABLED!=='true'||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY||!env.DB)return {sent:0,disabled:true};
+ if(env.APP_ENV==='staging'||env.TEAM_PUSH_ENABLED!=='true'||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY||!env.DB)return {sent:0,disabled:true};
  const db=env.DB,jobs=await all(db,"SELECT * FROM team_push_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
  let sent=0;
  for(const job of jobs){
@@ -183,7 +183,7 @@ export async function drainTeamPush(env,maximum=40){
 }
 // Rappels horaires, exclusivement pour les destinataires encore autorisés.
 export async function scheduleTeamReminders(env,maximum=40){
- if(env.TEAM_PUSH_ENABLED!=='true'||!env.TEAM_ACCESS_AUD||!env.DB||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY)return {sent:0,disabled:true};
+ if(env.APP_ENV==='staging'||env.TEAM_PUSH_ENABLED!=='true'||!env.DB||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY)return {sent:0,disabled:true};
  const db=env.DB,clock=now();
  for(const [kind,hours] of [['24h',24],['2h',2]]){
   const from=new Date(clock+hours*3600000-30*60000).toISOString();
