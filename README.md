@@ -32,7 +32,7 @@ Les envois sont désactivés par défaut. La compilation est un `--dry-run` : el
 | supabase/ | Source de la fonction wix-media et inventaire du schéma externe |
 | docs/ | Déploiement, secrets, maintenance et état de vérification |
 
-L'administration est accessible via **Plus → Administration**. Elle exige un jeton Cloudflare Access signé, pour la bonne audience et l'adresse administrateur. Un simple en-tête portant une adresse e-mail ne donne aucun accès.
+L'administration est accessible via **Plus → Administration**, à l'adresse `/administration/notifications`. Une seule application Cloudflare Access doit protéger le chemin `/administration/*` du Worker de test (sans protéger l'ensemble de l'application). Les API d'administration sont sous `/administration/api/*` ; les API publiques des visiteurs restent sous `/api/push/*`. L'accès exige un jeton Cloudflare Access signé, pour la bonne audience et l'adresse administrateur. Un simple en-tête portant une adresse e-mail ne donne aucun accès.
 
 Lire [docs/MIGRATION.md](docs/MIGRATION.md) avant tout déploiement et [docs/VERIFICATION.md](docs/VERIFICATION.md) pour les limites constatées.
 
