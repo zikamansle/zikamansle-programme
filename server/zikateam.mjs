@@ -255,6 +255,7 @@ async function saveMember(db,ctx,d,approving=false){
  await audit(db,ctx.email,'member.save',id,name);return reply({ok:true,id});
 }
 async function savePole(db,ctx,d){
+ if(!ctx.admin)return fail('Seule l’administration peut modifier les pôles.',403);
  const name=clean(d.name,100),description=clean(d.description,600);
  if(!name)return fail('Le nom du pôle est obligatoire.');
  const id=d.id||uuid(),previous=d.id?await one(db,'SELECT * FROM team_poles WHERE id=?',id):null;
@@ -265,6 +266,7 @@ async function savePole(db,ctx,d){
  await audit(db,ctx.email,'pole.save',id,name);return reply({ok:true,id});
 }
 async function assign(db,ctx,d){
+ if(!ctx.admin)return fail('Seule l’administration attribue les bénévoles aux pôles.',403);
  if(!idok(d.memberId)||!idok(d.poleId))return fail('Identifiants incorrects.');
  if(!ctx.admin&&!ctx.leadPoles.includes(d.poleId))return fail('Pôle non autorisé.',403);
  const member=await one(db,'SELECT id,active FROM team_members WHERE id=?',d.memberId),pole=await one(db,'SELECT id,archived FROM team_poles WHERE id=?',d.poleId);
@@ -513,6 +515,14 @@ async function signingAction(db,ctx,d){
 }
 
 async function adminAction(db,ctx,d){
+ if(d.op==='member.name.set'){
+  if(!ctx.admin&&!ctx.secretariat)return fail('Modification de fiche réservée à l’administration et au secrétariat.',403);
+  if(!idok(d.memberId)||!clean(d.name,110)||clean(d.name,110).length<2)return fail('Nom de bénévole invalide.',400);
+  if(!await one(db,'SELECT id FROM team_members WHERE id=? AND active=1',d.memberId))return fail('Bénévole introuvable.',404);
+  await db.prepare('UPDATE team_members SET name=?,updated_at=? WHERE id=?').bind(clean(d.name,110),now(),d.memberId).run();
+  await audit(db,ctx.email,'member.name.set',d.memberId,'Identité mise à jour');
+  return reply({ok:true});
+ }
  if(d.op.startsWith('signing.'))return signingAction(db,ctx,d);
  if(d.op==='dues.set'){
   if(!ctx.admin&&!ctx.secretariat)return fail('Suivi des adhésions réservé au secrétariat.',403);
