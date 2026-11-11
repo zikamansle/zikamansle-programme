@@ -66,7 +66,18 @@ async function readBody(request){
  const raw=await request.text();if(raw.length>1500)return null;
  try{return JSON.parse(raw)}catch{return null}
 }
-async function joinRequest(env,email,name){
+async function joinRequest(env,email,name,inviteCode=''){
+ const code=typeof inviteCode==='string'?inviteCode.trim().toUpperCase():'';
+ if(code){
+  if(!/^[0-9A-F]{16}$/.test(code))return {status:'invalid-invitation'};
+  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
+  const codeHash=Array.from(new Uint8Array(bytes),v=>v.toString(16).padStart(2,'0')).join('');
+  const invitation=await env.DB.prepare('SELECT id,name FROM team_invitations WHERE email=? AND code_hash=? AND revoked_at IS NULL AND used_at IS NULL AND expires_at>?').bind(email,codeHash,Date.now()).first();
+  if(!invitation)return {status:'invalid-invitation'};
+  // Réserver le code après validation de l'e-mail par Supabase.
+  await env.DB.prepare('UPDATE team_invitations SET used_at=? WHERE id=? AND used_at IS NULL').bind(Date.now(),invitation.id).run();
+  if(!name||name.length<2)name=invitation.name;
+ }
  // Après vérification du code : inscription provisoire, jamais d'accès automatique à l'équipe.
  if(email===cleanEmail(env.ADMIN_EMAIL||''))return {status:'admin'};
  const existing=await env.DB.prepare('SELECT id,active FROM team_members WHERE email=?').bind(email).first();
@@ -161,7 +172,8 @@ export async function handleTeamLogin(request,env){
  if(!result?.ok)return response({error:'Code expiré ou incorrect.'},401);
  const user=await verifiedUser(env,result.data.access_token);
  if(!user||user.email!==email)return response({error:'Identité non vérifiée.'},403);
- const enrollment=await joinRequest(env,email,body.name);
+ const enrollment=await joinRequest(env,email,body.name,body.inviteCode);
+ if(enrollment.status==='invalid-invitation')return response({error:'Code d’invitation invalide, expiré ou déjà utilisé. Demande un nouveau code à l’administration.'},403);
  if(enrollment.status==='rejected')return response({error:'Cette demande d’inscription n’a pas été retenue. Contacte l’association.'},403);
  if(enrollment.status==='disabled')return response({error:'Ce compte est désactivé. Contacte l’association.'},403);
  const newCookies=issue(result.data);
