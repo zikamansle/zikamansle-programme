@@ -12,6 +12,8 @@ Ce module est en développement **sur une branche isolée**, sans changer le pro
 
 L'administration crée les bénévoles et nomme les responsables. Un responsable peut éditer son pôle, en gérer les membres, créer des activités pour ses pôles seulement, attribuer des tâches et pointer les présences. Il ne peut pas se nommer administrateur, affecter un autre pôle ou cibler toute l'association.
 
+L'ancien schéma ZikaTeam de la migration `0004_zikateam_secure.sql` est conservé sous des tables `*_legacy`. Les anciens bénévoles, affectations, messages, réunions et réponses sont repris dans le nouveau modèle sans supprimer les originaux. Contrôler les effectifs et les journaux d'import avant toute ouverture aux utilisateurs.
+
 La suppression d'un pôle est une **archive réversible** pour préserver les historiques. La version de charte est immuable : toute nouvelle version doit être explicitement acceptée. Les documents acceptés sont des PDF de maximum 8 Mo, conservés dans R2 privé et servis uniquement aux personnes autorisées.
 
 ## Authentification — action indispensable du propriétaire
@@ -32,7 +34,7 @@ La page d'administration des notifications `/administration/notifications` conse
 ## Base, tests et déploiement
 
 1. Sauvegarder D1 et R2 staging.
-2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql` puis `drizzle/0101_team_operations.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
+2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql`, `drizzle/0101_team_operations.sql`, puis `drizzle/0102_zikateam_legacy_import.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
 3. Exécuter `npm ci`, `npm test` et `npm run build`. La compilation `build` est un dry-run, pas une publication.
 4. Déployer la **branche cible de test**, sans pointer de domaine personnalisé et sans fusion avec `main`. Le workflow `deploy-staging.yml` reste verrouillé par la variable `ZIKA_DEPLOY_ENABLED` et ne se déclenche automatiquement que sur `migration/application-autonome`.
 5. Vérifier depuis un téléphone puis un ordinateur : accès admin, accès responsable et bénévole, refus hors équipe, PDF, charte, présence, créneaux, messagerie, tâches et pointage.
