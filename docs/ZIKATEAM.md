@@ -9,9 +9,9 @@ Ce module est en développement **sur une branche isolée**, sans changer le pro
 - **Mon agenda** : réunions, stands, permanences, montage et missions ; réponse « Présent », « Absent » ou « À confirmer », inscription aux créneaux
 - **Discussions** : générale, par pôle ou par activité, après acceptation de la charte
 - **Gestion des équipes** : administrateur pour tous les pôles, responsables pour leurs seuls pôles ; gestion de la composition, activités, créneaux, tâches, pointage, réponses et journal d'administration
-- **Secrétariat** : rôle transversal attribué ou révoqué exclusivement par l’administrateur ; consulte toutes les feuilles de présence publiées, réalise les pointages, imprime les feuilles d’émargement et exporte les listes CSV, sans pouvoir modifier les pôles, équipes, bénévoles ou convocations
+- **Secrétariat** : rôle transversal attribué ou révoqué exclusivement par l’administrateur ; consulte toutes les feuilles de présence publiées, réalise les pointages, imprime les feuilles d’émargement et exporte les listes CSV, sans pouvoir modifier les pôles, équipes, affectations ou convocations ; il peut tenir l'annuaire, les adhésions et les feuilles de signatures
 
-L'administration crée les bénévoles, nomme les responsables et attribue le rôle Secrétariat depuis l’onglet « Bénévoles ». Un responsable peut éditer son pôle, en gérer les membres, créer des activités pour ses pôles seulement, attribuer des tâches et pointer les présences. Il ne peut pas se nommer administrateur, affecter un autre pôle ou cibler toute l'association.
+L'administration approuve ou refuse les premières inscriptions, crée les bénévoles, nomme les responsables et attribue le rôle Secrétariat depuis l’onglet « Bénévoles ». Un responsable peut éditer son pôle, en gérer les membres, créer des activités pour ses pôles seulement, attribuer des tâches et pointer les présences. Il ne peut pas se nommer administrateur, affecter un autre pôle ou cibler toute l'association.
 
 L'ancien schéma ZikaTeam de la migration `0004_zikateam_secure.sql` est conservé sous des tables `*_legacy`. Les anciens bénévoles, affectations, messages, réunions et réponses sont repris dans le nouveau modèle sans supprimer les originaux. Contrôler les effectifs et les journaux d'import avant toute ouverture aux utilisateurs.
 
@@ -28,13 +28,13 @@ La branche de test utilise **`TEAM_AUTH_PROVIDER=supabase`**. À la première co
 1. Utiliser l'adresse Gmail existante de l'association comme expéditeur et identifiant SMTP. Vérifier que la **validation en deux étapes** est activée sur le compte Google. Créer un **mot de passe d'application dédié** à Supabase dans les paramètres de sécurité du compte, si cette fonction est disponible. Ne jamais communiquer ce mot de passe dans un chat ni le stocker dans GitHub.
 2. Dans le projet Supabase `ZikaMansle-Programme` → Authentication → **SMTP Settings**, activer **Custom SMTP**, puis saisir `smtp.gmail.com`, port `465` (TLS implicite) ou `587` (STARTTLS), identifiant Gmail et mot de passe d'application. Nom expéditeur : `ZikaMansle` ; e-mail expéditeur : l'adresse Gmail réelle de l'association. Le serveur SMTP fourni par Gmail est soumis aux limites d'envoi et règles d'utilisation Google : **ne pas promettre l'absence de restrictions**.
 3. Dans Supabase → Authentication → Email Templates → **Magic Link**, personnaliser le modèle pour afficher `{{ .Token }}` afin d'envoyer le **code à six chiffres** plutôt qu'un simple lien. Les projets Free créés après le 3 juin 2026 ne permettent plus la personnalisation des modèles tant qu'un SMTP personnalisé n'est pas configuré. La connexion via Gmail SMTP permet cette personnalisation.
-4. Vérifier dans Supabase que le fournisseur Email est activé et que la création de comptes est autorisée : le Worker ne demande un code que pour les e-mails figurant dans `team_members` (ou l'e-mail administrateur `ADMIN_EMAIL`), sans ouvrir l'accès de ZikaTeam aux autres comptes Supabase.
+4. Vérifier dans Supabase que le fournisseur Email est activé et que la création de comptes est autorisée : le Worker peut envoyer un code à un nouveau candidat. Après vérification de son adresse, il crée seulement une demande **en attente** ; l'administration doit l'approuver pour activer l'accès aux équipes. Un candidat en attente ne voit ni discussions, ni documents internes, ni photos privées.
 5. Les variables **publiques** `TEAM_SUPABASE_URL` et `TEAM_SUPABASE_PUBLISHABLE_KEY` reprennent les valeurs déjà présentes dans `public/config.js`. Ne jamais remplacer la clé publishable par une clé `service_role`.
 6. Annuler le formulaire de création d'une nouvelle application **Cloudflare Access** pour `/zikateam*` ou supprimer cette **seule application ZikaTeam** si elle a déjà été créée ; sinon elle bloquerait la connexion de la majorité des bénévoles. **Conserver l'application Access existante `/administration/notifications`**. Les autorisations admin / responsables / secrétariat / bénévoles sont toujours gérées dans ZikaTeam.
 7. Sauvegarder et migrer D1 avant publication : la table `team_auth_attempts` (migration 0104) limite les demandes et essais de connexion. Tester le code sur une adresse de membre volontaire avant de donner l'accès au public.
 
 Le service d'e-mails intégré de Supabase **ne peut pas** envoyer des codes à tous les bénévoles : il est limité aux adresses de l'équipe Supabase et à 2 e-mails/heure. Le SMTP Google existant est une solution sans nouveau compte fournisseur ; le compte Gmail demeure soumis aux quotas, aux règles anti-spam et à la possibilité de refus ou blocage de messages. En cas de limitation de Google, une autre solution SMTP sera à envisager.
-**Sécurité :** pas d'inscription libre dans ZikaTeam, demandes de codes contrôlées par l'existence d'une fiche D1 active ; limite par e-mail et IP ; retour d'identité uniquement après validation par Supabase ; seules les activités pertinentes sont visibles ; chaque mutation exige une origine identique au site. Les cookies ne sont pas lisibles en JavaScript. La révocation d'un compte dans D1 lui retire immédiatement l'accès, même si sa session Supabase subsiste.
+**Sécurité :** première inscription libre sous contrôle et **sans accès aux données privées avant approbation**, demandes de codes limitées ; limite par e-mail et IP ; retour d'identité uniquement après validation par Supabase ; seules les activités pertinentes sont visibles ; chaque mutation exige une origine identique au site. Les cookies ne sont pas lisibles en JavaScript. La révocation d'un compte dans D1 lui retire immédiatement l'accès, même si sa session Supabase subsiste.
 
 
 ## Base, tests et déploiement
@@ -64,6 +64,22 @@ En production, envisager `TEAM_PUSH_ENABLED=true` **seulement** après validatio
 
 ## Émargement et rôle Secrétariat
 
-L’administrateur peut nommer un ou plusieurs bénévoles au **Secrétariat**, sans leur donner accès à l’administration globale. Ce rôle donne un accès transversal limité aux **activités publiées** : liste des personnes convoquées, réponses « Présent / Absent / À confirmer », horodatage de pointage, export CSV et impression d’une feuille pour signatures manuscrites. Le Secrétariat ne voit pas les brouillons, les courriels de tous les bénévoles, les ordres du jour réservés, ni les tables d’administration et n’a pas le droit de créer ou modifier les pôles, les affectations, les chartes et les activités.
+L’administrateur peut nommer un ou plusieurs bénévoles au **Secrétariat**, sans leur donner accès à l’administration globale. Ce rôle donne un accès transversal limité aux **activités publiées** : liste des personnes convoquées, réponses « Présent / Absent / À confirmer », horodatage de pointage, export CSV et impression d’une feuille pour signatures manuscrites. Le Secrétariat ne voit pas les brouillons ni les ordres du jour réservés et ne peut pas modifier les pôles, affectations, chartes ou activités. Il dispose toutefois de l'annuaire administratif complet pour les coordonnées, de la gestion des adhésions et des feuilles d'émargement signées, conformément aux droits qui lui sont confiés.
 
-**Pointage numérique ≠ signature d’émargement** : le bouton « Pointer présent » atteste seulement une saisie de présence par l’utilisateur autorisé. Pour obtenir une signature, imprimer la feuille et faire signer manuellement. Les actions de pointage, nomination et retrait de fonction sont enregistrées dans le journal d’audit.
+**Pointage numérique ≠ signature d’émargement** : le pointage simple reste distinct des feuilles d'émargement. Une feuille peut être créée pour une réunion, complétée avec les présents, puis signée individuellement au doigt ou à la souris ; les tracés et les dates de signatures sont enregistrés sans écrasement et exportables/imprimables. Les actions sensibles sont journalisées.
+
+## Autorisations de partage des coordonnées — règle actuelle
+
+- Chaque bénévole choisit explicitement **Oui** ou **Non** pour son téléphone et son e-mail ; ces deux autorisations sont distinctes et révocables.
+- Même après accord, seuls les **responsables de ses pôles** reçoivent les coordonnées consenties dans leurs vues d'équipe. Les autres bénévoles ne voient **aucun** numéro ni adresse e-mail d'un collègue.
+- L'administration et le secrétariat disposent de l'annuaire administratif complet pour l'exploitation interne ; il ne constitue **pas** un annuaire partagé aux bénévoles.
+- Une demande d'adhésion non approuvée ne reçoit aucune liste interne et ne peut lire ni messages ni documents privés.
+
+## État vérifié le 11 novembre 2026
+
+- Branche de développement : `feat/zikateam-fiches-notifications`. Écran `Déjà membre / Première inscription` et saisie nom/prénom inclus dans le code.
+- D1 staging : migrations `0100` à `0113` présentes ; ne pas les supprimer ni réinitialiser les données.
+- Le Worker staging sert encore un **ancien fichier ZikaTeam** : les commits récents ne sont donc **pas confirmés déployés**.
+- Le workflow dédié `.github/workflows/deploy-zikateam-staging.yml` est conditionné à `[staging-deploy-approved]` ; aucun run associé aux derniers commits n'a été observable via les accès GitHub disponibles.
+- Aucun test réel d'envoi de code, de connexion authentifiée, de signature sur téléphone ou de notifications n'a été validé. Les notifications générales restent désactivées.
+- Ne pas modifier `app.zikamansle.fr`, les DNS, ni les environnements de production à ce stade.
