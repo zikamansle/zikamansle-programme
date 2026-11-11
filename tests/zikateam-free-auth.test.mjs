@@ -168,7 +168,7 @@ test('connexion par mot de passe après premier code e-mail et récupération pa
  const ui=readFileSync('public/zikateam.js','utf8');
  assert.ok(ui.includes('teamLoginPassword'));
  assert.ok(ui.includes('teamSetPassword'));
- assert.ok(ui.includes('Mot de passe oublié ?'));
+ assert.ok(ui.toLocaleLowerCase('fr-FR').includes('mot de passe oublié ?'));
  assert.ok(ui.includes('freeLoginPassword('));
  assert.ok(ui.includes('freeLoginVerify('));
 });
