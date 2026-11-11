@@ -1,0 +1,63 @@
+(()=>{
+const $=id=>document.getElementById(id),escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(action,data){const r=await fetch('/api/push/'+action,{cache:'no-store',...(data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{})});const result=await r.json();if(!r.ok)throw Error(result.error||'Service indisponible');return result}
+const supported=()=>('serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window);
+async function registration(update=false){
+ const reg=await navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'});
+ if(update){await reg.update();const worker=reg.installing||reg.waiting;
+  if(worker){await new Promise((resolve,reject)=>{
+   const t=setTimeout(()=>{worker.removeEventListener('statechange',check);reject(Error('Mise à jour encore en cours. Fermez puis rouvrez ZikaMansle.'))},15000);
+   function check(){if(worker.state==='installed')worker.postMessage('ACTIVATE_UPDATE');if(worker.state==='activated'){clearTimeout(t);worker.removeEventListener('statechange',check);resolve()}else if(worker.state==='redundant'){clearTimeout(t);worker.removeEventListener('statechange',check);reject(Error('Mise à jour impossible. Rechargez la page avec Internet.'))}}
+   worker.addEventListener('statechange',check);check();
+  })}
+ }
+ return Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Le service de notifications ne démarre pas. Rechargez la page avec Internet.')),15000))]);
+}
+async function localTest(){
+ if(!supported()||Notification.permission!=='granted')throw Error('Autorisez les notifications avant ce test.');
+ const reg=await registration(true);
+ await reg.showNotification('Test ZikaMansle',{body:'Les notifications peuvent être affichées par ce navigateur.',icon:'/assets/icon-192.png',badge:'/assets/push-badge-z.png',tag:'zika-local-test',data:{url:location.origin+'/#actualites'}});
+ return 'Test demandé au téléphone. Vérifiez aussi le volet de notifications en haut de l’écran. Si rien ne s’affiche : Paramètres du téléphone → Applications → Samsung Internet (ou Chrome) → Notifications. Vérifiez également le mode Ne pas déranger.';
+}
+async function prepareTest(){const reg=await registration(true),sub=await reg.pushManager.getSubscription();if(sub)await api('subscribe',{subscription:sub.toJSON()});return sub}
+async function remoteTest(report){
+ if(!supported()||Notification.permission!=='granted')throw Error('Activez les notifications sur ce téléphone avant le test.');
+ report('Mise à jour de la réception des notifications…');
+ const sub=await prepareTest();if(!sub)throw Error('Activez les notifications sur ce téléphone avant le test.');
+ const subscription=sub.toJSON();report('Envoi du push depuis le serveur…');
+ const result=await api('selftest',{subscription});
+ if(!result.accepted){
+  if(result.code===0){const stages={encryption:'préparation du message',signature:'signature du message',network:'connexion au service push',endpoint:'adresse du service push'};throw Error('Échec côté serveur : '+(stages[result.failure?.stage]||'envoi du message')+'. Référence : '+(result.failure?.stage||'unknown')+'/'+(result.failure?.kind||'Error')+'.')}
+  throw Error('Le service push a refusé le message (code '+result.code+').');
+ }
+ report('Push accepté par le service. Attente de la réception sur ce téléphone…');
+ for(let i=0;i<15;i++){
+  await new Promise(resolve=>setTimeout(resolve,2000));
+  const state=await api('test-status',{id:result.id,subscription});
+  if(state.received){report(state.displayed?'Push reçu par ce navigateur. Le téléphone a accepté la demande d’affichage : vérifiez aussi son volet de notifications.':'Push reçu, mais le navigateur n’a pas pu afficher la notification. Vérifiez les autorisations du téléphone.');return}
+ }
+ report('Push accepté, mais aucune réception confirmée après 30 secondes. La réception peut être retardée. Le problème se situe avant la confirmation du navigateur ; ce test n’est pas considéré comme réussi.');
+}
+async function subscription(){return supported()?(await registration()).pushManager.getSubscription():null}
+async function enable(){
+ if(!supported())throw Error('Sur iPhone, ajoutez d’abord l’application à l’écran d’accueil depuis Safari, puis ouvrez-la. Sinon, utilisez un navigateur compatible.');
+ const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Notifications non autorisées. Vous pouvez changer ce choix dans les réglages du navigateur ou du téléphone.');
+ const config=await api('config'),reg=await registration(true);let sub=await reg.pushManager.getSubscription();
+ if(!sub){const bytes=Uint8Array.from(atob(config.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes})}
+ try{await api('subscribe',{subscription:sub.toJSON()})}catch(err){await sub.unsubscribe();throw err}return sub;
+}
+async function disable(){const sub=await subscription();if(sub){await api('unsubscribe',{subscription:sub.toJSON()});await sub.unsubscribe()}}
+function mediaHTML(raw){try{const m=typeof raw==='string'?JSON.parse(raw):raw;if(!m||!/^\/api\/push\/media\?id=[a-f0-9-]{36}$/.test(m.url))return '';const url=escape(m.url);if(m.type?.startsWith('image/'))return '<img class="news-media" src="'+url+'" alt="Visuel de l’annonce" loading="lazy">';if(m.type==='video/mp4')return '<video class="news-media" src="'+url+'" controls preload="metadata"></video>';if(m.type==='application/pdf')return '<a class="small-link" href="'+url+'" target="_blank" rel="noopener">Ouvrir le document PDF →</a>';return ''}catch{return ''}}
+window.zikaMediaHTML=mediaHTML;
+window.ZikaPush={api,enable,subscription,prepareTest,localTest,remoteTest};
+window.zikaNewsHTML=()=>'<div class="page"><header class="page-head"><span class="eyebrow">Festival ZikaMansle</span><h1>Actualités & notifications</h1><p>Les nouvelles du festival, au bon moment.</p></header><section class="push-panel"><h2>Gardons le contact</h2><p>Recevez les annonces et les informations pratiques, même lorsque l’application est fermée.</p><p id="pushStatus" role="status">Vérification…</p><button id="pushEnable" class="button orange">Activer les notifications</button> <button id="pushDisable" class="button light" hidden>Désactiver</button><button id="pushRemoteTest" class="button blue">Tester le push à distance</button><button id="pushLocalTest" class="button light">Tester l’affichage sur ce téléphone</button><p class="map-help">Sur iPhone : ouvrez l’application ajoutée à l’écran d’accueil. L’autorisation reste votre choix.</p><details><summary>Vos données</summary><p>Nous conservons l’abonnement technique de cet appareil pour lui envoyer les messages du festival. Aucun nom, e-mail ou numéro de téléphone n’est demandé. Désactiver les notifications ici supprime cet abonnement. Association ZikaMansle : 07 82 36 40 30.</p></details></section><section id="newsList" aria-live="polite">Chargement des actualités…</section></div>';
+window.zikaLoadNews=async()=>{
+ const status=$('pushStatus');if(!status)return;
+ async function state(){try{const sub=await subscription();$('pushEnable').hidden=!!sub;$('pushDisable').hidden=!sub;status.textContent=sub?'Notifications activées sur cet appareil.':'Activez les notifications pour rester informé.'}catch{status.textContent='Impossible de vérifier cet appareil.'}}
+ $('pushRemoteTest').onclick=async()=>{const b=$('pushRemoteTest');b.disabled=true;try{await remoteTest(message=>{status.textContent=message})}catch(e){status.textContent=e.message}finally{b.disabled=false}};
+ $('pushLocalTest').onclick=async()=>{const b=$('pushLocalTest');b.disabled=true;try{status.textContent=await localTest()}catch(e){status.textContent=e.message}finally{b.disabled=false}};
+ $('pushEnable').onclick=async()=>{const b=$('pushEnable');b.disabled=true;try{await enable();await state()}catch(e){status.textContent=e.message}finally{b.disabled=false}};
+ $('pushDisable').onclick=async()=>{const b=$('pushDisable');b.disabled=true;try{await disable();await state()}catch(e){status.textContent=e.message}finally{b.disabled=false}};
+ await state();try{const {items}=await api('news');if(!$('newsList'))return;$('newsList').innerHTML='<h2>Le fil du festival</h2>'+(items.length?items.map(n=>'<article class="news-card"><time>'+new Date(n.created).toLocaleString('fr-FR')+'</time><h3>'+escape(n.title)+'</h3><p>'+escape(n.body)+'</p>'+mediaHTML(n.media)+'<a class="small-link" href="'+escape(n.url)+'">En savoir plus →</a></article>').join(''):'<p>Les prochaines annonces du festival apparaîtront ici.</p>')}catch{if($('newsList'))$('newsList').textContent='Actualités indisponibles. Retrouvez-les avec une connexion Internet.'}
+};
+})();

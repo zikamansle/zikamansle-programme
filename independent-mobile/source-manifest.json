@@ -1,0 +1,75 @@
+{
+  "source": "https://app.zikamansle.fr/",
+  "assets": [
+    {
+      "path": "index.html",
+      "size": 4128,
+      "sha256": "14d8fff12d870a37769bfb865fdca3f820f27bfeba3cc3ccdd052fd8e04b74f3"
+    },
+    {
+      "path": "admin-notifications/index.html",
+      "size": 5324,
+      "sha256": "e9bd572adc2a84b8750d003366000432042e0dcdb40904638c639ad6caa8e202"
+    },
+    {
+      "path": "index.html",
+      "size": 4128,
+      "sha256": "305d45884b2a24a18db61513d179795088168d58f3d0d3cb3c8f958dbffdcff4"
+    },
+    {
+      "path": "admin-notifications.html",
+      "size": 5324,
+      "sha256": "c0d4679ad5e27defe6d21130abd6c784033b1b519a60cb3b9f0270d903de36ba"
+    },
+    {
+      "path": "mobile.js",
+      "size": 36307,
+      "sha256": "50431c168b28881ae26d70970aa6bab50abb91abbcb03a92ebf3b9fbbdb3f162"
+    },
+    {
+      "path": "model.js",
+      "size": 4375,
+      "sha256": "d4ecacb1070627326ee34cb139e4d77999c9329b025b5a17e92d296d9e3b4277"
+    },
+    {
+      "path": "notifications.js",
+      "size": 9015,
+      "sha256": "b2f979250dc55aa6dfe1109576670a583cbd460b2b8f6d2226658446c6a354e1"
+    },
+    {
+      "path": "admin-notifications.js",
+      "size": 4307,
+      "sha256": "d0e8480cdb82c55ad8e6ad8d17d72315ba12c7dade058ec212fbb6fccd8c0c08"
+    },
+    {
+      "path": "config.js",
+      "size": 219,
+      "sha256": "1c204a421b60b5da2433a2141f28332e534ec6fea16cb7404f7fe3e20cc4dfce"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "size": 508,
+      "sha256": "1562df612c82e6fee0baef6325546d422ca84e5a583f2f70ec7328b949d0f5f8"
+    },
+    {
+      "path": "sw.js",
+      "size": 3512,
+      "sha256": "92ba25fb9429603da8ac4c707853b804a7793107dc6ab45a36005e04aa73933f"
+    },
+    {
+      "path": "mobile.css",
+      "size": 21537,
+      "sha256": "7adb8deea36f7d2a12231142308f49c091ca0e76c1cb3ce39674a50cf5057bd3"
+    },
+    {
+      "path": "assets/icon-192.png",
+      "size": 39630,
+      "sha256": "55e50befe9e76f314b05b42fb95a0fd128c0225934690fcfed34e0d98e179e15"
+    },
+    {
+      "path": "assets/logo.png",
+      "size": 595334,
+      "sha256": "f0b386b186b54b9de75ba93200161d092e391c0e0e5732886b19cab2646bbb23"
+    }
+  ]
+}
