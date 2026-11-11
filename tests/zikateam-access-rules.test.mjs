@@ -186,3 +186,10 @@ test('aucune intégration Brevo ne doit être imposée aux invitations',()=>{
  assert.ok(!server.toLowerCase().includes('brevo'));
  assert.ok(client.includes('teamInviteForm'));
 });
+
+test('affichage du mot de passe au choix sans changer les valeurs',()=>{
+ assert.ok(client.includes('data-password-toggle'));
+ assert.ok(client.includes("input.type=show?'text':'password'"));
+ assert.ok(client.includes('name="confirmation"'));
+ assert.ok(client.includes('aria-pressed'));
+});
