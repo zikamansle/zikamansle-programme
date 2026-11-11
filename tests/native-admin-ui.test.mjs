@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const script=readFileSync(new URL('../public/admin-notifications.js',import.meta.url),'utf8');
-function ui({sendCode=200,sendError=null,devices=1,configured=true}={}){
+function ui({sendCode=200,sendError=null,devices=1,configured=true,diagnosticsReady=true,stage='OAUTH_OK'}={}){
  const elements=new Map();
  const el=id=>{
   if(!elements.has(id))elements.set(id,{
@@ -19,6 +19,7 @@ function ui({sendCode=200,sendError=null,devices=1,configured=true}={}){
   let status=200,data;
   if(action==='admin')data={subscribers:0,history:[]};
   else if(action==='native-status')data={devices,sendingConfigured:configured,testingOnly:true};
+  else if(action==='native-diagnostics')data={ready:diagnosticsReady,stage};
   else if(action==='native-test'){
    attempts++;
    status=sendError?502:200;
@@ -46,7 +47,7 @@ test('Native Android test button sends and keeps the success message visible',as
  assert.match(a.elements('nativeStatus').textContent,/Notification acceptée par Firebase/);
  assert.doesNotMatch(a.elements('nativeStatus').textContent,/Un appareil Android inscrit/);
  await a.elements('nativeRefresh').onclick();
- assert.match(a.elements('nativeStatus').textContent,/test ciblé est prêt/);
+ assert.match(a.elements('nativeStatus').textContent,/test Android disponible/);
  assert.equal(a.elements('nativeTest').disabled,false);
 });
 test('Native Android test error appears beside its button and is not silently erased',async()=>{
@@ -61,4 +62,18 @@ test('Native Android button stays disabled when no device or no server credentia
   const a=ui(args);await a.run();assert.equal(a.elements('nativeTest').disabled,true);
   assert.notEqual(a.elements('nativeStatus').textContent,'');
  }
+});
+
+test('Native diagnostic reports OAuth/configuration failure without sending a push',async()=>{
+ const a=ui({diagnosticsReady:false,stage:'OAUTH_403'});
+ await a.run();
+ assert.equal(a.attempts,0);
+ assert.equal(a.elements('nativeTest').disabled,true);
+ assert.match(a.elements('nativeStatus').textContent,/OAUTH_403/);
+});
+test('Native test surfaces safe diagnostic stage on an HTTP failure',async()=>{
+ const a=ui({sendError:'Le serveur Firebase a refusé le test.'});
+ await a.run();
+ await a.elements('nativeTest').onclick();
+ assert.match(a.elements('nativeStatus').textContent,/Le serveur Firebase a refusé le test/);
 });
