@@ -59,15 +59,15 @@ jobs:
             echo '=== Fatal errors for app ==='
             adb logcat -d -v brief | grep -E -A 10 'FATAL EXCEPTION|Process: fr.zikamansle.app.debug' | tail -n 65 || true
             echo '=== Assert app launcher did not crash ==='
-            if adb logcat -d -v brief | grep -E -A 3 'FATAL EXCEPTION' | grep -q 'Process: fr.zikamansle.app.debug'; then
-              echo 'FAIL: ZikaMansle Android launcher crashed'
-              exit 1
-            fi
-            echo 'PASS: no ZikaMansle Android fatal exception after launch'
+            adb logcat -d -v brief > zika_logcat.txt
+            python3 -c "from pathlib import Path; import re; log=Path('zika_logcat.txt').read_text(errors='replace'); bad=bool(re.search(r'FATAL EXCEPTION.{0,450}Process: fr\\.zikamansle\\.app\\.debug',log,re.S)); print('FAIL: ZikaMansle crash' if bad else 'PASS: no ZikaMansle fatal exception'); raise SystemExit(1 if bad else 0)"
+            echo '=== Verify app handed off live address to Chrome ==='
+            grep -F 'Using url from Manifest: https://app.zikamansle.fr/' zika_logcat.txt
+            echo 'PASS: Android startup launched the correct ZikaMansle URL'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: zikamansle-android-startup-screen
-          path: zika_android_startup.png
+          path: |\n            zika_android_startup.png\n            zika_logcat.txt
           if-no-files-found: warn
           retention-days: 7
