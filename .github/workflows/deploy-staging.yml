@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Déploiement ponctuel du lien Administration discret dans la copie de test.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Publier le lien accès admin en bas du menu Plus') }}
+    # Deploy only when explicitly enabled by the repository owner.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
