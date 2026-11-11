@@ -148,3 +148,5 @@ test('vrai chat ZikaTeam sur ordinateur et mobile',()=>{
  assert.ok(client.includes("void refreshChatSummary().then("));
  assert.ok(client.includes("Message non envoyé : "));
 });
+
+// Publication volontaire sur staging uniquement de la vraie messagerie testée.
