@@ -654,7 +654,7 @@ async function saveVolunteerForm(f){
  if(state.busy){toast('Une opération est déjà en cours.');return;}
  try{
 
-  const button=f.querySelector('button[type="submit"]');
+  const button=f.querySelector('[data-save-member]');
   let feedback=f.querySelector('[data-member-save-feedback]');
   if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');f.append(feedback);}
   const d=fromForm(f),name=String(d.name||'').trim(),email=String(d.email||'').trim().toLowerCase();
