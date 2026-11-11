@@ -57,6 +57,19 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   await okay(A,{op:'assignment.set',memberId:lead,poleId:pole,role:'lead'});
   await okay(A,{op:'assignment.set',memberId:member,poleId:pole,role:'member'});
   await okay(A,{op:'assignment.set',memberId:other,poleId:outsidePole,role:'member'});
+  // Le partage des coordonnées est choisi par la personne, et ne concerne que son pôle.
+  await okay(A,{op:'contact.set',memberId:member,phone:'0600000016',city:'Mansle-les-Fontaines'});
+  const noShare=(await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member);
+  assert.equal(noShare.email,'','l’adresse est masquée tant que le bénévole n’a pas accepté');
+  assert.equal(noShare.phone,'','le téléphone est masqué tant que le bénévole n’a pas accepté');
+  await okay(B,{op:'consents.save',consents:{image:false,phone:true,email:true}});
+  const yesShare=(await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member);
+  assert.equal(yesShare.email,B);
+  assert.equal(yesShare.phone,'0600000016');
+  assert.equal((await invoke(B,'/zikateam/api/me')).payload.consents.phone,true);
+  await okay(B,{op:'consents.save',consents:{image:false,phone:false,email:false}});
+  assert.equal((await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member).phone,'','le retrait du consentement est immédiat');
+
   assert.equal((await invoke(L,'/zikateam/api/manage')).payload.poles.length,1);
   assert.equal((await api(L,{op:'assignment.set',memberId:member,poleId:outsidePole,role:'member'})).status,403);
   assert.equal((await api(L,{op:'assignment.set',memberId:member,poleId:pole,role:'lead'})).status,403);
@@ -133,6 +146,13 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities[0].my_shifts.length,1);
   await okay(A,{op:'pole.archive',id:pole});
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities.length,0);
+
+  // Les réunions peuvent cibler les membres du bureau exclusivement.
+  await okay(A,{op:'member.save',id:member,name:'Bénévole',email:B,roles:['bureau']});
+  const meetingBureau=await okay(A,{op:'activity.save',kind:'meeting',title:'Réunion du bureau',audience:'bureau',starts_at:'2027-04-25T09:00:00.000Z',ends_at:'2027-04-25T10:00:00.000Z',status:'published'});
+  assert.equal(meetingBureau.invitedMembers,1,'seul le membre du bureau est concerné');
+  assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities.some(x=>x.id===meetingBureau.id),true);
+  assert.equal((await invoke(O,'/zikateam/api/me')).payload.activities.some(x=>x.id===meetingBureau.id),false);
   assert.deepEqual(await drainTeamPush(env),{sent:0,disabled:true});
   assert.deepEqual(await scheduleTeamReminders(env),{sent:0,disabled:true});
   db.close();
