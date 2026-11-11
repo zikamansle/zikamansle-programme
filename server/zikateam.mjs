@@ -114,20 +114,21 @@ async function getMine(db,ctx){
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
  const poles=ctx.admin?await all(db,'SELECT * FROM team_poles ORDER BY archived,name'):
+  ctx.secretariat?await all(db,'SELECT * FROM team_poles WHERE archived=0 ORDER BY name'):
   ctx.leadPoles.length?(await all(db,'SELECT * FROM team_poles WHERE archived=0 ORDER BY name')).filter(p=>ctx.leadPoles.includes(p.id)):
   await all(db,'SELECT id,name,archived FROM team_poles WHERE archived=0 ORDER BY name');
- const members=ctx.admin?await all(db,'SELECT id,name,email,active FROM team_members ORDER BY name'):
+ const members=ctx.admin||ctx.secretariat?await all(db,'SELECT id,name,email,active FROM team_members ORDER BY name'):
   ctx.leadPoles.length?await all(db,"SELECT DISTINCT m.id,m.name,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(contacts.phone,'') ELSE '' END AS phone,m.active FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id LEFT JOIN team_member_contacts contacts ON contacts.member_id=m.id WHERE tm.pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead') ORDER BY m.name",ctx.member.id):
   await all(db,'SELECT id,name,active FROM team_members WHERE active=1 ORDER BY name');
- if(ctx.admin||ctx.leadPoles.length){
+ if(ctx.admin||ctx.leadPoles.length||ctx.secretariat){
   const pictures=new Set((await all(db,ctx.admin?'SELECT member_id FROM team_member_photos':"SELECT ph.member_id FROM team_member_photos ph WHERE EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=ph.member_id AND c.kind='image' AND c.granted=1)")).map(x=>x.member_id));
   for(const member of members)member.has_photo=pictures.has(member.id)||member.id===ctx.member?.id;
  }
- if(ctx.admin){
+ if(ctx.admin||ctx.secretariat){
   const allRoles=await all(db,'SELECT member_id,role FROM team_member_roles');
   for(const member of members)member.roles=allRoles.filter(x=>x.member_id===member.id).map(x=>x.role);
  }
- const memberships=ctx.admin?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):
+ const memberships=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,pole_id,role FROM team_memberships'):
   ctx.leadPoles.length?await all(db,"SELECT member_id,pole_id,role FROM team_memberships WHERE pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead')",ctx.member.id):[];
  const allActivities=await all(db,"SELECT * FROM team_activities ORDER BY starts_at DESC LIMIT 160"),activities=[];
  for(const item of allActivities){
@@ -280,18 +281,38 @@ async function savePole(db,ctx,d){
  await audit(db,ctx.email,'pole.save',id,name);return reply({ok:true,id});
 }
 async function assign(db,ctx,d){
- if(!ctx.admin)return fail('Seule l’administration attribue les bénévoles aux pôles.',403);
+ if(!ctx.admin&&!ctx.secretariat)return fail('Affectations réservées à l’administration et au secrétariat.',403);
  if(!idok(d.memberId)||!idok(d.poleId))return fail('Identifiants incorrects.');
- if(!ctx.admin&&!ctx.leadPoles.includes(d.poleId))return fail('Pôle non autorisé.',403);
  const member=await one(db,'SELECT id,active FROM team_members WHERE id=?',d.memberId),pole=await one(db,'SELECT id,archived FROM team_poles WHERE id=?',d.poleId);
  if(!member||!pole||pole.archived)return fail('Bénévole ou pôle introuvable.',404);
  const role=d.role==='lead'?'lead':'member';
- if(!ctx.admin&&role==='lead')return fail('Seul l’administrateur désigne les responsables.',403);
  const prior=await one(db,'SELECT role FROM team_memberships WHERE member_id=? AND pole_id=?',d.memberId,d.poleId);
- if(!ctx.admin&&prior?.role==='lead')return fail('Seul l’administrateur modifie les responsables.',403);
  if(d.remove===true){await db.prepare('DELETE FROM team_memberships WHERE member_id=? AND pole_id=?').bind(d.memberId,d.poleId).run();}
  else await db.prepare("INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?) ON CONFLICT(member_id,pole_id) DO UPDATE SET role=excluded.role").bind(d.memberId,d.poleId,role,now()).run();
  await audit(db,ctx.email,d.remove?'membership.remove':'membership.save',d.poleId,d.memberId);return reply({ok:true});
+}
+async function setMemberFunctions(db,ctx,d){
+ if(!ctx.admin&&!ctx.secretariat)return fail('Fonctions réservées à l’administration et au secrétariat.',403);
+ if(!idok(d.memberId))return fail('Fiche bénévole invalide.',400);
+ const member=await one(db,'SELECT id,active FROM team_members WHERE id=?',d.memberId);
+ if(!member?.active)return fail('Bénévole actif introuvable.',404);
+ const labels=d.roles,poleRoles=d.poleRoles;
+ if(!Array.isArray(labels)||labels.length>2||new Set(labels).size!==labels.length||labels.some(x=>!['director','bureau'].includes(x)))return fail('Fonctions générales invalides.',400);
+ if(!Array.isArray(poleRoles)||poleRoles.length>100)return fail('Liste des pôles invalide.',400);
+ const seen=new Set();
+ for(const item of poleRoles){
+  if(!item||!idok(item.poleId)||!['member','lead'].includes(item.role)||seen.has(item.poleId))return fail('Fonction de pôle invalide.',400);
+  seen.add(item.poleId);
+  if(!await one(db,'SELECT id FROM team_poles WHERE id=? AND archived=0',item.poleId))return fail('Pôle introuvable ou archivé.',404);
+ }
+ // Mise à jour des seules fonctions : aucune modification de compte, de charte,
+ // d'approbation ou des accès au secrétariat.
+ await db.prepare('DELETE FROM team_member_roles WHERE member_id=?').bind(member.id).run();
+ for(const role of labels)await db.prepare('INSERT INTO team_member_roles(member_id,role,created_at) VALUES(?,?,?)').bind(member.id,role,now()).run();
+ await db.prepare("DELETE FROM team_memberships WHERE member_id=? AND pole_id IN (SELECT id FROM team_poles WHERE archived=0)").bind(member.id).run();
+ for(const item of poleRoles)await db.prepare('INSERT INTO team_memberships(member_id,pole_id,role,created_at) VALUES(?,?,?,?)').bind(member.id,item.poleId,item.role,now()).run();
+ await audit(db,ctx.email,'member.functions.set',member.id,JSON.stringify({roles:labels,poleRoles}).slice(0,500));
+ return reply({ok:true});
 }
 async function saveActivity(db,ctx,d){
  if(!ctx.admin&&!ctx.leadPoles.length)return fail('Réservé aux responsables.',403);
@@ -686,6 +707,7 @@ async function adminAction(db,ctx,d){
   await audit(db,ctx.email,d.enabled?'secretariat.grant':'secretariat.revoke',d.memberId);
   return reply({ok:true});
  }
+ if(d.op==='member.functions.set')return setMemberFunctions(db,ctx,d);
  if(d.op==='member.save')return saveMember(db,ctx,d);
  if(d.op==='pole.save')return savePole(db,ctx,d);
  if(d.op==='pole.delete'){
