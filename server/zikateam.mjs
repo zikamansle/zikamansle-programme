@@ -237,7 +237,7 @@ export async function notifyTeamChat(env,ctx,message){
   const links=await all(db,'SELECT ps.id,ps.endpoint,ps.p256dh,ps.auth FROM team_push_links l JOIN push_subscriptions ps ON ps.id=l.subscription_id WHERE l.member_id=? LIMIT 5',recipient.id);
   for(const sub of links){
    const title=channel==='general'?'Discussion générale':channel==='leaders'?'Entre responsables':channel==='pole'?'Message dans un pôle':'Discussion d’activité';
-   const silent=preferences?.sound_mode==='none'||preferences?.chat_mode==='grouped'&&preferences?.sound_mode!=='all';
+   const silent=preferences?.sound_mode==='none';
    const payload={title:'ZikaTeam · '+title,body:(ctx.member.name||'Un bénévole')+' a envoyé un nouveau message.',url:'/zikateam#messages',groupId:(channel+'-'+(channelId||'all')).slice(0,64),silent,vibrate:!silent&&preferences?.vibrate!==0?[120,70,120]:[]};
    let code=0;try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,env)}catch{}
    await audit(db,'system-chat-push',code>=200&&code<300?'chat.push.sent':'chat.push.failed',recipient.id,String(code)+' · '+channel+' · '+message.id);
@@ -1148,7 +1148,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
-    if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:data.messageId||'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
+    if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
     return result;
    }
   }
