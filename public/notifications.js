@@ -16,7 +16,7 @@ async function registration(update=false){
 async function localTest(){
  if(!supported()||Notification.permission!=='granted')throw Error('Autorisez les notifications avant ce test.');
  const reg=await registration(true);
- await reg.showNotification('Test ZikaMansle',{body:'Les notifications peuvent être affichées par ce navigateur.',icon:'/assets/icon-192.png',badge:'/assets/push-badge-z.png',tag:'zika-local-test',data:{url:location.origin+'/#actualites'}});
+ await reg.showNotification('Test ZikaMansle',{body:'Les notifications peuvent être affichées par ce navigateur.',icon:'/assets/icon-192.png',badge:'/assets/push-badge-z.png',tag:'zika-local-test',renotify:true,silent:false,vibrate:[120,70,120],data:{url:location.origin+'/#actualites'}});
  return 'Test demandé au téléphone. Vérifiez aussi le volet de notifications en haut de l’écran. Si rien ne s’affiche : Paramètres du téléphone → Applications → Samsung Internet (ou Chrome) → Notifications. Vérifiez également le mode Ne pas déranger.';
 }
 async function prepareTest(){const reg=await registration(true),sub=await reg.pushManager.getSubscription();if(sub)await api('subscribe',{subscription:sub.toJSON()});return sub}
