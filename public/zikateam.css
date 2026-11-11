@@ -549,3 +549,35 @@ body{background:radial-gradient(circle at 3% 18%,#d7f1ff 0,transparent 34%),radi
  #teamRoot .team-wa-send{min-height:46px;padding:0 9px}
 }
 @media(prefers-reduced-motion:reduce){#teamRoot .team-wa-app *{scroll-behavior:auto!important}}
+
+/* Palette vive ZikaMansle : aplats joyeux, contrastes accessibles et cohérence des rubriques */
+body{background:radial-gradient(circle at 10% 8%,#b4e8ff 0,transparent 31%),radial-gradient(circle at 91% 20%,#ffd7e2 0,transparent 29%),radial-gradient(circle at 65% 90%,#d9f8df 0,transparent 35%),#eef7fc}
+#teamRoot .team-heading{background:linear-gradient(105deg,#056eab 0%,#009f9c 41%,#8245c7 80%,#b653b9 100%);border:2px solid #ffffffa8;box-shadow:0 12px 30px #074f8760}
+#teamRoot .team-tabs{background:linear-gradient(108deg,#d6f4ff,#f0e3ff 55%,#ffedcf);border-color:#b6d9e9}
+#teamRoot .team-tabs button{background:linear-gradient(140deg,#fff,#f3f9ff);color:#174564;transition:background .15s,border-color .15s}
+#teamRoot .team-tabs button[aria-current="page"]{background:linear-gradient(115deg,#008ac0,#7746c9);color:#fff;border-color:#6332b4}
+#teamRoot .team-card{background:linear-gradient(140deg,#fff 48%,#eef9ff);border-color:#a4d4ed;box-shadow:0 9px 22px #0f6f9d23}
+#teamRoot .team-card.team-accent-orange{border-top:6px solid #ff852f;background:linear-gradient(132deg,#fff,#fff0d7 95%)}
+#teamRoot .team-card.team-accent-teal{border-top:6px solid #00aa91;background:linear-gradient(132deg,#fff,#dcfaef 95%)}
+#teamRoot .team-card.team-accent-blue{border-top:6px solid #168bd5;background:linear-gradient(132deg,#fff,#def3ff 95%)}
+#teamRoot .team-card.team-accent-purple{border-top:6px solid #8e4dd6;background:linear-gradient(132deg,#fff,#f0e1ff 95%)}
+#teamRoot .team-item{border:1px solid #a7d8ec;border-left:5px solid #00a99c;background:linear-gradient(110deg,#fff,#eaf9ff)}
+#teamRoot .team-item:nth-child(3n+2){border-left-color:#f68b2d;background:linear-gradient(115deg,#fff,#fff2df)}
+#teamRoot .team-item:nth-child(3n){border-left-color:#9758d5;background:linear-gradient(115deg,#fff,#f4eaff)}
+#teamRoot .team-button.orange,#teamRoot .team-publish-action{background:linear-gradient(110deg,#ffb13a,#ff7624);color:#182f47;border:1px solid #d46713;box-shadow:0 4px 14px #f5822940}
+#teamRoot .team-button.light{background:#e5f6ff;color:#085c8c;border:1px solid #9ed4ea}
+#teamRoot .team-button.light:hover{background:#c9edff}
+#teamRoot .team-wa-app{border:2px solid #65bedc;box-shadow:0 17px 45px #13567b3b}
+#teamRoot .team-wa-sidebar-head{background:linear-gradient(110deg,#006ca5,#008fbc 50%,#8348c9)}
+#teamRoot .team-wa-room.selected{background:#c5f6e5;box-shadow:inset 5px 0 #00a47e}
+#teamRoot .team-wa-room:hover{background:#d8f4ff}
+#teamRoot .team-wa-thread-head{background:linear-gradient(105deg,#c9efff,#f8e8ff 55%,#ffebce)}
+#teamRoot .team-wa-thread{background:radial-gradient(circle at 80% 20%,#fce9ff,transparent 35%),linear-gradient(145deg,#e3f7f8,#fff7e9)}
+#teamRoot .team-wa-message.outgoing .team-wa-bubble{background:#bdf2d9;border-color:#69c9a5}
+#teamRoot .team-wa-message.incoming .team-wa-bubble{background:#fff;border-color:#a8d9ee}
+#teamRoot .team-wa-composer{background:linear-gradient(95deg,#fff0cf,#d9f6ff);border-top:4px solid #00a9a0}
+#teamRoot .team-wa-send{background:linear-gradient(115deg,#ffad37,#ff792a);color:#173653}
+#teamRoot .team-wa-room-trailing .team-unread,#teamRoot .team-unread{background:#dd3971;color:white;border-radius:99px;font-weight:900}
+#teamRoot .team-agenda-alert{border:1px solid #ffca91;border-left:5px solid #fa853a;border-radius:13px;background:#fff9e9;padding:13px;margin:10px 0}
+#teamRoot .team-agenda-alert h3{color:#174f75;margin:6px 0}
+@media(prefers-reduced-motion:reduce){#teamRoot .team-tabs button{transition:none}}
