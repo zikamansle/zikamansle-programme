@@ -81,6 +81,9 @@ async function getMine(db,ctx){
  const consents={image:null,phone:null,email:null};
  for(const item of consentRows)if(Object.prototype.hasOwnProperty.call(consents,item.kind))consents[item.kind]=Boolean(item.granted);
  const currentCharter=c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null;
+ const savedPrefs=ctx.member?await one(db,'SELECT chat_mode,sound_mode,vibrate,activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end FROM team_notification_preferences WHERE member_id=?',ctx.member.id):null;
+ const notificationPrefs={chat_mode:savedPrefs?.chat_mode||'grouped',sound_mode:savedPrefs?.sound_mode||'important',vibrate:savedPrefs?Boolean(savedPrefs.vibrate):true,activity_enabled:savedPrefs?Boolean(savedPrefs.activity_enabled):true,urgent_enabled:savedPrefs?Boolean(savedPrefs.urgent_enabled):true,quiet_enabled:savedPrefs?Boolean(savedPrefs.quiet_enabled):true,quiet_start:savedPrefs?.quiet_start||'22:00',quiet_end:savedPrefs?.quiet_end||'08:00'};
+ const mutedChats=ctx.member?await all(db,'SELECT channel,channel_id FROM team_chat_mutes WHERE member_id=? AND muted=1',ctx.member.id):[];
  // Une identité vérifiée sans charte acceptée ne reçoit ni équipes ni convocations.
  if(!accepted)return reply({
   email:ctx.email,admin:ctx.admin,pending:ctx.pending,secretariat:false,
@@ -109,7 +112,7 @@ async function getMine(db,ctx){
  const allowedIds=new Set(mine.map(a=>a.id));
  const visibleNotices=notices.filter(n=>allowedIds.has(n.activity_id)).slice(0,25);
  for(const item of mine)if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
- return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email,has_photo:Boolean(selfPhoto)}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine,notices:visibleNotices});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email,has_photo:Boolean(selfPhoto)}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine,notices:visibleNotices,notificationPrefs,mutedChats});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -163,6 +166,9 @@ async function enqueue(db,a,reason){
  const memberIds=await audienceMembers(db,a);
  for(const memberId of memberIds){
   await db.prepare("INSERT INTO team_activity_notices(id,activity_id,member_id,reason,created_at,seen_at) VALUES(?,?,?,?,?,NULL) ON CONFLICT(activity_id,member_id,reason) DO UPDATE SET created_at=excluded.created_at,seen_at=NULL").bind(uuid(),a.id,memberId,reason,now()).run();
+  const pref=await one(db,'SELECT activity_enabled,urgent_enabled FROM team_notification_preferences WHERE member_id=?',memberId);
+  const pushAllowed=reason==='cancelled'?(pref?.urgent_enabled!==0):(pref?.activity_enabled!==0);
+  if(!pushAllowed)continue;
   const links=await all(db,'SELECT subscription_id FROM team_push_links WHERE member_id=?',memberId);
   for(const l of links){await db.prepare("INSERT INTO team_push_jobs(id,activity_id,member_id,subscription_id,reason,status,created_at) VALUES (?,?,?,?,?,'pending',?) ON CONFLICT(activity_id,subscription_id,reason) DO UPDATE SET status='pending',code=NULL,created_at=excluded.created_at")
    .bind(uuid(),a.id,memberId,l.subscription_id,reason,now()).run();}
@@ -181,10 +187,17 @@ export async function drainTeamPush(env,maximum=40){
   const intended=a&&m?.active&&stillLinked&&(await audienceMembers(db,a)).includes(job.member_id);
   const allowedState=(a?.status==='published'&&job.reason!=='cancelled')||(a?.status==='cancelled'&&job.reason==='cancelled');
   if(!intended||!allowedState){await db.prepare("UPDATE team_push_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
+  const prefs=await one(db,'SELECT activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end,sound_mode,vibrate FROM team_notification_preferences WHERE member_id=?',job.member_id);
+  if(job.reason==='cancelled'&&prefs?.urgent_enabled===0||job.reason!=='cancelled'&&prefs?.activity_enabled===0){await db.prepare("UPDATE team_push_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
+  if(prefs?.quiet_enabled&&!((job.reason==='cancelled')&&prefs?.urgent_enabled!==0)){
+   const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false}),start=prefs.quiet_start||'22:00',end=prefs.quiet_end||'08:00';
+   const quiet=start<=end?(local>=start&&local<end):(local>=start||local<end);
+   if(quiet){await db.prepare("UPDATE team_push_jobs SET status='pending' WHERE id=?").bind(job.id).run();continue;}
+  }
   const sub=await one(db,'SELECT endpoint,p256dh,auth FROM push_subscriptions WHERE id=?',job.subscription_id);
   if(!sub){await db.prepare("UPDATE team_push_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
   const prefix=job.reason==='created'?'Nouvelle activité':job.reason==='cancelled'?'Activité annulée':'Activité modifiée';
-  const payload={id:job.id,title:'ZikaTeam · '+prefix,body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites'};
+  const payload={id:job.id,title:'ZikaTeam · '+prefix,body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites',silent:prefs?.sound_mode==='none'||prefs?.sound_mode==='important'&&job.reason!=='cancelled',vibrate:prefs?.vibrate!==0?[120,70,120]:[]};
   let code=0;try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,env)}catch{}
   const ok=code>=200&&code<300;
   await db.prepare('UPDATE team_push_jobs SET status=?,code=?,sent_at=? WHERE id=?').bind(ok?'sent':'failed',code,now(),job.id).run();if(ok)sent++;
@@ -391,6 +404,20 @@ async function memberAction(db,ctx,d){
   return reply({ok:true});
  }
  const memberId=ctx.member.id;
+ if(d.op==='notification.settings'){
+  if(ctx.pending||!ctx.member.active||!await requireCharter(db,ctx))return fail('Paramètres non disponibles avant validation.',403);
+  const p=d.preferences;
+  if(!p||!['grouped','all','silent'].includes(p.chat_mode)||!['none','important','all'].includes(p.sound_mode)||['vibrate','activity_enabled','urgent_enabled','quiet_enabled'].some(k=>typeof p[k]!=='boolean')||![p.quiet_start,p.quiet_end].every(x=>typeof x==='string'&&/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(x)))return fail('Préférences invalides.',400);
+  await db.prepare('INSERT INTO team_notification_preferences(member_id,chat_mode,sound_mode,vibrate,activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET chat_mode=excluded.chat_mode,sound_mode=excluded.sound_mode,vibrate=excluded.vibrate,activity_enabled=excluded.activity_enabled,urgent_enabled=excluded.urgent_enabled,quiet_enabled=excluded.quiet_enabled,quiet_start=excluded.quiet_start,quiet_end=excluded.quiet_end,updated_at=excluded.updated_at').bind(memberId,p.chat_mode,p.sound_mode,p.vibrate?1:0,p.activity_enabled?1:0,p.urgent_enabled?1:0,p.quiet_enabled?1:0,p.quiet_start,p.quiet_end,now()).run();
+  await audit(db,ctx.email,'notifications.settings',memberId);
+  return reply({ok:true});
+ }
+ if(d.op==='notification.chat.mute'){
+  if(ctx.pending||!ctx.member.active||!await requireCharter(db,ctx))return fail('Accès non autorisé.',403);
+  if(typeof d.muted!=='boolean'||!await permittedChat(db,ctx,d.channel,d.channelId||null))return fail('Groupe non autorisé.',403);
+  await db.prepare('INSERT INTO team_chat_mutes(member_id,channel,channel_id,muted,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(member_id,channel,channel_id) DO UPDATE SET muted=excluded.muted,updated_at=excluded.updated_at').bind(memberId,d.channel,d.channelId||'',d.muted?1:0,now()).run();
+  return reply({ok:true});
+ }
  if(d.op==='contact.self'){
   if(ctx.pending||!ctx.member.active)return fail('Seuls les bénévoles validés peuvent renseigner leur téléphone.',403);
   if(!await requireCharter(db,ctx))return fail('Accepte la charte avant de modifier ta fiche.',409);
@@ -1075,7 +1102,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
