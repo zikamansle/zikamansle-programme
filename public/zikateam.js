@@ -969,7 +969,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
    feedback.scrollIntoView({block:'center',behavior:'smooth'});
   };
   if(name.length<2)return report('Indique le nom et le prénom du bénévole.');
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return report('Vérifie l’adresse e-mail de connexion.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return report('Vérifie l’adresse e-mail de connexion.');
   const active=f.querySelector('input[name="active"]');
   if(!active)return report('Champ fiche active introuvable. Recharge ZikaTeam.');
   const changes=rolePayload(f);
