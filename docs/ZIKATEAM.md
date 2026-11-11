@@ -9,8 +9,9 @@ Ce module est en développement **sur une branche isolée**, sans changer le pro
 - **Mon agenda** : réunions, stands, permanences, montage et missions ; réponse « Présent », « Absent » ou « À confirmer », inscription aux créneaux
 - **Discussions** : générale, par pôle ou par activité, après acceptation de la charte
 - **Gestion des équipes** : administrateur pour tous les pôles, responsables pour leurs seuls pôles ; gestion de la composition, activités, créneaux, tâches, pointage, réponses et journal d'administration
+- **Secrétariat** : rôle transversal attribué ou révoqué exclusivement par l’administrateur ; consulte toutes les feuilles de présence publiées, réalise les pointages, imprime les feuilles d’émargement et exporte les listes CSV, sans pouvoir modifier les pôles, équipes, bénévoles ou convocations
 
-L'administration crée les bénévoles et nomme les responsables. Un responsable peut éditer son pôle, en gérer les membres, créer des activités pour ses pôles seulement, attribuer des tâches et pointer les présences. Il ne peut pas se nommer administrateur, affecter un autre pôle ou cibler toute l'association.
+L'administration crée les bénévoles, nomme les responsables et attribue le rôle Secrétariat depuis l’onglet « Bénévoles ». Un responsable peut éditer son pôle, en gérer les membres, créer des activités pour ses pôles seulement, attribuer des tâches et pointer les présences. Il ne peut pas se nommer administrateur, affecter un autre pôle ou cibler toute l'association.
 
 L'ancien schéma ZikaTeam de la migration `0004_zikateam_secure.sql` est conservé sous des tables `*_legacy`. Les anciens bénévoles, affectations, messages, réunions et réponses sont repris dans le nouveau modèle sans supprimer les originaux. Contrôler les effectifs et les journaux d'import avant toute ouverture aux utilisateurs.
 
@@ -34,10 +35,10 @@ La page d'administration des notifications `/administration/notifications` conse
 ## Base, tests et déploiement
 
 1. Sauvegarder D1 et R2 staging.
-2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql`, `drizzle/0101_team_operations.sql`, puis `drizzle/0102_zikateam_legacy_import.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
+2. Appliquer en ordre les migrations D1 `drizzle/0100_zikateam.sql`, `drizzle/0101_team_operations.sql`, `drizzle/0102_zikateam_legacy_import.sql`, puis `drizzle/0103_zikateam_secretariat.sql`. La commande `npx wrangler d1 migrations apply zikamansle-app-staging --remote` fonctionne après configuration des secrets et des identifiants du Worker de test.
 3. Exécuter `npm ci`, `npm test` et `npm run build`. La compilation `build` est un dry-run, pas une publication.
 4. Déployer la **branche cible de test**, sans pointer de domaine personnalisé et sans fusion avec `main`. Le workflow `deploy-staging.yml` reste verrouillé par la variable `ZIKA_DEPLOY_ENABLED` et ne se déclenche automatiquement que sur `migration/application-autonome`.
-5. Vérifier depuis un téléphone puis un ordinateur : accès admin, accès responsable et bénévole, refus hors équipe, PDF, charte, présence, créneaux, messagerie, tâches et pointage.
+5. Vérifier depuis un téléphone puis un ordinateur : accès admin, accès responsable, **secrétariat** et bénévole, refus hors équipe, PDF, charte, présence, créneaux, messagerie, tâches et pointage. Vérifier la nomination et révocation du Secrétariat, les feuilles imprimables et l’export CSV.
 6. Vérifier les notifications isolées sur **un seul appareil volontaire** avant d'autoriser les notifications de groupe. Ne pas publier une convocation réelle sans recette complète.
 
 ## Notifications automatiques
@@ -55,3 +56,9 @@ En production, envisager `TEAM_PUSH_ENABLED=true` **seulement** après validatio
 - Les accès sont contrôlés sur **chaque** appel API, pas uniquement en masquant les boutons.
 - Avant mise en service, fournir aux bénévoles la politique de confidentialité et les modalités de retrait de leur accès. Prévoir export et purge des données selon les durées décidées par l'association.
 - La charte doit être importée depuis le document officiel, non rédigée ou validée automatiquement.
+
+## Émargement et rôle Secrétariat
+
+L’administrateur peut nommer un ou plusieurs bénévoles au **Secrétariat**, sans leur donner accès à l’administration globale. Ce rôle donne un accès transversal limité aux **activités publiées** : liste des personnes convoquées, réponses « Présent / Absent / À confirmer », horodatage de pointage, export CSV et impression d’une feuille pour signatures manuscrites. Le Secrétariat ne voit pas les brouillons, les courriels de tous les bénévoles, les ordres du jour réservés, ni les tables d’administration et n’a pas le droit de créer ou modifier les pôles, les affectations, les chartes et les activités.
+
+**Pointage numérique ≠ signature d’émargement** : le bouton « Pointer présent » atteste seulement une saisie de présence par l’utilisateur autorisé. Pour obtenir une signature, imprimer la feuille et faire signer manuellement. Les actions de pointage, nomination et retrait de fonction sont enregistrées dans le journal d’audit.
