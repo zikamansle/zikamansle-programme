@@ -41,7 +41,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   await okay(A,{op:'charter.save',version:'1',title:'Charte',content:'Respect et engagement'});
   // La charte est déjà publiée : le bénévole non signataire ne peut pas répondre.
   assert.equal((await invoke(A,'/zikateam/api/manage')).status,403,'gestion verrouillée jusqu’à signature');
-  await okay(A,{op:'charter.accept',version:'1',agree:true});
+  await okay(A,{op:'charter.accept',version:'1',agree:true,consents:{image:false,phone:false,email:false}});
   // Ajouter le document visuel officiel plus tard ne change pas la version signée.
   const charterPdfId='aaaaaaaa-1111-4111-8111-111111111111';
   db.prepare('INSERT INTO team_documents(id,kind,activity_id,name,mime,size,uploaded_by,created_at) VALUES(?,?,?,?,?,?,?,?)').run(charterPdfId,'charter',null,'charte-officielle.pdf','application/pdf',120000,A,Date.now());
@@ -51,7 +51,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const member=(await okay(A,{op:'member.save',name:'Bénévole',email:B})).id;
   const other=(await okay(A,{op:'member.save',name:'Autre bénévole',email:O})).id;
   const secretary=(await okay(A,{op:'member.save',name:'Secrétariat',email:S})).id;
-  for(const email of [L,O,S,B])await okay(email,{op:'charter.accept',version:'1',agree:true});
+  for(const email of [L,O,S,B])await okay(email,{op:'charter.accept',version:'1',agree:true,consents:{image:false,phone:false,email:false}});
   // Seul l'administrateur peut supprimer définitivement un pôle vide.
   const emptyPole=(await okay(A,{op:'pole.save',name:'Pôle provisoire à supprimer'})).id;
   assert.equal((await api(L,{op:'pole.delete',id:emptyPole})).status,403);
@@ -143,9 +143,9 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   await okay(A,{op:'charter.save',version:'2',title:'Charte',content:'Charte actualisée et acceptation renouvelée'});
   assert.equal((await api(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403,'la charte actualisée bloque les actions non acceptées');
   assert.equal((await api(B,{op:'charter.accept',version:'2'})).status,400,'acceptation explicite obligatoire');
-  await okay(B,{op:'charter.accept',version:'2',agree:true});
-  await okay(L,{op:'charter.accept',version:'2',agree:true});
-  await okay(A,{op:'charter.accept',version:'2',agree:true});
+  await okay(B,{op:'charter.accept',version:'2',agree:true,consents:{image:false,phone:false,email:false}});
+  await okay(L,{op:'charter.accept',version:'2',agree:true,consents:{image:false,phone:false,email:false}});
+  await okay(A,{op:'charter.accept',version:'2',agree:true,consents:{image:false,phone:false,email:false}});
   await okay(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'});
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities[0].my_response,'yes');
   assert.equal((await api(A,{op:'charter.save',version:'2',title:'Charte',content:'Texte modifié'})).status,409);
