@@ -10,7 +10,14 @@ assert(/^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID||''),'compte Cloudflare 
 assert(env.ZIKA_D1_DATABASE_ID===DB_ID,'mauvaise base D1 de test');
 assert(c.name===TARGET && c.workers_dev===true && c.vars?.APP_ENV==='staging','Worker non-staging');
 assert(!c.routes&&!c.route&&!c.env,'route ou environnement inattendu');
-assert(c.vars.PUSH_SEND_ENABLED==='false'&&c.vars.TEAM_PUSH_ENABLED==='false','diffusion de notifications non désactivée');
+assert(c.vars.PUSH_SEND_ENABLED==='false'&&['false','true'].includes(c.vars.TEAM_PUSH_ENABLED),'diffusion générale des notifications non désactivée');
+if(c.vars.TEAM_PUSH_ENABLED==='true'){
+ const source=readFileSync('server/zikateam.mjs','utf8');
+ assert(source.includes("env.APP_ENV!=='staging'||Boolean(String(env.TEAM_PUSH_TEST_MEMBER_IDS||'').trim())"),'liste blanche obligatoire manquante en staging');
+ assert(source.includes('teamPushRecipientAllowed(env,job.member_id)'),'garde anti-diffusion absente sur les réunions');
+ assert(source.includes('teamPushRecipientAllowed(env,recipient.id)'),'garde anti-diffusion absente sur les messages');
+}
+
 assert(c.vars.TEAM_AUTH_PROVIDER==='supabase','authentification de test non configurée');
 assert(c.d1_databases?.length===1&&c.d1_databases[0].binding==='DB'&&c.d1_databases[0].database_name===TARGET,'base D1 inattendue');
 assert(c.r2_buckets?.length===1&&c.r2_buckets[0].binding==='BUCKET'&&c.r2_buckets[0].bucket_name===TARGET,'bucket R2 inattendu');
