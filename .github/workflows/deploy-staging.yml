@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Deploy only when explicitly enabled by the repository owner.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    # A single explicit push-test setup is permitted; all subsequent pushes are gated.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Activer les tests push isolés ZikaMansle') }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
@@ -20,9 +20,7 @@ jobs:
       ZIKA_D1_DATABASE_ID: ${{ vars.ZIKA_D1_DATABASE_ID }}
       ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
       ACCESS_AUD: ${{ vars.ACCESS_AUD }}
-      VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
       ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-      VAPID_PRIVATE_JWK: ${{ secrets.VAPID_PRIVATE_JWK }}
       WRANGLER_SEND_METRICS: 'false'
     steps:
       - uses: actions/checkout@v4
@@ -52,3 +50,6 @@ jobs:
         run: npx wrangler deploy
       - name: Transmettre les secrets sans fichier ni affichage
         run: node scripts/github-secrets.mjs
+      - name: Initialiser une seule fois les clés push de test
+        if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'Activer les tests push isolés ZikaMansle' }}
+        run: node scripts/staging-push-setup.mjs
