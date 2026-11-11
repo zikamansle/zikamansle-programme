@@ -61,3 +61,12 @@ test('un test push réseau ne peut cibler que le membre connecté en staging',()
  assert.match(clientSource,/data-test-server-push/);
  assert.match(clientSource,/command\('push\.test',\{\}\)/);
 });
+
+test('son et vibration sont activés par défaut sur toutes les notifications ZikaTeam',()=>{
+ assert.match(serverSource,/sound_mode:savedPrefs\?\.sound_mode\|\|'all'/);
+ assert.match(serverSource,/quiet_enabled:savedPrefs\?Boolean\(savedPrefs\.quiet_enabled\):false/);
+ assert.match(serverSource,/silent:prefs\?\.sound_mode==='none'/);
+ assert.match(clientSource,/sound_mode:'all',vibrate:true,activity_enabled:true,urgent_enabled:true,quiet_enabled:false/);
+ const sw=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8');
+ assert.match(sw,/icon:'\/assets\/icon-192\.png',badge:'\/assets\/push-badge-z\.png'/);
+});
