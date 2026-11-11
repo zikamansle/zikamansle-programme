@@ -1,9 +1,7 @@
 name: Check ZikaMansle notifications admin URL
 on:
-  push:
-    branches: [prepare/google-play-android-2026]
-    paths: ['.github/workflows/check-notification-admin-route.yml']
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
