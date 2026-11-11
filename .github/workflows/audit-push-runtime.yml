@@ -1,0 +1,37 @@
+name: Analyze live notification administration endpoints
+on:
+  push:
+    branches: [prepare/google-play-android-2026]
+    paths: ['.github/workflows/audit-push-runtime.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public push code without sending notifications
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json,re
+          base='https://app.zikamansle.fr'
+          for path in ['/notifications.js','/config.js','/sw.js']:
+            try:
+              with urllib.request.urlopen(base+path,timeout=10) as response:
+                data=response.read().decode('utf-8','replace')
+                print('=== FILE',path,'status',response.status,'len',len(data))
+                for line in data.splitlines():
+                  if re.search('api/push|test|admin|subscribe|fetch\\(|serviceWorker|vapid|Broadcast|notify|notification',line,re.I):
+                    print('LINE',line[:1600].replace('secret','[REDACTED]'))
+            except Exception as e: print('ERR',path,str(e)[:150])
+          for path in ['/api/push/status','/api/push/config','/api/push/subscribers','/api/push/history','/api/push/admin','/admin','/admin.html']:
+            try:
+              req=urllib.request.Request(base+path,headers={'Accept':'application/json'})
+              with urllib.request.urlopen(req,timeout=10) as resp:
+                typ=resp.headers.get('content-type')
+                text=resp.read(500).decode('utf8','replace')
+                print('GET',path,'status',resp.status,'type',typ,'response',text[:350] if typ and 'json' in typ else '[non-json redacted]')
+            except Exception as e: print('GET',path,'ERR',str(e)[:150])
+          PY
