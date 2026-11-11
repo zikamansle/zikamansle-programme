@@ -58,3 +58,19 @@ jobs:
       - name: Vérifier que le Worker de test répond
         run: |
           node --input-type=module -e "const r=await fetch('https://zikamansle-app-staging.zikamansle.workers.dev/healthz');const d=await r.json();if(!r.ok||d.app!=='ZikaMansle'||d.environment!=='staging')process.exit(1);console.log('Worker de test sain.');"
+
+      - name: Vérifier les vrais fichiers ZikaTeam publiés
+        run: |
+          node --input-type=module -e "
+            const base='https://zikamansle-app-staging.zikamansle.workers.dev';
+            for(const [path,checks] of [
+              ['/zikateam',['ZikaTeam']],
+              ['/zikateam.js',['teamInviteForm','teamNotificationsForm','Publier la réunion','team-wa-app']],
+              ['/zikateam.css',['team-wa-app','team-notifications-settings']]
+            ]){
+              const r=await fetch(base+path,{cache:'no-store'});
+              if(!r.ok)throw Error('Ressource indisponible : '+path+' ('+r.status+')');
+              const body=await r.text();
+              for(const part of checks)if(!body.includes(part))throw Error('Version ancienne ou fichier manquant : '+path+' / '+part);
+              console.log('OK '+path);
+            }"
