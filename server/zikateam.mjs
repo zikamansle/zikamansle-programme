@@ -51,11 +51,10 @@ async function visibleActivity(db,ctx,a){
  if(!ctx.member||a.status==='draft')return false;
  return (await audienceMembers(db,a)).includes(ctx.member.id);
 }
-const charterAccepted=(c,versions)=>!c||versions.some(v=>v.version===c.version);
+const charterAccepted=(c,versions)=>Boolean(c&&versions.some(v=>v.version===c.version));
 async function requireCharter(db,ctx){
  const c=await charter(db);
- if(!c)return true;
- if(!ctx.member)return false;
+ if(!c||!ctx.member)return false;
  return Boolean(await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,c.version));
 }
 async function enrichActivities(db,activities,memberId=null){
@@ -70,11 +69,19 @@ async function enrichActivities(db,activities,memberId=null){
 async function getMine(db,ctx){
  const c=await charter(db);
  const versions=ctx.member?await all(db,'SELECT version,accepted_at FROM team_charter_acceptances WHERE member_id=? ORDER BY accepted_at DESC',ctx.member.id):[];
+ const accepted=charterAccepted(c,versions);
+ const currentCharter=c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null;
+ // Une identité vérifiée sans charte acceptée ne reçoit ni équipes ni convocations.
+ if(!accepted)return reply({
+  email:ctx.email,admin:ctx.admin,secretariat:false,
+  member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,
+  leadPoles:[],poles:[],charter:currentCharter,charterAccepted:false,charterAcceptedAt:null,activities:[]
+ });
  const poles=ctx.member?await all(db,"SELECT p.id,p.name,p.description,tm.role,(SELECT group_concat(m.name,', ') FROM team_memberships l JOIN team_members m ON m.id=l.member_id WHERE l.pole_id=p.id AND l.role='lead' AND m.active=1) AS leaders FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",ctx.member.id):[];
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
- return reply({email:ctx.email,admin:ctx.admin,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,leadPoles:ctx.leadPoles,poles,charter:c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null,charterAccepted:charterAccepted(c,versions),charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -279,8 +286,10 @@ async function memberAction(db,ctx,d){
  if(d.op==='charter.accept'){
   const c=await charter(db);if(!c)return fail('La charte officielle n’a pas encore été publiée.',409);
   if(d.version!==c.version)return fail('La charte a été actualisée, relisez sa nouvelle version.',409);
-  await db.prepare('INSERT OR IGNORE INTO team_charter_acceptances(member_id,version,accepted_at) VALUES(?,?,?)').bind(memberId,c.version,now()).run();
-  await audit(db,ctx.email,'charter.accept',memberId,c.version);return reply({ok:true});
+  if(d.agree!==true)return fail('Vous devez confirmer explicitement la lecture et l’acceptation.',400);
+  const saved=await db.prepare('INSERT OR IGNORE INTO team_charter_acceptances(member_id,version,accepted_at) VALUES(?,?,?)').bind(memberId,c.version,now()).run();
+  if(saved.meta.changes)await audit(db,ctx.email,'charter.accept',memberId,c.version);
+  return reply({ok:true});
  }
  if(!await requireCharter(db,ctx))return fail('Veuillez accepter la charte avant de répondre ou de discuter.',409);
  if(d.op==='activity.rsvp'){
@@ -448,20 +457,33 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
  try{
   const ctx=await identify(request,env,verified);if(!ctx)return new Response('Accès ZikaTeam refusé. Utilisez votre adresse de bénévole autorisée.',{status:403,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
   const url=new URL(request.url),path=url.pathname,db=env.DB;
-  if(path.startsWith('/zikateam/document/')&&request.method==='GET')return getDocument(env,ctx,path.split('/').pop());
   if(path==='/zikateam'||path==='/zikateam/'||path==='/zikateam/index.html')return env.ASSETS.fetch(new Request(new URL('/zikateam',url),request));
   if(path==='/zikateam/api/me'&&request.method==='GET')return getMine(db,ctx);
-  if(path==='/zikateam/api/manage'&&request.method==='GET')return getManage(db,ctx);
-  if(path==='/zikateam/api/messages'&&request.method==='GET')return getMessages(db,ctx,url);
+  const currentCharter=await charter(db);
+  const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
+  const locked=!accepted;
+  const notice=currentCharter?'Charte obligatoire : veuillez la lire et l’accepter pour poursuivre.':'La charte officielle doit être publiée avant l’ouverture de ZikaTeam.';
+  if(path.startsWith('/zikateam/document/')&&request.method==='GET'){
+   if(locked&&(!currentCharter||currentCharter.document_id!==path.split('/').pop()))return fail(notice,403);
+   return getDocument(env,ctx,path.split('/').pop());
+  }
+  if(path==='/zikateam/api/manage'&&request.method==='GET')return locked?fail(notice,403):getManage(db,ctx);
+  if(path==='/zikateam/api/messages'&&request.method==='GET')return locked?fail(notice,403):getMessages(db,ctx,url);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
-   if(path==='/zikateam/api/upload')return upload(request,env,ctx,url);
+   if(path==='/zikateam/api/upload'){
+    if(locked&&!(ctx.admin&&!currentCharter&&url.searchParams.get('kind')==='charter'))return fail(notice,403);
+    return upload(request,env,ctx,url);
+   }
    if(path==='/zikateam/api/command'){
     if(!request.headers.get('content-type')?.startsWith('application/json'))return fail('Contenu non autorisé.',415);
     if(Number(request.headers.get('content-length')||0)>35000)return fail('Requête trop longue.',413);
     const raw=await request.text();if(raw.length>35000)return fail('Requête trop longue.',413);
     let data;try{data=JSON.parse(raw)}catch{return fail('Requête JSON invalide.');}
     if(!data||typeof data.op!=='string')return fail('Action manquante.');
+    const ownProfile=ctx.admin&&!ctx.member&&data.op==='member.save'&&!data.id&&clean(data.email,254).toLowerCase()===ctx.email&&data.active!==false;
+    const firstCharter=ctx.admin&&!currentCharter&&data.op==='charter.save';
+    if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     let result;
     if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
