@@ -102,3 +102,13 @@ test('pastille des non lus sur onglet Discussions',()=>{
  assert.ok(client.includes('aria-label='));
  assert.ok(client.includes("const badge=document.createElement('span')"));
 });
+
+test('les responsables ont une fiche contact sans messagerie privée',()=>{
+ assert.ok(client.includes('team-chat-contact-card'));
+ assert.ok(client.includes('Contacter '));
+ assert.ok(client.includes('📞 Appeler'));
+ assert.ok(client.includes('✉️ Envoyer un e-mail'));
+ assert.ok(!client.includes('data-chat-direct'));
+ assert.ok(!server.includes("channel==='direct'"));
+ assert.ok(server.includes('async function chatLeaders('));
+});
