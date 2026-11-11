@@ -200,6 +200,42 @@ function manageDues(){
  '<p class="team-small team-muted">'+rows.length+' personne(s) dans la liste. Les coordonnées complètes sont incluses dans les exports.</p>'+
  (rows.length?rows.map(d=>'<form class="team-dues-item team-form" data-dues-form="'+esc(d.member_id)+'"><div class="team-between"><div><strong>'+esc(d.name)+'</strong><p class="team-small">'+esc(d.contact.email||'')+' · '+esc(d.contact.phone||'Téléphone non renseigné')+'</p></div><span class="team-pill '+(d.paid?'ok':'warn')+'">'+(d.paid?'À jour':'En attente')+'</span></div><div class="team-split"><label>Statut<select name="paid"><option value="0" '+(!d.paid?'selected':'')+'>En attente</option><option value="1" '+(d.paid?'selected':'')+'>À jour</option></select></label><label>Règlement le (facultatif)<input type="date" name="paidOn" value="'+esc(d.paid_on||'')+'"></label><label>Moyen de paiement (facultatif)<select name="paymentMethod"><option value="">Non renseigné</option>'+Object.entries(paymentLabels).map(([k,v])=>'<option value="'+k+'" '+(d.payment_method===k?'selected':'')+'>'+v+'</option>').join('')+'</select></label></div><button class="team-button orange" type="submit">Enregistrer l’adhésion</button>'+(d.updated_at?'<p class="team-small team-muted">Modifiée le '+esc(shortdt(d.updated_at))+' par '+esc(d.updated_by)+'</p>':'')+'</form>').join(''):'<p>Aucune adhésion pour ce filtre.</p>')+'</section>';
 }
+
+function directoryFiltered(){
+ const q=(state.directorySearch||'').toLocaleLowerCase('fr-FR').trim();
+ return (state.manage?.contacts||[]).filter(m=>!q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q)));
+}
+function directoryRows(){
+ return [['Nom et prénom','E-mail','Téléphone','Adresse','Code postal','Ville'],...directoryFiltered().map(m=>[m.name,m.email,m.phone,m.address,m.postal_code,m.city])];
+}
+function exportDirectoryCSV(){
+ const safe=x=>{const s=String(x??'');return /^[=+\-@\t\r]/.test(s)?"'"+s:s;};
+ const csv='\uFEFF'+directoryRows().map(row=>row.map(x=>'"'+safe(x).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='zikamansle-annuaire-'+new Date().toISOString().slice(0,10)+'.csv';
+ document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function printDirectory(mode){
+ const rows=directoryRows(),popup=window.open('','_blank');if(!popup){toast('Autorise les fenêtres supplémentaires pour créer la liste.');return;}
+ popup.opener=null;
+ const head=rows[0].map(x=>'<th>'+esc(x)+'</th>').join('');
+ const body=rows.slice(1).map(r=>'<tr>'+r.map(x=>'<td>'+esc(x||'—')+'</td>').join('')+'</tr>').join('');
+ const hint=mode==='pdf'?'Choisis « Enregistrer au format PDF » dans la fenêtre d’impression.':'Choisis ton imprimante dans la fenêtre d’impression.';
+ const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>ZikaMansle · Annuaire bénévoles</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial,sans-serif;color:#142c41}h1{font-size:20px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #c6d4de;text-align:left;padding:6px 5px;overflow-wrap:anywhere}th{background:#edf5f9}tr{break-inside:avoid}button{padding:10px 16px}@media print{button,.hint{display:none}}</style></head><body><h1>ZikaMansle · Annuaire bénévoles</h1><p>Document confidentiel réservé à l’administration et au secrétariat · '+new Date().toLocaleDateString('fr-FR')+' · '+rows.slice(1).length+' personne(s)</p><p class="hint">'+esc(hint)+'</p><button onclick="window.print()">Imprimer / enregistrer en PDF</button><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></body></html>';
+ popup.document.open();popup.document.write(html);popup.document.close();
+}
+function manageDirectory(){
+ if(!state.me.admin&&!state.me.secretariat)return '<section class="team-card">Annuaire privé réservé au secrétariat et à l’administration.</section>';
+ const all=state.manage.contacts||[];
+ const search=state.directorySearch||'';
+ const rows=directoryFiltered();
+ return '<section class="team-card team-accent-blue"><h2>Annuaire des bénévoles</h2><p>Coordonnées complètes réservées à l’administration et au secrétariat. Tu peux corriger chaque fiche, puis imprimer, créer un PDF ou exporter un tableau.</p>'+
+ '<label class="team-directory-search">Rechercher un bénévole<input id="teamDirectorySearch" type="search" autocomplete="off" placeholder="Nom, e-mail, ville, téléphone…" value="'+esc(search)+'"></label>'+
+ '<div class="team-export-tools"><span class="team-pill">'+rows.length+' / '+all.length+' bénévoles</span><button type="button" class="team-button light" data-export-directory="csv">Exporter CSV</button><button type="button" class="team-button light" data-export-directory="print">Imprimer A4</button><button type="button" class="team-button orange" data-export-directory="pdf">Créer un PDF</button></div>'+
+ (rows.length?rows.map(m=>'<form class="team-form team-directory-card" data-directory-form="'+esc(m.member_id)+'"><div class="team-between"><div><strong>'+esc(m.name)+'</strong><p class="team-small">'+esc(m.email)+'</p></div><span class="team-pill ok">Bénévole</span></div><div class="team-split"><label>Téléphone<input name="phone" type="tel" maxlength="40" value="'+esc(m.phone)+'" placeholder="06…"></label><label>Adresse<input name="address" maxlength="280" value="'+esc(m.address)+'" placeholder="Rue, numéro…"></label><label>Code postal<input name="postalCode" maxlength="16" value="'+esc(m.postal_code)+'" placeholder="16230"></label><label>Ville<input name="city" maxlength="120" value="'+esc(m.city)+'" placeholder="Mansle-les-Fontaines"></label></div><button class="team-button orange" type="submit">Enregistrer les coordonnées</button>'+(m.updated_at?'<p class="team-small team-muted">Modifié le '+shortdt(m.updated_at)+' par '+esc(m.updated_by)+'</p>':'')+'</form>').join(''):'<p>Aucun bénévole ne correspond à cette recherche.</p>')+
+ '</section>';
+}
+
 function manageAudit(){return '<section class="team-card"><h2>Journal d’administration</h2><p>Les principales modifications des bénévoles, pôles, activités et documents sont tracées.</p><div class="team-table-wrap"><table class="team-table"><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>'+state.manage.audit.map(x=>'<tr><td>'+shortdt(x.created_at)+'</td><td>'+esc(x.actor_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.detail)+'</td></tr>').join('')+'</tbody></table></div></section>'}
 
 function loginScreen(error=''){
@@ -255,7 +291,7 @@ async function upload(file,kind,activityId){if(!file||!file.size)return null;if(
  const response=await fetch('/zikateam/api/upload?'+query,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(file.name)},body:file});const r=await response.json();if(!response.ok)throw Error(r.error||'Erreur lors de l’envoi du PDF.');return r.id;
 }
 async function perform(fn){if(state.busy)return;state.busy=true;try{await fn();await refresh();toast('Modifications enregistrées.')}catch(e){toast(e.message||'Erreur de service.')}finally{state.busy=false}}
-root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-reject-member],button[data-export-adhesions],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
+root.addEventListener('click',async e=>{const b=e.target.closest('button[data-team-logout],button[data-team-reset],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.hasAttribute('data-team-reset')){state.codeSent=false;loginScreen();return;}
  if(b.hasAttribute('data-team-logout')){try{await api('auth/logout',{});}catch(e){toast(e.message)}state.me=null;state.manage=null;state.codeSent=false;loginScreen();return;}
  if(b.dataset.rejectMember){
@@ -267,6 +303,11 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
   const enabled=b.dataset.enabled==='1';
   if(!confirm(enabled?'Confirmer la nomination au secrétariat ? Cette personne pourra consulter les présences de toutes les équipes.':'Retirer les droits du secrétariat à cette personne ?'))return;
   await perform(async()=>command('secretariat.set',{memberId:b.dataset.secretariat,enabled}));return;
+ }
+ if(b.dataset.exportDirectory){
+  if(!state.me.admin&&!state.me.secretariat)return;
+  b.dataset.exportDirectory==='csv'?exportDirectoryCSV():printDirectory(b.dataset.exportDirectory);
+  return;
  }
  if(b.dataset.exportAdhesions){
   if(!state.me.admin&&!state.me.secretariat)return;
@@ -304,6 +345,7 @@ root.addEventListener('change',async e=>{
  }
  if(e.target.id==='teamAdhesionFilter'){state.adhesionFilter=e.target.value;render();return;}
  if(e.target.id==='teamChannel'){const [channel,id]=e.target.value.split(':');state.chatChannel=channel;state.chatId=id||null;try{await refreshMessages()}catch(err){toast(err.message)}}});
+root.addEventListener('input',e=>{if(e.target.id==='teamDirectorySearch')state.directorySearch=e.target.value;});
 root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(state.busy)return;
  if(f.id==='teamLoginRequest'){
   state.busy=true;try{await freeLoginRequest(f.elements.email.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
@@ -316,6 +358,10 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
  if(f.id==='poleForm')return perform(async()=>{const d=fromForm(f);await command('pole.save',{id:d.id||undefined,name:d.name,description:d.description});state.editPole=null});
  if(f.id==='teamMyProfileForm')return perform(async()=>{if(!state.me.admin)throw Error('Action réservée à l’administration.');const d=fromForm(f);await command('member.save',{id:state.me.member?.id||undefined,name:d.name,email:state.me.email,active:true});state.tab='fiche';});
+ if(f.hasAttribute('data-directory-form'))return perform(async()=>{
+  const data=fromForm(f);
+  await command('contact.set',{memberId:f.dataset.directoryForm,phone:data.phone,address:data.address,postalCode:data.postalCode,city:data.city});
+ });
  if(f.hasAttribute('data-dues-form'))return perform(async()=>{
   const d=fromForm(f);
   await command('dues.set',{memberId:f.dataset.duesForm,paid:d.paid==='1',paidOn:d.paidOn||null,paymentMethod:d.paymentMethod||null});
