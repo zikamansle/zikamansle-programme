@@ -56,7 +56,8 @@ async function enrichActivities(db,activities,memberId=null){
  for(const a of activities){
   a.poles=await selectedPoles(db,a.id);
   a.shifts=await all(db,'SELECT s.*, (SELECT COUNT(*) FROM team_shift_signups z WHERE z.shift_id=s.id) AS signed_count FROM team_shifts s WHERE s.activity_id=? ORDER BY s.starts_at',a.id);
-  if(memberId){const r=await one(db,'SELECT answer,updated_at FROM team_activity_rsvps WHERE activity_id=? AND member_id=?',a.id,memberId);a.my_response=r?.answer||'pending';const mine=await all(db,'SELECT shift_id FROM team_shift_signups WHERE member_id=? AND shift_id IN (SELECT id FROM team_shifts WHERE activity_id=?)',memberId,a.id);a.my_shifts=mine.map(x=>x.shift_id)}
+  a.tasks=await all(db,"SELECT id,activity_id,title,details,assigned_to,status,created_at,updated_at FROM team_activity_tasks WHERE activity_id=? ORDER BY created_at",a.id);
+  if(memberId){const r=await one(db,'SELECT answer,updated_at FROM team_activity_rsvps WHERE activity_id=? AND member_id=?',a.id,memberId);a.my_response=r?.answer||'pending';const mine=await all(db,'SELECT shift_id FROM team_shift_signups WHERE member_id=? AND shift_id IN (SELECT id FROM team_shifts WHERE activity_id=?)',memberId,a.id);a.my_shifts=mine.map(x=>x.shift_id);const checkin=await one(db,'SELECT checked_in_at,checked_out_at FROM team_activity_checkins WHERE activity_id=? AND member_id=?',a.id,memberId);a.my_checkin=checkin||null}
  }
  return activities;
 }
@@ -79,7 +80,11 @@ async function getManage(db,ctx){
  const a=await all(db,"SELECT * FROM team_activities ORDER BY starts_at DESC LIMIT 160");const activities=[];
  for(const item of a)if(await allowedActivity(db,ctx,item))activities.push(item);
  await enrichActivities(db,activities);
- for(const item of activities){item.responses=await all(db,"SELECT m.id AS member_id,m.name,r.answer,r.updated_at FROM team_members m JOIN team_activity_rsvps r ON r.member_id=m.id WHERE r.activity_id=? ORDER BY m.name",item.id);item.invitedCount=(await audienceMembers(db,item)).length}
+ for(const item of activities){
+  const invited=new Set(await audienceMembers(db,item));
+  item.attendance=(await all(db,"SELECT m.id AS member_id,m.name,COALESCE(r.answer,'pending') AS answer,r.updated_at,c.checked_in_at,c.checked_out_at FROM team_members m LEFT JOIN team_activity_rsvps r ON r.member_id=m.id AND r.activity_id=? LEFT JOIN team_activity_checkins c ON c.member_id=m.id AND c.activity_id=? WHERE m.active=1 ORDER BY m.name",item.id,item.id)).filter(m=>invited.has(m.member_id));
+  item.responses=item.attendance.filter(x=>x.answer!=='pending');item.invitedCount=invited.size;
+ }
  const logs=ctx.admin?await all(db,'SELECT actor_email,action,entity_id,detail,created_at FROM team_audit ORDER BY created_at DESC LIMIT 60'):[];
  return reply({poles,members,memberships,activities,audit:logs});
 }
@@ -94,7 +99,7 @@ async function enqueue(db,a,reason){
 }
 export async function drainTeamPush(env,maximum=40){
  // Never send in staging or when explicitly disabled; jobs stay in the queue.
- if(env.PUSH_SEND_ENABLED!=='true'||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY||!env.DB)return {sent:0,disabled:true};
+ if(env.TEAM_PUSH_ENABLED!=='true'||!env.VAPID_PRIVATE_JWK||!env.VAPID_PUBLIC_KEY||!env.DB)return {sent:0,disabled:true};
  const db=env.DB,jobs=await all(db,"SELECT * FROM team_push_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
  let sent=0;
  for(const job of jobs){
@@ -227,7 +232,7 @@ async function memberAction(db,ctx,d){
   if(!message||!['general','pole','activity'].includes(channel))return fail('Message invalide.');
   if(channel==='general'&&channelId)return fail('Canal invalide.');
   if(channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(m=>m.pole_id===channelId)))return fail('Pôle non autorisé.',403);
-  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Discussion non autorisée.',403);}
+  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||(!ctx.admin&&a.status==='draft')||!await visibleActivity(db,ctx,a))return fail('Discussion non autorisée.',403);}
   const id=uuid();await db.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id,body,created_at) VALUES(?,?,?,?,?,?)').bind(id,memberId,channel,channelId,message,now()).run();return reply({ok:true,id});
  }
  return fail('Action non reconnue.',404);
@@ -252,6 +257,7 @@ async function adminAction(db,ctx,d){
   if(!ctx.admin)return fail('Réservé à l’administration.',403);
   const version=clean(d.version,60),title=clean(d.title,140),content=clean(d.content,20000);
   if(!version||!title||!content)return fail('Version, titre et texte officiels requis.');
+  const old=await charter(db);if(old&&old.version===version&&(old.title!==title||old.content!==content||old.document_id!==(d.documentId||null)))return fail('Modifiez le numéro de version pour publier une charte modifiée.',409);
   const doc=d.documentId||null;if(doc&&!(await one(db,"SELECT id FROM team_documents WHERE id=? AND kind='charter'",doc)))return fail('Document inconnu.');
   await db.prepare('INSERT INTO team_charter(id,version,title,content,document_id,published_at) VALUES(1,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version,title=excluded.title,content=excluded.content,document_id=excluded.document_id,published_at=excluded.published_at').bind(version,title,content,doc,now()).run();
   await audit(db,ctx.email,'charter.save',version);return reply({ok:true});
@@ -259,10 +265,10 @@ async function adminAction(db,ctx,d){
  return fail('Action non reconnue.',404);
 }
 async function getMessages(db,ctx,url){
- if(!ctx.member||!await requireCharter(db,ctx))return fail('Charte à accepter avant les discussions.',403);
+ if(!ctx.admin&&(!ctx.member||!await requireCharter(db,ctx)))return fail('Charte à accepter avant les discussions.',403);
  const channel=url.searchParams.get('channel')||'general',channelId=url.searchParams.get('id')||null;
  if(!['general','pole','activity'].includes(channel))return fail('Canal invalide.');
- if(channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
+ if(!ctx.admin&&channel==='pole'&&(!idok(channelId)||!ctx.memberships.some(p=>p.pole_id===channelId)))return fail('Accès à ce pôle refusé.',403);
  if(channel==='activity'){const a=idok(channelId)?await one(db,'SELECT * FROM team_activities WHERE id=?',channelId):null;if(!a||a.status==='draft'||!await visibleActivity(db,ctx,a))return fail('Accès à la discussion refusé.',403)}
  const messages=await all(db,'SELECT t.id,t.body,t.created_at,m.name AS author FROM team_messages t JOIN team_members m ON m.id=t.author_id WHERE t.channel=? AND t.channel_id IS ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC LIMIT 80',channel,channelId);
  return reply({messages:messages.reverse()});
