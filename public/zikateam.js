@@ -586,7 +586,7 @@ async function autoLinkTeamPush(me){
  if(!window.ZikaPush?.subscription)return;
  linkingPush=true;
  try{
-  const sub=await window.ZikaPush.subscription();
+  const sub=(await window.ZikaPush.subscription())||(await window.ZikaPush.enable());
   if(sub){await command('push.link',{subscription:sub.toJSON()});linkedPushMember=me.member.id;}
  }catch{}finally{linkingPush=false;}
 }
