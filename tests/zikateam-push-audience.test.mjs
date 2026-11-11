@@ -51,3 +51,13 @@ test('les réunions destinées aux pôles restent ciblées et la publication ave
  assert.match(serverSource,/enqueue\(db,result,'created'\)/);
  assert.match(clientSource,/activitySaveFeedback/);
 });
+
+test('un test push réseau ne peut cibler que le membre connecté en staging',()=>{
+ assert.match(serverSource,/if\(d\.op==='push\.test'\)/);
+ assert.match(serverSource,/env\.APP_ENV!=='staging'/);
+ assert.match(serverSource,/teamPushRecipientAllowed\(env,memberId\)/);
+ assert.match(serverSource,/WHERE l\.member_id=\? LIMIT 5/);
+ assert.match(serverSource,/push\.selftest/);
+ assert.match(clientSource,/data-test-server-push/);
+ assert.match(clientSource,/command\('push\.test',\{\}\)/);
+});
