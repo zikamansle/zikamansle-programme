@@ -122,7 +122,7 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   const updated=await invoke('/zikateam/api/command',{op:'member.save',id:saved.id,name:'Nom modifie',email:'admin@zikamansle.fr',active:true},adminCookie);
   assert.equal(updated.status,200,'la fiche est modifiable');
   assert.equal((await (await invoke('/zikateam/api/me',undefined,adminCookie)).json()).member.name,'Nom modifie');
-  // Parcours complet d'une candidature : charte, lecture seule, approbation, droits et adhésions.
+  // Parcours complet d'une candidature : charte, aucun accès aux discussions, approbation, droits et adhésions.
   const published=await invoke('/zikateam/api/command',{op:'charter.save',version:'2026',title:'Charte bénévoles',content:'Respect et entraide'},adminCookie);
   assert.equal(published.status,200,'la charte est publiable par l administrateur');
   assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true},adminCookie)).status,200);
@@ -132,10 +132,11 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.equal((await invoke('/zikateam/api/command',{op:'charter.accept',version:'2026',agree:true},outsiderCookie)).status,200);
   const signedPending=await invoke('/zikateam/api/me',undefined,outsiderCookie);
   assert.equal((await signedPending.json()).pending,true);
-  assert.equal((await invoke('/zikateam/api/messages?channel=general',undefined,outsiderCookie)).status,200,'lecture de la discussion generale');
+  assert.equal((await invoke('/zikateam/api/messages?channel=general',undefined,outsiderCookie)).status,403,'aucune lecture de discussion générale avant validation');
   assert.equal((await invoke('/zikateam/api/messages?channel=activity&id=10000000-0000-4000-a000-000000000001',undefined,outsiderCookie)).status,403,'aucun salon d activite en attente');
   assert.equal((await invoke('/zikateam/api/messages?channel=leaders',undefined,outsiderCookie)).status,403,'aucun salon responsables en attente');
   assert.equal((await invoke('/zikateam/api/command',{op:'message.send',channel:'general',body:'Intrusion'},outsiderCookie)).status,403,'publication bloquee avant approbation');
+   assert.equal((await invoke('/zikateam/api/command',{op:'contact.self',phone:'0612345678'},outsiderCookie)).status,403,'un compte en attente ne modifie pas ses coordonnées');
   const queue=await invoke('/zikateam/api/manage',undefined,adminCookie);
   assert.equal(queue.status,200);
   assert.ok((await queue.json()).pendingRequests.some(p=>p.email===names.outsider));
@@ -152,9 +153,12 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   assert.ok(secData.contacts.some(p=>p.email===names.outsider));
   assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:approvedId,paid:true,paidOn:null,paymentMethod:'card'},outsiderCookie)).status,200,'date reglement facultative');
   assert.equal((await invoke('/zikateam/api/command',{op:'contact.set',memberId:approvedId,phone:'0601020304',address:'10 rue des Fleurs',postalCode:'16230',city:'Mansle-les-Fontaines'},outsiderCookie)).status,200);
+   assert.equal((await invoke('/zikateam/api/command',{op:'contact.self',phone:'0612345678'},outsiderCookie)).status,200,'la personne approuvée peut corriger son propre numéro');
+   assert.equal((await (await invoke('/zikateam/api/me',undefined,outsiderCookie)).json()).myContact.phone,'0612345678');
+   assert.equal((await invoke('/zikateam/api/command',{op:'contact.self',phone:'numéro incorrect'},outsiderCookie)).status,400,'refus des numéros invalides');
   const complete=await (await invoke('/zikateam/api/manage',undefined,outsiderCookie)).json();
   assert.equal(complete.dues.find(d=>d.member_id===(approvedId)).payment_method,'card');
-  assert.equal(complete.contacts.find(d=>d.member_id===(approvedId)).phone,'0601020304');
+  assert.equal(complete.contacts.find(d=>d.member_id===(approvedId)).phone,'0612345678');
   assert.equal((await invoke('/zikateam/api/command',{op:'dues.set',memberId:approvedId,paid:true},jar)).status,403,'un benevole ne peut modifier les adhesions');
   db.close();
  }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
@@ -188,7 +192,7 @@ test('Le message d’accueil en attente explique les droits provisoires',()=>{
  const ui=readFileSync('public/zikateam.js','utf8');
  assert.ok(ui.includes('Inscription en attente d’approbation'));
  assert.ok(ui.includes('Ce que tu peux faire dès maintenant'));
- assert.ok(ui.includes('Accès temporairement restreint'));
+ assert.ok(ui.includes('Accès temporairement fermé'));
  assert.ok(ui.includes('Après validation de ton inscription'));
- assert.ok(ui.includes('Tu peux lire la conversation générale, mais pas encore y répondre'));
+ assert.ok(ui.includes('tu ne peux consulter aucune conversation, même générale'));
 });
