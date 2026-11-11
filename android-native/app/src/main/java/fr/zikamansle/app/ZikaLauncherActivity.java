@@ -18,6 +18,11 @@ public final class ZikaLauncherActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        // Keep the existing festival app available if Firebase has not yet been provisioned.
+        if(com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+            launchFestival();
+            return;
+        }
         if(!getPreferences(MODE_PRIVATE).getBoolean(ASKED,false)) {
             new AlertDialog.Builder(this)
                 .setTitle("Notifications ZikaMansle")
