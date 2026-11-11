@@ -82,7 +82,7 @@ async function getMine(db,ctx){
  for(const item of consentRows)if(Object.prototype.hasOwnProperty.call(consents,item.kind))consents[item.kind]=Boolean(item.granted);
  const currentCharter=c?{version:c.version,title:c.title,content:c.content,document_id:c.document_id,published_at:c.published_at}:null;
  const savedPrefs=ctx.member?await one(db,'SELECT chat_mode,sound_mode,vibrate,activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end FROM team_notification_preferences WHERE member_id=?',ctx.member.id):null;
- const notificationPrefs={chat_mode:savedPrefs?.chat_mode||'grouped',sound_mode:savedPrefs?.sound_mode||'important',vibrate:savedPrefs?Boolean(savedPrefs.vibrate):true,activity_enabled:savedPrefs?Boolean(savedPrefs.activity_enabled):true,urgent_enabled:savedPrefs?Boolean(savedPrefs.urgent_enabled):true,quiet_enabled:savedPrefs?Boolean(savedPrefs.quiet_enabled):true,quiet_start:savedPrefs?.quiet_start||'22:00',quiet_end:savedPrefs?.quiet_end||'08:00'};
+ const notificationPrefs={chat_mode:savedPrefs?.chat_mode||'grouped',sound_mode:savedPrefs?.sound_mode||'all',vibrate:savedPrefs?Boolean(savedPrefs.vibrate):true,activity_enabled:savedPrefs?Boolean(savedPrefs.activity_enabled):true,urgent_enabled:savedPrefs?Boolean(savedPrefs.urgent_enabled):true,quiet_enabled:savedPrefs?Boolean(savedPrefs.quiet_enabled):false,quiet_start:savedPrefs?.quiet_start||'22:00',quiet_end:savedPrefs?.quiet_end||'08:00'};
  const mutedChats=ctx.member?await all(db,'SELECT channel,channel_id FROM team_chat_mutes WHERE member_id=? AND muted=1',ctx.member.id):[];
  // Une identité vérifiée sans charte acceptée ne reçoit ni équipes ni convocations.
  if(!accepted)return reply({
@@ -210,7 +210,7 @@ export async function drainTeamPush(env,maximum=40){
   const sub=await one(db,'SELECT endpoint,p256dh,auth FROM push_subscriptions WHERE id=?',job.subscription_id);
   if(!sub){await db.prepare("UPDATE team_push_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
   const prefix=job.reason==='created'?'Nouvelle activité':job.reason==='cancelled'?'Activité annulée':'Activité modifiée';
-  const payload={id:job.id,title:'ZikaTeam · '+prefix,body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites',silent:prefs?.sound_mode==='none'||prefs?.sound_mode==='important'&&job.reason!=='cancelled',vibrate:prefs?.vibrate!==0?[120,70,120]:[]};
+  const payload={id:job.id,title:'ZikaTeam · '+prefix,body:a.title+' · '+new Date(a.starts_at).toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),url:'/zikateam#activites',silent:prefs?.sound_mode==='none',vibrate:prefs?.vibrate!==0?[120,70,120]:[]};
   let code=0;try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,env)}catch{}
   const ok=code>=200&&code<300;
   await db.prepare('UPDATE team_push_jobs SET status=?,code=?,sent_at=? WHERE id=?').bind(ok?'sent':'failed',code,now(),job.id).run();if(ok)sent++;
