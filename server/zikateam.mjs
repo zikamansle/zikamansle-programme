@@ -93,7 +93,7 @@ async function getMine(db,ctx){
  });
  const poles=ctx.member?await all(db,"SELECT p.id,p.name,p.description,tm.role,(SELECT group_concat(m.name,', ') FROM team_memberships l JOIN team_members m ON m.id=l.member_id WHERE l.pole_id=p.id AND l.role='lead' AND m.active=1) AS leaders FROM team_poles p JOIN team_memberships tm ON tm.pole_id=p.id WHERE tm.member_id=? AND p.archived=0 ORDER BY p.name",ctx.member.id):[];
  for(const p of poles){
-  p.leadersDetails=await all(db,"SELECT m.id,m.name,CASE WHEN ph.member_id IS NOT NULL THEN 1 ELSE 0 END AS has_photo FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_photos ph ON ph.member_id=m.id WHERE tm.pole_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name",p.id);
+  p.leadersDetails=await all(db,"SELECT m.id,m.name,CASE WHEN ph.member_id IS NOT NULL THEN 1 ELSE 0 END AS has_photo FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_photos ph ON ph.member_id=m.id AND (m.id=? OR ?=1 OR EXISTS(SELECT 1 FROM team_member_consents pc WHERE pc.member_id=m.id AND pc.kind='image' AND pc.granted=1)) WHERE tm.pole_id=? AND tm.role='lead' AND m.active=1 ORDER BY m.name",ctx.member?.id||'',ctx.admin?1:0,p.id);
   // Les coordonnées consenties ne sont révélées qu'aux responsables du pôle concerné, jamais aux autres membres.
   const canViewContacts=ctx.admin||ctx.leadPoles.includes(p.id);
   p.membersDetails=await all(db,"SELECT m.id,m.name,tm.role,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(cn.phone,'') ELSE '' END AS phone FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_contacts cn ON cn.member_id=m.id WHERE tm.pole_id=? AND m.active=1 ORDER BY tm.role DESC,m.name",canViewContacts?1:0,canViewContacts?1:0,p.id);
@@ -114,8 +114,8 @@ async function getManage(db,ctx){
   ctx.leadPoles.length?await all(db,"SELECT DISTINCT m.id,m.name,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(contacts.phone,'') ELSE '' END AS phone,m.active FROM team_members m JOIN team_memberships tm ON tm.member_id=m.id LEFT JOIN team_member_contacts contacts ON contacts.member_id=m.id WHERE tm.pole_id IN (SELECT pole_id FROM team_memberships WHERE member_id=? AND role='lead') ORDER BY m.name",ctx.member.id):
   await all(db,'SELECT id,name,active FROM team_members WHERE active=1 ORDER BY name');
  if(ctx.admin||ctx.leadPoles.length){
-  const pictures=new Set((await all(db,'SELECT member_id FROM team_member_photos')).map(x=>x.member_id));
-  for(const member of members)member.has_photo=pictures.has(member.id);
+  const pictures=new Set((await all(db,ctx.admin?'SELECT member_id FROM team_member_photos':"SELECT ph.member_id FROM team_member_photos ph WHERE EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=ph.member_id AND c.kind='image' AND c.granted=1)")).map(x=>x.member_id));
+  for(const member of members)member.has_photo=pictures.has(member.id)||member.id===ctx.member?.id;
  }
  if(ctx.admin){
   const allRoles=await all(db,'SELECT member_id,role FROM team_member_roles');
@@ -735,6 +735,8 @@ async function getTeamPhoto(env,ctx,id){
  if(!photo)return fail('Photo introuvable.',404);
  if(!ctx.admin&&ctx.member?.id!==id){
   if(!ctx.member)return fail('Photo non autorisée.',403);
+  const consent=await one(env.DB,"SELECT 1 FROM team_member_consents WHERE member_id=? AND kind='image' AND granted=1",id);
+  if(!consent)return fail('Droit à l’image non accordé.',403);
   const visible=await one(env.DB,'SELECT 1 FROM team_memberships current JOIN team_memberships subject ON current.pole_id=subject.pole_id WHERE current.member_id=? AND subject.member_id=? LIMIT 1',ctx.member.id,id);
   if(!visible)return fail('Photo non autorisée.',403);
  }
