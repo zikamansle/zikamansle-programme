@@ -634,3 +634,11 @@ body{background:radial-gradient(ellipse at 6% 9%,#94e7ff 0,transparent 37%),radi
 #teamRoot .team-agenda-alert{background:linear-gradient(109deg,#fff9ed,#ffe3bc);border:2px solid #ffb866;border-left:6px solid #fd8125}
 #teamRoot input:focus-visible,#teamRoot select:focus-visible,#teamRoot textarea:focus-visible,#teamRoot button:focus-visible{outline:3px solid #d642a2;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){#teamRoot .team-tabs button{transition:none}}
+
+/* Saisie des mots de passe : œil accessible, mobile et clavier */
+#teamRoot .team-password-field{display:flex;align-items:stretch;gap:7px;width:100%;margin-top:4px}
+#teamRoot .team-password-field input{min-width:0;flex:1}
+#teamRoot .team-password-toggle{flex:0 0 auto;align-self:stretch;border-radius:11px;border:2px solid #72bbdf;padding:7px 12px;background:linear-gradient(115deg,#e5f7ff,#e8d9ff);color:#16446f;font:inherit;font-size:.89rem;font-weight:800;cursor:pointer;white-space:nowrap}
+#teamRoot .team-password-toggle:hover,#teamRoot .team-password-toggle[aria-pressed="true"]{background:linear-gradient(115deg,#c6eeff,#d4bdfb);border-color:#8051c3}
+#teamRoot .team-password-toggle:focus-visible{outline:3px solid #e43c96;outline-offset:2px}
+@media(max-width:430px){#teamRoot .team-password-field{gap:5px}#teamRoot .team-password-toggle{padding:7px 9px;font-size:.83rem}}
