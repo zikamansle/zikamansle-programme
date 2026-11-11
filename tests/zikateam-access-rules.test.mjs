@@ -114,3 +114,18 @@ test('les responsables ont une fiche contact sans messagerie privée',()=>{
 });
 
 // Publier seulement sur ZikaTeam staging, après succès des tests. Contact responsable uniquement.
+
+test('messagerie compacte : onglets et zone de saisie en permanence',()=>{
+ assert.ok(client.includes('team-chat-compact'));
+ assert.ok(client.includes('✍️ Votre message'));
+ assert.ok(client.includes('Écrivez votre message ici…'));
+ assert.ok(client.includes('signal:AbortSignal.timeout(12000)'));
+ assert.ok(client.includes('void Promise.allSettled(tasks)'));
+ assert.ok(client.includes('rooms[0]||null'));
+});
+test('personnalisation de l’icône sans rechargement bloquant',()=>{
+ assert.ok(client.includes("toast('Icône du groupe enregistrée.')"));
+ assert.ok(client.includes("toast('Image du groupe enregistrée.')"));
+ assert.ok(client.includes("room.image_id=null"));
+ assert.ok(client.includes("room.image_id=data.id"));
+});
