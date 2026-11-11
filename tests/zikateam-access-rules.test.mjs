@@ -112,3 +112,5 @@ test('les responsables ont une fiche contact sans messagerie privée',()=>{
  assert.ok(!server.includes("channel==='direct'"));
  assert.ok(server.includes('async function chatLeaders('));
 });
+
+// Publier seulement sur ZikaTeam staging, après succès des tests. Contact responsable uniquement.
