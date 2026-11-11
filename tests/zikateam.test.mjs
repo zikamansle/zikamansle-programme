@@ -36,10 +36,16 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const A='admin@example.org',L='lead@example.org',B='volunteer@example.org',O='other@example.org',S='secretary@example.org';
   assert.equal((await invoke('', '/zikateam/api/me')).status,403);
   assert.equal((await invoke(B,'/zikateam/api/me')).status,403);
+  // L'administrateur crée sa fiche puis publie la charte avant toute gestion.
+  await okay(A,{op:'member.save',name:'Administration',email:A});
+  // La charte est déjà publiée : le bénévole non signataire ne peut pas répondre.
+  assert.equal((await invoke(A,'/zikateam/api/manage')).status,403,'gestion verrouillée jusqu’à signature');
+  await okay(A,{op:'charter.accept',version:'1',agree:true});
   const lead=(await okay(A,{op:'member.save',name:'Responsable',email:L})).id;
   const member=(await okay(A,{op:'member.save',name:'Bénévole',email:B})).id;
   const other=(await okay(A,{op:'member.save',name:'Autre bénévole',email:O})).id;
   const secretary=(await okay(A,{op:'member.save',name:'Secrétariat',email:S})).id;
+  for(const email of [L,O,S])await okay(email,{op:'charter.accept',version:'1',agree:true});
   const pole=(await okay(A,{op:'pole.save',name:'ZikaVillage'})).id;
   const outsidePole=(await okay(A,{op:'pole.save',name:'Logistique'})).id;
   await okay(A,{op:'assignment.set',memberId:lead,poleId:pole,role:'lead'});
@@ -78,7 +84,8 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await api(O,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,403);
   await okay(A,{op:'charter.save',version:'1',title:'Charte',content:'Respect et engagement'});
   assert.equal((await api(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'})).status,409);
-  await okay(B,{op:'charter.accept',version:'1'});
+  assert.equal((await api(B,{op:'charter.accept',version:'1'})).status,400,'acceptation explicite obligatoire');
+  await okay(B,{op:'charter.accept',version:'1',agree:true});
   await okay(B,{op:'activity.rsvp',activityId:act.id,answer:'yes'});
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.activities[0].my_response,'yes');
   assert.equal((await api(A,{op:'charter.save',version:'1',title:'Charte',content:'Texte modifié'})).status,409);
