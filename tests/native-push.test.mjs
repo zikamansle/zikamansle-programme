@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {generateKeyPairSync} from 'node:crypto';
 import {jwtVerify,importSPKI} from 'jose';
-import {handleNative,sendFirebaseTest} from '../server/native-push.mjs';
+import {handleNative,sendFirebaseTest,firebasePreflight} from '../server/native-push.mjs';
 
 const ROOT='https://zikamansle-app-staging.zikamansle.workers.dev';
 const token='FCM_TEST_'+('a'.repeat(100));
@@ -80,4 +80,25 @@ test('Firebase test OAuth request uses the requested project and does not broadc
  });
  assert.deepEqual(response,{accepted:true,code:200});
  assert.equal(urls.length,2);
+});
+
+test('Firebase diagnostic does not send notifications and exposes only safe states',async()=>{
+ const e=env();
+ assert.deepEqual(await firebasePreflight(e),{ready:false,stage:'CONFIG_MISSING'});
+ e.FCM_SERVICE_ACCOUNT_JSON='{invalid json';
+ assert.deepEqual(await firebasePreflight(e),{ready:false,stage:'CONFIG_INVALID'});
+ const {privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
+ e.FCM_SERVICE_ACCOUNT_JSON=JSON.stringify({
+  project_id:'zikamansle-d0c4e',
+  client_email:'firebase-adminsdk-fbsvc@zikamansle-d0c4e.iam.gserviceaccount.com',
+  private_key:privateKey.export({type:'pkcs8',format:'pem'})
+ });
+ const urls=[];
+ const preflight=await firebasePreflight(e,async(url)=>{
+  urls.push(url);return Response.json({access_token:'mock-oauth-token'});
+ });
+ assert.deepEqual(preflight,{ready:true,stage:'OAUTH_OK'});
+ assert.deepEqual(urls,['https://oauth2.googleapis.com/token']);
+ const denied=await firebasePreflight(e,async()=>new Response(null,{status:403}));
+ assert.deepEqual(denied,{ready:false,stage:'OAUTH_403'});
 });
