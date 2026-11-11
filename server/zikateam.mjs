@@ -606,8 +606,7 @@ async function signingAction(db,ctx,d){
  return fail('Commande d’émargement inconnue.',404);
 }
 
-async function adminAction(db,ctx,d,env={}){
-
+async function adminAction(db,ctx,d){
  if(d.op==='invite.create'){
   if(!ctx.admin)return fail('Seul un administrateur peut inviter de nouveaux bénévoles.',403);
   const email=clean(d.email,254).toLowerCase(),name=clean(d.name,110);
@@ -624,23 +623,7 @@ async function adminAction(db,ctx,d,env={}){
   const id=uuid(),created=now(),expires=created+14*86400000;
   await db.prepare('INSERT INTO team_invitations(id,email,name,code_hash,created_by,created_at,expires_at) VALUES(?,?,?,?,?,?,?)').bind(id,email,name,hash,ctx.email,created,expires).run();
   await audit(db,ctx.email,'invite.create',id,'Invitation créée pour '+email+' ; code jamais journalisé');
-  // Envoi transactionnel Brevo, uniquement si le Worker dispose de sa propre clé.
-  // Aucune demande n'est déclarée envoyée avant l'acceptation du fournisseur.
-  let emailed=false,emailError=null;
-  if(env.BREVO_API_KEY){
-   const appUrl=env.APP_ENV==='staging'?'https://zikamansle-app-staging.zikamansle.workers.dev/zikateam':'https://app.zikamansle.fr/zikateam';
-   const body={
-    sender:{email:'zikamansle@gmail.com',name:'Association ZikaMansle'},
-    to:[{email,name}],
-    subject:'Votre invitation personnelle ZikaTeam',
-    textContent:'Bonjour '+name+',\n\nVous êtes invité(e) à rejoindre ZikaTeam, l’espace des bénévoles ZikaMansle.\n\nLien : '+appUrl+'\nCode personnel (valable 14 jours) : '+code+'\n\nSélectionnez Première inscription, renseignez votre adresse et ce code. Vous recevrez ensuite un code de vérification de votre adresse e-mail. L’accès aux équipes reste soumis à la validation de l’administration.\n\nÀ bientôt,\nAssociation ZikaMansle'
-   };
-   try{
-    const res=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'Content-Type':'application/json','api-key':env.BREVO_API_KEY},body:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
-    if(res.ok)emailed=true;else emailError='Le service d’e-mail a refusé l’envoi ('+res.status+').';
-   }catch{emailError='Le service e-mail ne répond pas.';}
-  }else emailError='Envoi automatique non configuré : utilisez le bouton e-mail.';
-  return reply({ok:true,id,email,name,code,expiresAt:expires,emailed,emailError});
+  return reply({ok:true,id,email,name,code,expiresAt:expires});
  }
  if(d.op==='invite.revoke'){
   if(!ctx.admin)return fail('Action réservée à l’administration.',403);
@@ -1120,7 +1103,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
     if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data);
-    else result=await adminAction(db,ctx,data,env);
+    else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
    }
