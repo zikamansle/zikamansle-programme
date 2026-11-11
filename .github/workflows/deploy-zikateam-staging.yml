@@ -45,7 +45,8 @@ jobs:
             import {readFileSync} from 'node:fs';
             for(const name of ['0105_team_photos_leaders_chat.sql','0106_team_member_roles.sql','0107_team_join_approval.sql','0108_membership_dues.sql','0109_team_member_contacts.sql']){
               const sql=readFileSync('drizzle/'+name,'utf8').replace(/--[^\\n]*/g,'');
-              if(!/CREATE TABLE IF NOT EXISTS/.test(sql) || /\\b(?:DROP|ALTER|DELETE|UPDATE|INSERT|REPLACE|TRUNCATE)\\b/i.test(sql))throw Error('Migration non additive : '+name);
+              const statements=sql.split(';').map(t=>t.trim()).filter(Boolean);
+              if(!statements.length||!statements.some(t=>/^CREATE TABLE IF NOT EXISTS/i.test(t))||!statements.every(t=>/^CREATE (?:TABLE|INDEX) IF NOT EXISTS/i.test(t)))throw Error('Migration non additive : '+name);
               console.log('OK migration '+name);
             }"
       - name: Installer uniquement les migrations additives sur la base D1 de test
