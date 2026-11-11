@@ -203,3 +203,21 @@ test('parcours de test pratique réservé au Secrétariat avec navigation foncti
  assert.ok(client.includes('return secretaryTestGuide()+'));
  assert.ok(client.includes('data-mtab'));
 });
+
+test('secrétariat : filtrage consentements distincts et exports liés',()=>{
+ for(const field of ['teamDirectoryImage','teamDirectoryPhone','teamDirectoryEmail','teamListImage','teamListPhone','teamListEmail']){
+  assert.ok(client.includes(field),'contrôle '+field);
+ }
+ assert.ok(client.includes("'unset':'Non renseigné'"));
+ assert.ok(client.includes("consentMatches(m,'image',state.directoryImage)"));
+ assert.ok(client.includes("consentMatches(m,'phone',state.listPhone)"));
+ assert.ok(client.includes("consentLabel(consentValue(m,'image'))"));
+ assert.ok(server.includes("'image_consent','phone_consent','email_consent'"));
+});
+test('les messages déclenchent un push ciblé sans diffusion générale en staging',()=>{
+ assert.ok(server.includes('export async function notifyTeamChat('));
+ assert.ok(server.includes("if(staging&&recipient.email!==String(env.ADMIN_EMAIL"));
+ assert.ok(server.includes("data.op==='message.send'&&result.status===200"));
+ assert.ok(server.includes("if(muted?.muted===1)continue"));
+ assert.ok(server.includes("env.PUSH_TEST_ENABLED!=='true'"));
+});
