@@ -150,3 +150,12 @@ test('vrai chat ZikaTeam sur ordinateur et mobile',()=>{
 });
 
 // Publication volontaire sur staging uniquement de la vraie messagerie testée.
+
+test('Entrée envoie un message et Maj + Entrée garde un saut de ligne',()=>{
+ assert.ok(client.includes("root.addEventListener('keydown',e=>"));
+ assert.ok(client.includes("e.key!=='Enter'||e.shiftKey||e.isComposing"));
+ assert.ok(client.includes("e.keyCode===229"));
+ assert.ok(client.includes("if(state.busy||!field.value.trim())return"));
+ assert.ok(client.includes('form.requestSubmit()'));
+ assert.ok(client.includes('Entrée pour envoyer, Maj + Entrée'));
+});
