@@ -98,11 +98,12 @@ async function getMine(db,ctx){
   const canViewContacts=ctx.admin||ctx.leadPoles.includes(p.id);
   p.membersDetails=await all(db,"SELECT m.id,m.name,tm.role,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='email' AND c.granted=1) THEN m.email ELSE '' END AS email,CASE WHEN ?=1 AND EXISTS(SELECT 1 FROM team_member_consents c WHERE c.member_id=m.id AND c.kind='phone' AND c.granted=1) THEN COALESCE(cn.phone,'') ELSE '' END AS phone FROM team_memberships tm JOIN team_members m ON m.id=tm.member_id LEFT JOIN team_member_contacts cn ON cn.member_id=m.id WHERE tm.pole_id=? AND m.active=1 ORDER BY tm.role DESC,m.name",canViewContacts?1:0,canViewContacts?1:0,p.id);
  }
+ const myContact=ctx.member?await one(db,"SELECT COALESCE(phone,'') AS phone FROM team_member_contacts WHERE member_id=?",ctx.member.id):null;
  const activities=await all(db,"SELECT * FROM team_activities WHERE status!='draft' AND ends_at>=? ORDER BY starts_at LIMIT 140",new Date(now()-86400000).toISOString());
  const mine=[];for(const a of activities)if(await visibleActivity(db,ctx,a))mine.push(a);
  await enrichActivities(db,mine,ctx.member?.id);
  for(const item of mine)if(await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',item.id))item.audience='bureau';
- return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
+ return reply({email:ctx.email,admin:ctx.admin,pending:false,secretariat:ctx.secretariat,member:ctx.member?{id:ctx.member.id,name:ctx.member.name,email:ctx.member.email}:null,myContact:{phone:myContact?.phone||''},consents,leadPoles:ctx.leadPoles,poles,charter:currentCharter,charterAccepted:accepted,charterAcceptedAt:versions.find(v=>v.version===c?.version)?.accepted_at||null,activities:mine});
 }
 async function getManage(db,ctx){
  if(!ctx.admin&&!ctx.leadPoles.length&&!ctx.secretariat)return fail('Droits de gestion requis.',403);
@@ -350,6 +351,15 @@ async function setCheckin(db,ctx,d){
 async function memberAction(db,ctx,d){
  if(!ctx.member)return fail('Fiche bénévole nécessaire.',403);
  const memberId=ctx.member.id;
+ if(d.op==='contact.self'){
+  if(ctx.pending||!ctx.member.active)return fail('Seuls les bénévoles validés peuvent renseigner leur téléphone.',403);
+  if(!await requireCharter(db,ctx))return fail('Accepte la charte avant de modifier ta fiche.',409);
+  const phone=clean(d.phone,40);
+  if(phone&&!/^[+()\d\s.\-]{6,40}$/.test(phone))return fail('Numéro de téléphone invalide.',400);
+  await db.prepare("INSERT INTO team_member_contacts(member_id,phone,updated_at,updated_by) VALUES(?,?,?,?) ON CONFLICT(member_id) DO UPDATE SET phone=excluded.phone,updated_at=excluded.updated_at,updated_by=excluded.updated_by").bind(memberId,phone,now(),ctx.email).run();
+  await audit(db,ctx.email,'contact.self',memberId,'Téléphone personnel actualisé');
+  return reply({ok:true});
+ }
  if(d.op==='consents.save'){
   const values=d.consents;
   if(!values||typeof values!=='object'||['image','phone','email'].some(k=>typeof values[k]!=='boolean'))return fail('Choisis explicitement Oui ou Non pour chacune des trois autorisations.',400);
@@ -808,7 +818,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save'].includes(data.op))result=await memberAction(db,ctx,data);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','message.send','task.status','consents.save','contact.self'].includes(data.op))result=await memberAction(db,ctx,data);
     else result=await adminAction(db,ctx,data);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
     return result;
