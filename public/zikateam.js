@@ -577,11 +577,25 @@ function render(){
  if(state.tab==='messages'){const pane=$('teamMessages');if(pane)pane.scrollTop=pane.scrollHeight;}
  if(state.signingMember)setupSigningCanvas();
 }
+// L'association à un pôle ou à une fonction suffit pour cibler les alertes.
+// Si ce navigateur possède déjà un abonnement push autorisé, on le rattache
+// automatiquement au compte connecté sans demander d'activation groupe par groupe.
+let linkedPushMember=null,linkingPush=false;
+async function autoLinkTeamPush(me){
+ if(!me?.member?.id||me.pending||me.passwordRequired||!me.charterAccepted||typeof Notification==='undefined'||Notification.permission!=='granted'||linkedPushMember===me.member.id||linkingPush)return;
+ if(!window.ZikaPush?.subscription)return;
+ linkingPush=true;
+ try{
+  const sub=await window.ZikaPush.subscription();
+  if(sub){await command('push.link',{subscription:sub.toJSON()});linkedPushMember=me.member.id;}
+ }catch{}finally{linkingPush=false;}
+}
 async function refresh(){
  // Priorité à l’affichage : les modules de gestion et les salons sont chargés
  // ensuite, et ne doivent jamais bloquer la fiche ni l'écran de connexion.
  state.me=await api('me');
  const me=state.me;
+ void autoLinkTeamPush(me);
  if(me.secretariat&&!me.admin&&!me.leadPoles.length&&state.managementTab==='activites')state.managementTab='emargements';
  if(me.passwordRequired||!me.charterAccepted){state.manage=null;state.signing=null;state.chatRooms=[];state.chatUnread=0;render();return;}
  render();
@@ -791,7 +805,7 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-pa
   try{
    if(!window.ZikaPush)throw Error('Notifications indisponibles.');
    const sub=await window.ZikaPush.enable();
-   await command('push.link',{subscription:sub.toJSON()});
+   await command('push.link',{subscription:sub.toJSON()});linkedPushMember=state.me?.member?.id||null;
    if(status)status.textContent='✅ Appareil associé à ton compte ZikaTeam. Les alertes de tes réunions et missions pourront être reçues après activation du service d’envoi.';
    toast('Appareil associé à ZikaTeam.');
   }catch(error){if(status)status.textContent='❌ '+(error.message||'Activation impossible.');toast(error.message||'Activation impossible.');}
@@ -1001,9 +1015,6 @@ async function init(){
  }catch{}
  try{
   await refresh();
-  if(!state.me.passwordRequired&&state.me.member&&state.me.charterAccepted){
-   try{const sub=await window.ZikaPush?.subscription?.();if(sub)await command('push.link',{subscription:sub.toJSON()});}catch{}
-  }
   if(state.tab==='messages')await refreshMessages();
  }catch(e){
   if(state.freeLogin){loginScreen();return;}
