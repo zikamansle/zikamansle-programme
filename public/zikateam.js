@@ -10,7 +10,7 @@ const statusName={draft:'Brouillon',published:'Publiée',cancelled:'Annulée'};
 const responseName={yes:'Présent',no:'Absent',maybe:'À confirmer',pending:'Sans réponse'};
 const toast=s=>{const el=$('teamToast');el.textContent=s;el.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.hidden=true,4500)};
 async function api(path,data,options={}){
- const r=await fetch('/zikateam/api/'+path,{credentials:'same-origin',cache:'no-store',...(data!==undefined?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{}),...options});
+ const r=await fetch('/zikateam/api/'+path,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000),...(data!==undefined?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{}),...options});
  const raw=await r.text();let body;try{body=JSON.parse(raw)}catch{body={error:raw.slice(0,180)||'Connexion indisponible'}};
  if(!r.ok)throw Error(body.error||'L’opération a échoué.');return body;
 }
@@ -91,7 +91,7 @@ const chatIcons=['💬','⭐','🎨','📅','🎵','🎤','🎪','🎭','📢','
 function messages(){
  if(state.me.pending)return '<div class="team-card team-accent-orange"><h2>Inscription en attente</h2><p>Les groupes sont accessibles après validation par l’administration.</p></div>';
  const rooms=state.chatRooms||[];
- const active=rooms.find(r=>r.channel===state.chatChannel&&(r.id||null)===(state.chatId||null));
+ const active=rooms.find(r=>r.channel===state.chatChannel&&(r.id||null)===(state.chatId||null))||rooms[0]||null;
  const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
  const left=rooms.map(room=>{
   const current=room.channel===state.chatChannel&&(room.id||null)===(state.chatId||null);
@@ -104,7 +104,7 @@ function messages(){
   const media=m.media_id?'<div class="team-chat-media">'+(m.mime?.startsWith('image/')?'<a href="/zikateam/chat-media/'+esc(m.media_id)+'" target="_blank" rel="noopener" title="Ouvrir la photo"><img src="/zikateam/chat-media/'+esc(m.media_id)+'" alt="'+esc(m.filename||'Image')+'" loading="lazy"></a>':'<a href="/zikateam/chat-media/'+esc(m.media_id)+'" target="_blank" rel="noopener">📄 '+esc(m.filename||'Document PDF')+'</a>')+'</div>':'';
   return '<article class="team-chat-message'+(mine?' mine':'')+'"><div class="team-chat-avatar">'+chatAvatar(m)+'</div><div class="team-chat-bubble"><div class="team-chat-meta"><strong>'+esc(m.author)+'</strong><time>'+esc(shortdt(m.created_at))+'</time></div>'+(m.body&&!m.media_id?'<p>'+esc(m.body)+'</p>':'')+media+(state.me.admin||(state.me.leadPoles.length&&state.chatChannel==='pole')?'<button type="button" class="team-chat-moderate" data-delete-message="'+m.id+'">Retirer</button>':'')+'</div></article>';
  }).join('');
- return '<section class="team-chat-shell"><div class="team-chat-sidebar"><header class="team-chat-sidebar-head"><h2>💬 Mes discussions</h2><p>Uniquement les groupes auxquels tu as accès</p>'+(state.chatUnread?'<span class="team-unread">'+(state.chatUnread>99?'99+':state.chatUnread)+' non lus</span>':'')+'</header><div class="team-chat-rooms">'+(left||'<p class="team-muted">Aucun groupe accessible.</p>')+'</div></div><div class="team-chat-main"><header class="team-chat-header"><div class="team-chat-header-icon">'+roomIcon(active)+'</div><div><h2>'+esc(active?.title||'Choisir un groupe')+'</h2><p>'+esc(active?'Groupe ZikaTeam sécurisé':'Sélectionne une conversation sur la gauche')+'</p></div>'+contacts+(state.me.admin&&active?'<details class="team-chat-icon-editor"><summary>🎨 Changer l’icône du groupe</summary><p class="team-small">Cette icône sera visible par tous les membres du groupe.</p><div class="team-chat-icon-choices">'+chatIcons.map(icon=>'<button type="button" class="team-icon-choice" data-chat-icon="'+esc(icon)+'" title="Choisir '+esc(icon)+'">'+icon+'</button>').join('')+'</div><label class="team-icon-image">📷 Image personnalisée (JPEG, PNG ou WebP, 2 Mo max.)<input type="file" id="teamChatIconUpload" accept="image/jpeg,image/png,image/webp"></label></details>':'')+'</header><div class="team-chat-messages" id="teamMessages" aria-live="polite">'+(active?(bubbles||'<p class="team-chat-empty">Aucun message pour le moment. Sois le premier à écrire !</p>'):'<p class="team-chat-empty">Choisis un groupe pour lire ses messages.</p>')+'</div>'+(active?'<form id="messageForm" class="team-chat-composer"><label class="team-chat-attach" title="Ajouter une photo ou un PDF">📎<input id="teamChatAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-label="Ajouter une photo ou un document PDF" hidden></label><label class="team-chat-input"><span class="team-sr-only">Écrire un message</span><textarea name="body" rows="2" maxlength="1400" required placeholder="Écrire un message…"></textarea></label><button class="team-button orange team-chat-send" type="submit">Envoyer</button></form><p class="team-chat-help">📎 Photos et PDF : 8 Mo maximum.</p>':'')+'</div></section>';
+ return '<section class="team-chat-shell team-chat-compact"><div class="team-chat-sidebar"><header class="team-chat-sidebar-head"><h2>💬 Mes discussions</h2><p>Uniquement les groupes auxquels tu as accès</p>'+(state.chatUnread?'<span class="team-unread">'+(state.chatUnread>99?'99+':state.chatUnread)+' non lus</span>':'')+'</header><div class="team-chat-rooms">'+(left||'<p class="team-muted">Aucun groupe accessible.</p>')+'</div></div><div class="team-chat-main"><header class="team-chat-header"><div class="team-chat-header-icon">'+roomIcon(active)+'</div><div><h2>'+esc(active?.title||'Choisir un groupe')+'</h2><p>'+esc(active?'Groupe ZikaTeam sécurisé':'Sélectionne une conversation sur la gauche')+'</p></div>'+contacts+(state.me.admin&&active?'<details class="team-chat-icon-editor"><summary>🎨 Changer l’icône du groupe</summary><p class="team-small">Cette icône sera visible par tous les membres du groupe.</p><div class="team-chat-icon-choices">'+chatIcons.map(icon=>'<button type="button" class="team-icon-choice" data-chat-icon="'+esc(icon)+'" title="Choisir '+esc(icon)+'">'+icon+'</button>').join('')+'</div><label class="team-icon-image">📷 Image personnalisée (JPEG, PNG ou WebP, 2 Mo max.)<input type="file" id="teamChatIconUpload" accept="image/jpeg,image/png,image/webp"></label></details>':'')+'</header><div class="team-chat-messages" id="teamMessages" aria-live="polite">'+(active?(bubbles||'<p class="team-chat-empty">Aucun message pour le moment. Sois le premier à écrire !</p>'):'<p class="team-chat-empty">Choisis un groupe pour lire ses messages.</p>')+'</div>'+(active?'<form id="messageForm" class="team-chat-composer"><label class="team-chat-attach" title="Ajouter une photo ou un PDF">📎<input id="teamChatAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-label="Ajouter une photo ou un document PDF" hidden></label><label class="team-chat-input"><span class="team-chat-write-label">✍️ Votre message</span><textarea name="body" rows="2" maxlength="1400" required placeholder="Écrivez votre message ici…"></textarea></label><button class="team-button orange team-chat-send" type="submit">Envoyer</button></form><p class="team-chat-help">📎 Photos et PDF : 8 Mo maximum.</p>':'')+'</div></section>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
  const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...(state.me.admin?[['benevoles','Bénévoles'],['charte','Charte'],['journal','Historique']]:[])];
@@ -524,8 +524,8 @@ async function refresh(){
  if(!me.pending&&me.member){
   tasks.push(refreshChatSummary().then(()=>{if(state.me===me&&state.tab==='messages')render();}).catch(()=>{}));
  }
- // Toutes les données secondaires arrivent ensuite ; la navigation est déjà disponible.
- await Promise.allSettled(tasks);
+ // Ne pas bloquer la navigation sur les données secondaires. Elles s'affichent à leur arrivée.
+ void Promise.allSettled(tasks);
 }
 async function refreshChatSummary(){
  if(!state.me?.charterAccepted||state.me.pending||!state.me.member){state.chatRooms=[];state.chatUnread=0;return;}
@@ -765,7 +765,7 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
 });
 async function init(){
  try{
-  const status=await fetch('/zikateam/api/auth/status',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(8500)});
+  const status=await fetch('/zikateam/api/auth/status',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(3500)});
   if(status.ok){state.freeLogin=true;}
   else if(status.status===503){root.innerHTML='<section class="team-card"><h2>Connexion ZikaTeam en cours de configuration</h2><p>Le service de connexion gratuit doit être configuré par l’administration.</p></section>';return;}
  }catch{}
