@@ -642,3 +642,14 @@ body{background:radial-gradient(ellipse at 6% 9%,#94e7ff 0,transparent 37%),radi
 #teamRoot .team-password-toggle:hover,#teamRoot .team-password-toggle[aria-pressed="true"]{background:linear-gradient(115deg,#c6eeff,#d4bdfb);border-color:#8051c3}
 #teamRoot .team-password-toggle:focus-visible{outline:3px solid #e43c96;outline-offset:2px}
 @media(max-width:430px){#teamRoot .team-password-field{gap:5px}#teamRoot .team-password-toggle{padding:7px 9px;font-size:.83rem}}
+
+/* Parcours guidé du secrétariat en environnement de test */
+#teamRoot .team-secretary-trial{background:linear-gradient(125deg,#fff,#e9ddff 49%,#dff9ff)!important;border:2px solid #aa7ae2;border-top:7px solid #8242d8}
+#teamRoot .team-secretary-trial h2{color:#5f2ca4}
+#teamRoot .team-secretary-trial ol{list-style:decimal;padding-left:1.5rem;display:grid;gap:12px}
+#teamRoot .team-secretary-trial li{padding:12px 14px;background:#fff;border:2px solid #b9d8f1;border-left:6px solid #0ba9c9;border-radius:13px;color:#153e60}
+#teamRoot .team-secretary-trial li:nth-child(3n+2){border-left-color:#ff8c20;background:#fff9ed}
+#teamRoot .team-secretary-trial li:nth-child(3n){border-left-color:#b04acb;background:#fcf6ff}
+#teamRoot .team-secretary-trial li strong{font-size:1.08rem}
+#teamRoot .team-secretary-trial li p{margin:.4rem 0 .8rem}
+#teamRoot .team-secretary-trial button{min-height:40px}
