@@ -3,6 +3,8 @@ package fr.zikamansle.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.util.Log;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -71,7 +73,27 @@ public final class ZikaLauncherActivity extends Activity {
                 intent.setData(data.buildUpon().appendQueryParameter("zika_native","1").build());
             }
         }
-        startActivity(intent);
+        // Never leave the app on a blank screen if the installed TWA provider
+        // cannot resolve its launcher. Preserve access to the official website.
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException error) {
+            Log.e("ZikaMansle", "Android browser helper unavailable; opening HTTPS fallback");
+            Uri fallback = Uri.parse(getString(R.string.zika_launch_url));
+            Intent browser = new Intent(Intent.ACTION_VIEW, fallback);
+            browser.addCategory(Intent.CATEGORY_BROWSABLE);
+            try {
+                startActivity(browser);
+            } catch (ActivityNotFoundException | SecurityException unavailable) {
+                handedOff = false;
+                new AlertDialog.Builder(this)
+                    .setTitle("ZikaMansle")
+                    .setMessage("Impossible d’ouvrir l’application. Vérifiez qu’un navigateur Internet est installé.")
+                    .setPositiveButton("Fermer", (dialog, which) -> finish())
+                    .show();
+                return;
+            }
+        }
         finish();
     }
 }
