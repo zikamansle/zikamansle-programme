@@ -64,6 +64,14 @@
             android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize" />
+        <!-- The official Z notification icon is also used for background FCM messages. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/zika_notification_small" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="festival-zikamansle" />
+
         <service
             android:name=".ZikaMessagingService"
             android:exported="false">
