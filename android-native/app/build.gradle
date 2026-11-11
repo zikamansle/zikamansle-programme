@@ -15,31 +15,7 @@ if (!launchUrl.startsWith('https://')) {
 def nativeLaunch = url -> url + (url.contains('?') ? '&' : '?') + 'zika_native=1'
 def firebaseString = name -> (project.findProperty(name) ?: System.getenv(name) ?: '').toString()
 
-// Use the already versioned ZikaMansle app icon for BOTH debug and release.
-// Generate the Android resource during every build; avoid external downloads
-// and ensure the manifest never falls back to Android's default icon.
-def officialZikaIcon = file('../public/assets/icon-512.png')
-def generatedZikaIconRes = layout.buildDirectory.dir('generated/zikaIconRes')
-tasks.register('prepareOfficialZikaIcon', Copy) {
-    doFirst {
-        if (!officialZikaIcon.isFile()) {
-            throw new GradleException('Missing official Zika icon: public/assets/icon-512.png')
-        }
-    }
-    from officialZikaIcon
-    into generatedZikaIconRes.map { it.dir('drawable-nodpi') }
-    rename { 'zika_icon.png' }
-}
-tasks.matching { it.name == 'preBuild' }.configureEach {
-    dependsOn tasks.named('prepareOfficialZikaIcon')
-}
-
 android {
-    sourceSets {
-        main {
-            res.srcDir(generatedZikaIconRes)
-        }
-    }
     namespace 'fr.zikamansle.app'
     compileSdk 36
 
