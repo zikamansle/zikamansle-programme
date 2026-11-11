@@ -530,6 +530,15 @@ async function signingAction(db,ctx,d){
 }
 
 async function adminAction(db,ctx,d){
+ if(d.op==='chat.icon.set'){
+  if(!ctx.admin)return fail('Seule l’administration peut modifier les icônes des discussions.',403);
+  const channel=d.channel,channelId=d.channelId||null,icon=d.icon;
+  const icons=['💬','⭐','🎨','📅','🎵','🎤','🎪','🎭','📢','🧡','💜','💙','💚','🌟','📸','🤝','🎯','🎟️','🍹','🚗','📍','🛠️','🎉','📚','🎬'];
+  if(!icons.includes(icon)||!await permittedChat(db,ctx,channel,channelId))return fail('Groupe ou icône invalide.',400);
+  await db.prepare('INSERT INTO team_chat_icons(channel,channel_id,icon,image_id,updated_by,updated_at) VALUES(?,?,?,NULL,?,?) ON CONFLICT(channel,channel_id) DO UPDATE SET icon=excluded.icon,image_id=NULL,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(channel,channelId||'',icon,ctx.email,now()).run();
+  await audit(db,ctx.email,'chat.icon.set',channel+':'+(channelId||''),icon);
+  return reply({ok:true});
+ }
  if(d.op==='list.save'){
   if(!ctx.admin&&!ctx.secretariat)return fail('Listes réservées à l’administration et au secrétariat.',403);
   const title=clean(d.title,110),columns=Array.isArray(d.columns)?d.columns:[],ids=Array.isArray(d.memberIds)?d.memberIds:[];
@@ -726,6 +735,9 @@ async function chatSummary(db,ctx){
  if(!await requireCharter(db,ctx)||ctx.pending||!ctx.member?.active)return fail('Accès aux discussions refusé.',403);
  const rooms=await chatRooms(db,ctx);
  for(const room of rooms){
+  const appearance=await one(db,'SELECT icon,image_id FROM team_chat_icons WHERE channel=? AND channel_id=?',room.channel,room.id||'');
+  room.icon=appearance?.icon||({general:'💬',leaders:'⭐',pole:'🎨',activity:'📅'}[room.channel]||'💬');
+  room.image_id=appearance?.image_id||null;
   const leader=room.channel==='leaders',table=leader?'team_leader_messages':'team_messages';
   const filter=leader?'':' AND t.channel=? AND t.channel_id IS ?';
   const params=leader?[]:[room.channel,room.id];
@@ -754,6 +766,37 @@ async function getMessages(db,ctx,url){
  return reply({messages:messages.reverse()});
 }
 
+
+async function uploadChatIcon(request,env,ctx,url){
+ if(!ctx.admin)return fail('Icônes réservées à l’administration.',403);
+ if(!env.BUCKET)return fail('Stockage indisponible.',503);
+ const channel=url.searchParams.get('channel'),channelId=url.searchParams.get('id')||null;
+ if(!await permittedChat(env.DB,ctx,channel,channelId))return fail('Groupe non autorisé.',403);
+ const mime=request.headers.get('content-type');
+ if(!['image/jpeg','image/png','image/webp'].includes(mime))return fail('Image JPEG, PNG ou WebP uniquement.',415);
+ const bytes=new Uint8Array(await request.arrayBuffer());
+ if(bytes.length<16||bytes.length>2*1024*1024)return fail('Image invalide ou de plus de 2 Mo.',413);
+ const sig=(...values)=>values.every((v,i)=>bytes[i]===v);
+ const ascii=(start,count)=>String.fromCharCode(...bytes.slice(start,start+count));
+ if(!(mime==='image/jpeg'&&sig(0xff,0xd8,0xff)||
+  mime==='image/png'&&sig(0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)||
+  mime==='image/webp'&&ascii(0,4)==='RIFF'&&ascii(8,4)==='WEBP'))return fail('Format de fichier incohérent.',415);
+ const id=uuid();
+ await env.BUCKET.put('team/chat-icon/'+id,bytes,{httpMetadata:{contentType:mime}});
+ try{
+  await env.DB.prepare("INSERT INTO team_chat_icons(channel,channel_id,icon,image_id,updated_by,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(channel,channel_id) DO UPDATE SET image_id=excluded.image_id,updated_by=excluded.updated_by,updated_at=excluded.updated_at").bind(channel,channelId||'','💬',id,ctx.email,now()).run();
+  await audit(env.DB,ctx.email,'chat.icon.upload',channel+':'+(channelId||''),id);
+ }catch(err){await env.BUCKET.delete('team/chat-icon/'+id).catch(()=>{});throw err;}
+ return reply({ok:true,id});
+}
+async function getChatIcon(env,ctx,id){
+ if(!idok(id)||!ctx.member?.active||ctx.pending||!await requireCharter(env.DB,ctx))return fail('Icône inaccessible.',403);
+ const icon=await one(env.DB,'SELECT channel,channel_id FROM team_chat_icons WHERE image_id=?',id);
+ if(!icon||!await permittedChat(env.DB,ctx,icon.channel,icon.channel_id||null))return fail('Icône inaccessible.',403);
+ const asset=await env.BUCKET?.get('team/chat-icon/'+id);
+ if(!asset)return fail('Image introuvable.',404);
+ return new Response(asset.body,{headers:{'Content-Type':asset.httpMetadata?.contentType||'image/png','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"}});
+}
 async function uploadChatMedia(request,env,ctx,url){
  if(!ctx.member?.active||ctx.pending||!await requireCharter(env.DB,ctx))return fail('Accès refusé.',403);
  if(!env.BUCKET)return fail('Médias indisponibles.',503);
@@ -895,6 +938,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   const accepted=Boolean(currentCharter&&ctx.member&&await one(db,'SELECT accepted_at FROM team_charter_acceptances WHERE member_id=? AND version=?',ctx.member.id,currentCharter.version));
   const locked=!accepted;
   const notice=currentCharter?'Charte obligatoire : veuillez la lire et l’accepter pour poursuivre.':'La charte officielle doit être publiée avant l’ouverture de ZikaTeam.';
+  if(path.startsWith('/zikateam/chat-icon/')&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getChatIcon(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/chat-media/')&&request.method==='GET')return locked||ctx.pending?fail(notice,403):getChatMedia(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/photo/')&&request.method==='GET')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):getTeamPhoto(env,ctx,path.split('/').pop());
   if(path.startsWith('/zikateam/document/')&&request.method==='GET'){
@@ -908,6 +952,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(path==='/zikateam/api/chat-summary'&&request.method==='GET')return locked||ctx.pending?fail(notice,403):chatSummary(db,ctx);
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
+   if(path==='/zikateam/api/chat-icon')return locked||ctx.pending?fail(notice,403):uploadChatIcon(request,env,ctx,url);
    if(path==='/zikateam/api/chat-media')return locked||ctx.pending?fail(notice,403):uploadChatMedia(request,env,ctx,url);
    if(path==='/zikateam/api/photo')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
    if(path==='/zikateam/api/upload'){
