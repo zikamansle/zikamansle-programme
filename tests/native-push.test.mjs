@@ -105,7 +105,7 @@ test('Firebase diagnostic does not send notifications and exposes only safe stat
 
 test('Classify Firebase credentials without logging any private data',()=>{
  const base={project_id:'zikamansle-d0c4e',client_email:'firebase-adminsdk-fbsvc@zikamansle-d0c4e.iam.gserviceaccount.com',
-  private_key:'-----BEGIN PRIVATE KEY-----\\nplaceholder\\n-----END PRIVATE KEY-----\\n'};
+  private_key:'-----BEGIN PRIVATE KEY-----\nplaceholder\n-----END PRIVATE KEY-----\n'};
  const stage=x=>classifyFirebaseCredentials(x).stage;
  assert.equal(stage('{garbled'), 'CONFIG_JSON_SYNTAX');
  assert.equal(stage('{}'), 'CONFIG_WRONG_PROJECT');
