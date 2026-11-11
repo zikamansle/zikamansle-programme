@@ -96,3 +96,9 @@ test('photo de profil, pastille avatar et chat façon groupes mobiles',()=>{
  assert.ok(server.includes('async function uploadChatMedia('));
  assert.ok(server.includes('async function getChatMedia('));
 });
+
+test('pastille des non lus sur onglet Discussions',()=>{
+ assert.ok(client.includes('team-tab-unread'));
+ assert.ok(client.includes('aria-label='));
+ assert.ok(client.includes("const badge=document.createElement('span')"));
+});
