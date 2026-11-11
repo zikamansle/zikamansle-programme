@@ -9,6 +9,13 @@ import com.google.firebase.FirebaseOptions;
 public final class ZikaApplication extends Application {
     @Override public void onCreate() {
         super.onCreate();
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            android.app.NotificationManager manager =
+                (android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(new android.app.NotificationChannel(
+                "festival-zikamansle","Actualités du Festival ZikaMansle",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT));
+        }
         String id = getString(R.string.zika_firebase_app_id);
         String api = getString(R.string.zika_firebase_api_key);
         String sender = getString(R.string.zika_firebase_sender_id);
