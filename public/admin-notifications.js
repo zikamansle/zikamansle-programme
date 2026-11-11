@@ -25,10 +25,21 @@
    if(data.devices===1&&data.sendingConfigured){
     const check=await adminApi('native-diagnostics');
     if(!check.ready){
-     status.textContent='Firebase ne peut pas envoyer de notification : '+check.stage+'. '+(
-      check.stage==='CONFIG_INVALID'?'Vérifiez la clé JSON du compte de service Firebase dans Cloudflare.':
-      check.stage.startsWith('OAUTH_')?'L’autorisation du compte de service auprès de Google échoue.':
-      'La connexion du serveur Firebase doit être vérifiée.');
+     const advice={
+      CONFIG_JSON_SYNTAX:'Le contenu du secret Cloudflare n’est pas un JSON valide. Recollez le fichier original du compte de service.',
+      CONFIG_DOUBLE_ENCODED:'Le secret contient du texte encodé au lieu du fichier JSON complet.',
+      CONFIG_NOT_OBJECT:'Le secret ne contient pas un objet de compte de service Firebase.',
+      CONFIG_WRONG_PROJECT:'La clé provient d’un autre projet Firebase. Il faut une clé du projet ZikaMansle.',
+      CONFIG_WRONG_ACCOUNT:'Le fichier ne correspond pas au compte de service Firebase Admin attendu.',
+      CONFIG_NO_PRIVATE_KEY:'Le fichier est incomplet ou il s’agit du google-services.json Android, pas du compte de service.',
+      CONFIG_PRIVATE_KEY_FORMAT:'La clé privée du fichier JSON est absente ou mal copiée.',
+      CONFIG_KEY_SIGNING:'Le serveur n’arrive pas à signer avec la clé Firebase. Une correction technique est nécessaire.',
+      CONFIG_MISSING:'Le secret Firebase est absent du Worker de test.',
+      OAUTH_400:'Google refuse la demande OAuth. Vérifiez le compte de service Firebase.',
+      OAUTH_401:'Google refuse les identifiants du compte de service Firebase.',
+      OAUTH_403:'Le compte de service n’a pas les autorisations nécessaires chez Google.'
+     };
+     status.textContent='Diagnostic Firebase : '+check.stage+'. '+(advice[check.stage]||(check.stage.startsWith('OAUTH_')?'Connexion Google OAuth en échec.':'La connexion Firebase nécessite une vérification.'));
      button.disabled=true;
     }else{
      status.textContent='Un appareil inscrit. Connexion Firebase authentifiée : test Android disponible.';
