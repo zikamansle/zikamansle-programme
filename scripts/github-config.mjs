@@ -11,11 +11,13 @@ export function configure(source,env) {
   c.d1_databases=[{binding:'DB',database_name:'zikamansle-app-staging',database_id:env.ZIKA_D1_DATABASE_ID,migrations_dir:'drizzle'}];
   c.r2_buckets=[{binding:'BUCKET',bucket_name:'zikamansle-app-staging'}];
   c.workers_dev=true;c.preview_urls=false;
-  c.vars={...c.vars,APP_ENV:'staging',PUSH_SEND_ENABLED:'false'};
-  for(const key of ['ACCESS_TEAM_DOMAIN','ACCESS_AUD','VAPID_PUBLIC_KEY'])c.vars[key]=env[key]||'';
+  c.vars={...c.vars,APP_ENV:'staging',PUSH_SEND_ENABLED:'false',PUSH_TEST_ENABLED:'true'};
+  // VAPID keys are managed only as independent Cloudflare staging secrets.
+  delete c.vars.VAPID_PUBLIC_KEY;
+  for(const key of ['ACCESS_TEAM_DOMAIN','ACCESS_AUD'])c.vars[key]=env[key]||'';
   return c;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   writeFileSync('wrangler.jsonc',JSON.stringify(configure(JSON.parse(readFileSync('wrangler.jsonc','utf8')),process.env),null,2)+'\n');
-  console.log('Configuration de test validée ; envois désactivés, aucun domaine personnalisé.');
+  console.log('Configuration de test validée ; essais individuels permis, diffusion générale désactivée, aucun domaine personnalisé.');
 }
