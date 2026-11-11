@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    # Single-use Firebase Android staging validation. Other pushes remain gated.
-    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' || (github.event_name == 'push' && github.event.head_commit.message == 'Publier une fois la réception Android Firebase de test') }}
+    # Deploy only when explicitly enabled by the repository owner.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
     environment: zikamansle-staging
     runs-on: ubuntu-latest
     env:
