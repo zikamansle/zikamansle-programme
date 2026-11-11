@@ -2,7 +2,6 @@ package fr.zikamansle.app;
 
 import android.Manifest;
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -16,7 +15,6 @@ import java.util.Map;
 
 /** Displays native Android notifications using the official Zika badge. */
 public final class ZikaMessagingService extends FirebaseMessagingService {
-    private static final String CHANNEL="festival-zikamansle";
     @Override public void onNewToken(String token) {
         super.onNewToken(token);
         ZikaPushRegistration.register(this,token);
@@ -46,11 +44,10 @@ public final class ZikaMessagingService extends FirebaseMessagingService {
         PendingIntent click=PendingIntent.getActivity(this,notificationId,launch,
             PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(
-            CHANNEL,"Actualités du Festival ZikaMansle",NotificationManager.IMPORTANCE_DEFAULT));
+        ZikaNotificationChannels.ensure(this);
         Notification.Builder builder=Build.VERSION.SDK_INT>=26
-            ?new Notification.Builder(this,CHANNEL)
-            :new Notification.Builder(this);
+            ?new Notification.Builder(this,ZikaNotificationChannels.CHANNEL_ID)
+            :new Notification.Builder(this).setSound(ZikaNotificationChannels.customSound(this));
         builder.setSmallIcon(R.drawable.zika_notification_small).setContentTitle(title)
             .setContentText(body).setAutoCancel(true).setContentIntent(click)
             .setCategory(Notification.CATEGORY_EVENT)
