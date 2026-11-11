@@ -148,3 +148,12 @@ test('l onglet Ma fiche permet de creer et modifier le profil administrateur',()
  assert.ok(ui.includes("if(f.id==='teamMyProfileForm')"));
  assert.ok(ui.includes('email:state.me.email'));
 });
+
+test('Le message d’accueil en attente explique les droits provisoires',()=>{
+ const ui=readFileSync('public/zikateam.js','utf8');
+ assert.ok(ui.includes('Inscription en attente d’approbation'));
+ assert.ok(ui.includes('Ce que tu peux faire dès maintenant'));
+ assert.ok(ui.includes('Accès temporairement restreint'));
+ assert.ok(ui.includes('Après validation de ton inscription'));
+ assert.ok(ui.includes('Tu peux lire la conversation générale, mais pas encore y répondre'));
+});
