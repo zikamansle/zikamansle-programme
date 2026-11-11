@@ -659,7 +659,7 @@ document.addEventListener('click',e=>{
  if(!form){toast('Formulaire introuvable.');return;}
  let feedback=form.querySelector('[data-member-save-feedback], [data-functions-save-feedback]');
  if(!feedback){feedback=document.createElement('p');feedback.dataset.memberSaveFeedback='';feedback.setAttribute('role','status');feedback.style.cssText='font-size:16px;font-weight:800;color:#17364a;padding:12px;background:#fff4d8;border:2px solid #e8932a;border-radius:10px';button.closest('.team-row')?.after(feedback)||form.append(feedback);}
- feedback.textContent='⏳ Appui détecté : enregistrement en cours…';
+ feedback.textContent='⏳ Appui détecté : enregistrement en cours… Une réponse de confirmation ou d’erreur doit apparaître ensuite.';
  if(state.busy){feedback.textContent='⌛ Une autre opération est en cours. Réessaie.';return;}
  form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
 },true);
@@ -988,11 +988,14 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
    const d=fromForm(f),changes=rolePayload(f);
    const saved=await command('member.functions.set',{memberId:d.memberId,roles:changes.roles,poleRoles:changes.poleRoles});
    if(!saved.ok)throw Error('Le serveur n’a pas confirmé la sauvegarde.');
-   const data=await api('manage');
-   const member=data.members?.find(x=>x.id===d.memberId);
-   const actual=(data.memberships||[]).filter(x=>x.member_id===d.memberId&&!data.poles?.find(p=>p.id===x.pole_id)?.archived);
-   if(!member||changes.roles.length!==(member.roles||[]).length||changes.roles.some(role=>!member.roles.includes(role))||actual.length!==changes.poleRoles.length||actual.some(x=>!changes.poleRoles.some(y=>y.poleId===x.pole_id&&y.role===x.role)))throw Error('Les fonctions n’ont pas été confirmées par la base.');
-   state.manage=data;state.editMember=null;render();toast('✅ Fonctions et pôles enregistrés.');
+   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
+   state.editMember=null;
+   feedback.textContent='✅ Fonctions et pôles enregistrés dans la base.';
+   feedback.style.color='#116b49';feedback.style.fontWeight='800';
+   toast('✅ Fonctions et pôles enregistrés.');
+   try{const data=await api('manage');state.manage=data;render();}catch(error){
+    toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');
+   }
   }catch(error){
    feedback.textContent='❌ '+(error.message||'Échec de sauvegarde.');
    feedback.style.color='#ad2034';feedback.style.fontWeight='700';
@@ -1025,16 +1028,12 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
   try{
    const saved=await command('member.save',{id:d.id||undefined,name,email,active:active.checked,...changes});
    if(!saved.ok||!saved.id)throw Error('Le serveur n’a pas confirmé la sauvegarde de cette fiche.');
-   const data=await api('manage');
-   const verified=data.members?.find(x=>x.id===saved.id);
-   if(!verified||verified.name!==name||verified.email?.toLowerCase()!==email)throw Error('L’enregistrement doit être revérifié : la fiche ne correspond pas aux informations saisies.');
-   const expected=new Map(changes.poleRoles.map(x=>[x.poleId,x.role]));
-   const actual=new Map((data.memberships||[]).filter(x=>x.member_id===saved.id&&!data.poles?.find(p=>p.id===x.pole_id)?.archived).map(x=>[x.pole_id,x.role]));
-   if(expected.size!==actual.size||[...expected].some(([id,role])=>actual.get(id)!==role))throw Error('La fiche est enregistrée, mais certaines affectations aux pôles n’ont pas été confirmées.');
-   if(changes.roles.some(x=>!verified.roles?.includes(x))||(verified.roles||[]).some(x=>!changes.roles.includes(x)))throw Error('La fiche est enregistrée, mais les fonctions générales n’ont pas été confirmées.');
-   state.manage=data;state.editMember=null;
-   render();toast('Fiche, fonctions et pôles enregistrés pour '+name+'.');
-   root.querySelector('[data-edit-member="'+saved.id+'"]')?.scrollIntoView({block:'center',behavior:'smooth'});
+   if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)throw Error('Le serveur n’a pas confirmé toutes les fonctions et affectations.');
+   state.editMember=null;
+   report('Fiche, fonctions et pôles enregistrés dans la base.',true);
+   toast('✅ Fiche, fonctions et pôles enregistrés pour '+name+'.');
+   try{const data=await api('manage');state.manage=data;render();}
+   catch(error){toast('Enregistrement réussi. Actualise la liste pour afficher les modifications.');}
   }catch(error){report('Enregistrement non confirmé : '+(error.message||'Erreur de service.'));}
   finally{state.busy=false;if(button?.isConnected){button.disabled=false;button.textContent='Enregistrer la fiche et les fonctions';}}
   return;
