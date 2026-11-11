@@ -1,0 +1,68 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync,readdirSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+
+test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'zikateam-free-'));
+ const oldFetch=globalThis.fetch;
+ try{
+  writeFileSync(join(dir,'zikateam.mjs'),readFileSync('server/zikateam.mjs'));
+  writeFileSync(join(dir,'zikateam-login.mjs'),readFileSync('server/zikateam-login.mjs'));
+  writeFileSync(join(dir,'admin-auth.mjs'),"export async function verifyAccessIdentity(){throw new Error('Cloudflare Access ne doit pas être appelé')}");
+  writeFileSync(join(dir,'webpush.mjs'),"export const enc=s=>new TextEncoder().encode(s);export const b64=s=>'';export async function sendPush(){return 201}");
+  const {handleZikaTeam}=await import(pathToFileURL(join(dir,'zikateam.mjs')));
+  const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');
+  for(const sql of readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort())db.exec(readFileSync('drizzle/'+sql,'utf8'));
+  const DB={prepare(sql){const stmt=db.prepare(sql);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
+  const env={DB,ADMIN_EMAIL:'admin@zikamansle.fr',TEAM_AUTH_PROVIDER:'supabase',TEAM_SUPABASE_URL:'https://project.supabase.co',TEAM_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_public-test',TEAM_PUSH_ENABLED:'false',BUCKET:{get:async()=>null}};
+  const names={alice:'alice@zikamansle.fr',outsider:'outsider@example.org'};
+  db.prepare('INSERT INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,?,?,?)').run('10000000-0000-4000-a000-000000000001','Alice',names.alice,1,Date.now(),Date.now());
+  const requests=[];
+  globalThis.fetch=async (url,options)=>{
+   requests.push({url:String(url),method:options?.method||'GET'});
+   const respond=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json'}});
+   if(String(url).endsWith('/auth/v1/otp'))return respond({});
+   if(String(url).endsWith('/auth/v1/verify')){
+    const data=JSON.parse(options.body);
+    if(data.token!=='123456')return respond({error:'invalid'},401);
+    return respond({access_token:'token-alice',refresh_token:'refresh-alice',expires_in:3600});
+   }
+   if(String(url).endsWith('/auth/v1/user'))return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
+   if(String(url).endsWith('/auth/v1/logout'))return respond({});
+   return respond({error:'unexpected'},404);
+  };
+  async function invoke(path,data,cookie=''){
+   const req=new Request('https://site.example'+path,{
+    method:data?'POST':'GET',
+    headers:{'Origin':'https://site.example','Content-Type':'application/json',...(cookie?{'Cookie':cookie}:{})},
+    ...(data?{body:JSON.stringify(data)}:{})
+   });
+   return handleZikaTeam(req,env);
+  }
+  assert.equal((await invoke('/zikateam/api/auth/status')).status,200);
+  assert.equal((await invoke('/zikateam/api/me')).status,403);
+  assert.equal((await invoke('/zikateam/api/auth/request',{email:names.outsider})).status,200);
+  assert.equal(requests.length,0,'no email for uninvited addresses');
+  assert.equal((await invoke('/zikateam/api/auth/request',{email:names.alice})).status,200);
+  assert.equal(requests.filter(r=>r.url.endsWith('/otp')).length,1);
+  assert.equal((await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'999999'})).status,401);
+  const auth=await invoke('/zikateam/api/auth/verify',{email:names.alice,code:'123456'});
+  assert.equal(auth.status,200);
+  const cookies=auth.headers.getSetCookie();
+  assert.equal(cookies.length,2);
+  assert.ok(cookies.every(c=>c.includes('HttpOnly')&&c.includes('Secure')&&c.includes('SameSite=Lax')));
+  const jar=cookies.map(c=>c.split(';')[0]).join('; ');
+  const me=await invoke('/zikateam/api/me',undefined,jar);
+  assert.equal(me.status,200);
+  const body=await me.json();assert.equal(body.member.email,names.alice);assert.equal(body.admin,false);
+  assert.equal((await invoke('/zikateam/api/command',{op:'member.save',name:'Nope',email:'x@example.org'},jar)).status,403);
+  const logout=await invoke('/zikateam/api/auth/logout',{},jar);
+  assert.equal(logout.status,200);
+  assert.ok(logout.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
+  db.close();
+ }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
+});
