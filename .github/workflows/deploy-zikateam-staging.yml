@@ -1,0 +1,47 @@
+name: Publier ZikaTeam sur le Worker de test (si autorise)
+on:
+  push:
+    branches: [feat/zikateam-fiches-notifications]
+    paths:
+      - 'worker/**'
+      - 'server/**'
+      - 'public/**'
+      - 'drizzle/**'
+      - 'scripts/zikateam-staging-guard.mjs'
+      - 'wrangler.jsonc'
+      - 'tests/**'
+      - '.github/workflows/deploy-zikateam-staging.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: zikamansle-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    # Même verrou de consentement que l'ancien workflow Cloudflare.
+    if: ${{ vars.ZIKA_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: zikamansle-staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ZIKA_D1_DATABASE_ID: ${{ vars.ZIKA_D1_DATABASE_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Vérifier la cible et préserver l'accès administrateur
+        run: node scripts/zikateam-staging-guard.mjs
+      - name: Déployer uniquement workers.dev, sans remplacer les variables du tableau de bord
+        run: |
+          printf 'y\n' | npx wrangler deploy --keep-vars --config wrangler.jsonc
+      - name: Vérifier que le Worker de test répond
+        run: |
+          node --input-type=module -e "const r=await fetch('https://zikamansle-app-staging.zikamansle.workers.dev/healthz');const d=await r.json();if(!r.ok||d.app!=='ZikaMansle'||d.environment!=='staging')process.exit(1);console.log('Worker de test sain.');"
