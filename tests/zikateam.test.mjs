@@ -231,6 +231,20 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await invoke(S,'/zikateam/api/signing')).payload.sessions.some(x=>x.id===unsignedSession),false,'le secrétariat peut supprimer une feuille non signée');
   assert.ok((await invoke(A,'/zikateam/api/manage')).payload.audit.some(x=>x.action==='signing.delete'),'une trace de suppression est conservée');
 
+
+  // Le secrétariat peut désigner des responsables et des dirigeants depuis la fiche.
+  assert.equal((await api(B,{op:'member.functions.set',memberId:member,roles:['director'],poleRoles:[{poleId:pole,role:'lead'}]})).status,403);
+  assert.equal((await api(S,{op:'member.save',id:member,name:'Bénévole modifié',email:B,active:false})).status,403,'pas de modification de comptes');
+  assert.equal((await api(S,{op:'secretariat.set',memberId:member,enabled:true})).status,403,'pas d’élévation de privilèges secrétariat');
+  await okay(S,{op:'member.functions.set',memberId:member,roles:['director','bureau'],poleRoles:[{poleId:pole,role:'lead'}]});
+  let rolesAfter=(await invoke(S,'/zikateam/api/manage')).payload;
+  assert.ok(rolesAfter.members.find(x=>x.id===member).roles.includes('director'),'dirigeant ajouté');
+  assert.ok(rolesAfter.memberships.some(x=>x.member_id===member&&x.pole_id===pole&&x.role==='lead'),'responsable ajouté depuis fiche');
+  await okay(S,{op:'assignment.set',memberId:member,poleId:outsidePole,role:'member'});
+  rolesAfter=(await invoke(S,'/zikateam/api/manage')).payload;
+  assert.ok(rolesAfter.memberships.some(x=>x.member_id===member&&x.pole_id===outsidePole),'autre pôle ajouté sans perdre le précédent');
+  await okay(S,{op:'member.functions.set',memberId:member,roles:[],poleRoles:[{poleId:pole,role:'member'}]});
+  assert.ok(!(await invoke(S,'/zikateam/api/manage')).payload.members.find(x=>x.id===member).roles.includes('director'),'fonction dirigeant réversible');
   await okay(A,{op:'secretariat.set',memberId:secretary,enabled:false});
   assert.equal((await invoke(S,'/zikateam/api/manage')).status,403);
   assert.equal((await invoke(S,'/zikateam/api/signing')).status,403,'droit révoqué immédiatement');
