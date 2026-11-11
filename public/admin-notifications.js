@@ -4,7 +4,11 @@
  async function adminApi(action,data){
   const r=await fetch('/administration/api/'+action,{cache:'no-store',...(data!==undefined?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{})});
   let result;try{result=await r.json()}catch{throw Error('Connexion administrateur requise. Rechargez cette page pour vous identifier.')}
-  if(!r.ok)throw Error(result.error||'Accès administrateur refusé.');return result;
+  if(!r.ok){
+   const stage=typeof result.stage==='string'?' [Diagnostic : '+result.stage+']':'';
+   throw Error((result.error||'Accès administrateur refusé.')+stage);
+  }
+  return result;
  }
  async function loadNative(){
   const button=$('nativeTest'),status=$('nativeStatus');
@@ -18,6 +22,18 @@
     :data.devices===1?'Un appareil Android inscrit : le test ciblé est prêt.'
     :'Test bloqué : plusieurs appareils Android sont inscrits. Le test est réservé à un seul appareil.';
    button.disabled=busy||data.devices!==1||!data.sendingConfigured;
+   if(data.devices===1&&data.sendingConfigured){
+    const check=await adminApi('native-diagnostics');
+    if(!check.ready){
+     status.textContent='Firebase ne peut pas envoyer de notification : '+check.stage+'. '+(
+      check.stage==='CONFIG_INVALID'?'Vérifiez la clé JSON du compte de service Firebase dans Cloudflare.':
+      check.stage.startsWith('OAUTH_')?'L’autorisation du compte de service auprès de Google échoue.':
+      'La connexion du serveur Firebase doit être vérifiée.');
+     button.disabled=true;
+    }else{
+     status.textContent='Un appareil inscrit. Connexion Firebase authentifiée : test Android disponible.';
+    }
+   }
   }catch(e){status.textContent='Impossible de vérifier les appareils : '+e.message;button.disabled=true;}
  }
  async function load(){try{const d=await adminApi('admin');$('workspace').hidden=false;$('login').hidden=true;$('subscribers').textContent=d.subscribers;$('history').replaceChildren();
