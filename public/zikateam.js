@@ -21,15 +21,33 @@ function header(){const m=state.me;return '<header class="team-heading"><span>Es
 function menu(){return '<nav class="team-tabs" aria-label="Rubriques ZikaTeam">'+(state.me.pending?[['fiche','Mon accueil'],['messages','Discussion générale']]:[
  ['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'],...((state.me.admin||state.me.leadPoles.length||state.me.secretariat)?[['gestion',state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length?'Secrétariat':'Gestion des équipes']]:[])
  ]).map(([id,title])=>'<button type="button" data-tab="'+id+'" aria-current="'+(state.tab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav>'}
+function consentQuestions(consents={}){
+ const items=[
+  ['image','Droit à l’image','J’autorise ZikaMansle à utiliser les photos et vidéos sur lesquelles je suis reconnaissable, réalisées lors des activités de l’association, pour communiquer sur ses événements (site, réseaux sociaux, affiches et publications).'],
+  ['phone','Partage de mon téléphone','J’autorise les autres membres de mes pôles et leurs responsables à consulter mon numéro de téléphone pour l’organisation des activités.'],
+  ['email','Partage de mon e-mail','J’autorise les autres membres de mes pôles et leurs responsables à consulter mon adresse e-mail pour l’organisation des activités.']
+ ];
+ return '<div class="team-consent-choices">'+items.map(([kind,title,description])=>'<fieldset class="team-consent-choice"><legend>'+title+'</legend><p>'+description+'</p><div class="team-row"><label class="team-check"><input type="radio" name="consent_'+kind+'" value="yes" required '+(consents[kind]===true?'checked':'')+'> Oui, j’autorise</label><label class="team-check"><input type="radio" name="consent_'+kind+'" value="no" required '+(consents[kind]===false?'checked':'')+'> Non, je refuse</label></div></fieldset>').join('')+'</div>';
+}
+function consentPayload(form){
+ const data=new FormData(form),consents={};
+ for(const key of ['image','phone','email']){
+  const value=data.get('consent_'+key);
+  if(!['yes','no'].includes(value))throw Error('Choisis Oui ou Non pour les trois autorisations.');
+  consents[key]=value==='yes';
+ }
+ return consents;
+}
 function charterBlock(){
  const m=state.me;if(!m.charter)return '<div class="team-notice" role="status">La charte officielle sera disponible ici après publication.</div>';
  const c=m.charter,accepted=m.charterAccepted;
  const content='<div class="team-charter">'+esc(c.content)+'</div>'+(c.document_id?'<p><a class="team-link" href="/zikateam/document/'+esc(c.document_id)+'" target="_blank" rel="noopener">Ouvrir la charte officielle en PDF</a></p>':'');
+ const opt='<section class="team-consent-notice"><h3>Mes autorisations personnelles</h3><p>Répondre Oui ou Non est nécessaire, mais <strong>accepter n’est jamais obligatoire</strong>. Tu peux refuser un ou plusieurs usages et changer ton choix par la suite.</p></section>';
  return '<section class="team-card team-charter-card '+(accepted?'team-charter-signed':'team-charter-required')+'"><div class="team-between"><h2>'+esc(c.title)+'</h2><span class="team-pill '+(accepted?'ok':'warn')+'">'+(accepted?'Acceptée':'Lecture obligatoire')+'</span></div>'+
  '<p class="team-muted">Version '+esc(c.version)+(m.charterAcceptedAt?' · Acceptée le '+shortdt(m.charterAcceptedAt):'')+'</p>'+
- (accepted?'<details class="team-charter-details"><summary>Relire la charte des bénévoles</summary>'+content+'</details>':content+
- '<p><strong>Pour accéder à ton espace ZikaTeam, tu dois avoir lu et accepté cette charte.</strong></p><form id="charterAccept" class="team-form"><label class="team-consent"><input type="checkbox" name="agree" required> J’ai lu la charte et j’accepte de m’y conformer.</label><button type="submit" class="team-button orange">J’accepte la charte et j’accède à ZikaTeam</button></form>')+
- '</section>';
+ (accepted?'<details class="team-charter-details"><summary>Relire la charte des bénévoles</summary>'+content+'</details>'+
+ '<div class="team-consents-saved"><h3>Droit à l’image et partage des coordonnées</h3><p class="team-muted">Tes choix sont modifiables à tout moment.</p><form id="consentForm" class="team-form">'+consentQuestions(m.consents)+'<button type="submit" class="team-button orange">Enregistrer mes autorisations</button></form></div>'
+ :content+'<p><strong>Pour accéder à ton espace ZikaTeam, tu dois accepter la charte et répondre aux trois questions ci-dessous.</strong></p><form id="charterAccept" class="team-form"><label class="team-consent"><input type="checkbox" name="agree" required> J’ai lu la charte et j’accepte de m’y conformer.</label>'+opt+consentQuestions(m.consents)+'<button type="submit" class="team-button orange">Valider la charte et mes choix</button></form>')+'</section>';
 }
 function avatar(member){
  const name=member?.name||'Bénévole';
@@ -455,7 +473,8 @@ root.addEventListener('submit',async e=>{e.preventDefault();const f=e.target;if(
  if(f.id==='teamLoginVerify'){
   state.busy=true;try{await freeLoginVerify(f.elements.code.value)}catch(err){loginScreen(err.message)}finally{state.busy=false}return;
  }
- if(f.id==='charterAccept')return perform(async()=>command('charter.accept',{version:state.me.charter.version,agree:f.elements.agree.checked}));
+ if(f.id==='charterAccept')return perform(async()=>command('charter.accept',{version:state.me.charter.version,agree:f.elements.agree.checked,consents:consentPayload(f)}));
+ if(f.id==='consentForm')return perform(async()=>command('consents.save',{consents:consentPayload(f)}));
  if(f.id==='messageForm')return perform(async()=>{await command('message.send',{channel:state.chatChannel,channelId:state.chatId,body:fromForm(f).body});await refreshMessages()});
  if(f.hasAttribute('data-assignment-form'))return perform(async()=>{const d=fromForm(f);await command('assignment.set',{poleId:f.dataset.assignmentForm,memberId:d.memberId,role:d.role||'member'})});
  if(f.id==='poleForm')return perform(async()=>{const d=fromForm(f);await command('pole.save',{id:d.id||undefined,name:d.name,description:d.description});state.editPole=null});
