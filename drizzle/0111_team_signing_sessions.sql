@@ -14,9 +14,12 @@ CREATE TABLE IF NOT EXISTS team_signing_sessions (
 CREATE TABLE IF NOT EXISTS team_signing_attendees (
  session_id TEXT NOT NULL REFERENCES team_signing_sessions(id) ON DELETE CASCADE,
  member_id TEXT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+ display_name TEXT NOT NULL,
+ quality TEXT NOT NULL DEFAULT 'Bénévole',
  added_at INTEGER NOT NULL,
  signature_points TEXT,
  signed_at INTEGER,
+ signed_by_operator TEXT,
  PRIMARY KEY(session_id,member_id)
 );
 CREATE INDEX IF NOT EXISTS ix_team_signing_attendees_session ON team_signing_attendees(session_id,added_at);
