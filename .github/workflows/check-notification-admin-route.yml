@@ -26,6 +26,9 @@ jobs:
           s=Path('/tmp/response').read_text(errors='replace')
           print('HTML_TITLE=', re.findall(r'<title[^>]*>(.*?)</title>', s, re.I|re.S)[:2])
           print('ADMIN_MARKERS=', [(w, bool(re.search(w,s,re.I))) for w in ('admin','connexion','notification','auth','push')])
+          print('SCRIPTS=',re.findall(r'<script[^>]+src=[\"\\\']([^\"\\\']+)',s,re.I)[:15])
+          print('PAGE_TEXT=',re.sub(r'\\s+',' ',re.sub(r'<[^>]*>',' ',s))[:2200])
+          print('FORM_TAGS=',re.findall(r'<(?:button|input|form|textarea|select)\\b[^>]*>',s,re.I)[:25])
           PY
             fi
           done
