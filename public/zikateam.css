@@ -211,3 +211,13 @@ body{background:linear-gradient(155deg,#eaf5fd 0,#f9fbfd 360px,#f7fafc 100%);col
 .team-login-card>button{margin-top:8px}
 .team-login-card>p{color:#395a72}
 @media(max-width:600px){.team-login-card{margin:8px auto}.team-login-card>button{width:100%}}
+
+
+/* Connexion ZikaTeam : distinguer immédiatement connexion habituelle et première activation. */
+.team-login-card.team-accent-blue{border-left-width:7px}
+.team-login-card.team-accent-orange{border-left-width:7px}
+.team-login-card .team-button.orange{background:#e89431;color:#172d43}
+.team-login-card .team-button.light{background:#f3f8fc;border:1px solid #c6dbe9;color:#174563}
+.team-login-card [role="alert"]{border-radius:12px;font-weight:650}
+.team-item button[data-delete-pole]{background:#fff0f1;border:1px solid #eebfc5;color:#9c2436}
+.team-item button[data-delete-pole]:hover{background:#ffe3e6}
