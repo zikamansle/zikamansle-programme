@@ -13,3 +13,6 @@
 .news-media{display:block;width:100%;max-height:480px;object-fit:contain;border-radius:14px;margin:14px 0;background:#eef3f6}
 
 .install-banner{display:flex;align-items:center;gap:14px;padding:18px 24px;background:#e9f5ff;border-bottom:1px solid #c9e5f8}.install-banner img{border-radius:13px;flex:none}.install-banner>div{flex:1}.install-banner strong{font-size:16px}.install-banner p{margin:3px 0 0;color:#476173;font-size:12px}.install-banner .button{flex:none}.install-steps{padding-left:24px}.install-steps li{padding:7px 0}.install-link{overflow-wrap:anywhere;color:#087cbe}@media(max-width:540px){.install-banner{padding:16px;flex-wrap:wrap;gap:10px}.install-banner .button{width:100%}.install-banner strong{font-size:15px}}
+
+/* Inside the Play Store Android wrapper there is no secondary install prompt. */
+.native-android #installBanner,.native-android [data-install],.native-android .install-panel{display:none!important}
