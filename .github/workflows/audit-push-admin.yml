@@ -1,0 +1,37 @@
+name: Auditer accès administration des notifications mobile
+on:
+  push:
+    branches: [prepare/google-play-android-2026]
+    paths: ['.github/workflows/audit-push-admin.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify deployment and identify notification admin capabilities
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,re,json
+          root='https://app.zikamansle.fr'
+          for p in ['/','/notifications.js','/mobile.js','/config.js','/admin','/admin.html','/api/notifications','/api/push/send']:
+            try:
+              r=urllib.request.urlopen(urllib.request.Request(root+p,headers={'User-Agent':'Mozilla/5.0'}),timeout=12)
+              data=r.read(1000000).decode('utf-8','replace')
+              print('PATH',p,'STATUS',r.status,'TYPE',r.headers.get('Content-Type',''),'LEN',len(data))
+              if p.endswith('.js'):
+                for k in ['admin','send','push','notification','endpoint','testRemote','testPush']:
+                  count=len(re.findall(re.escape(k),data,re.I))
+                  print(' KEY',k,'COUNT',count)
+                for m in list(re.finditer('fetch\\s*\\(|admin|sendPush|testRemote|testPush',data,re.I))[:24]:
+                  frag=data[max(0,m.start()-75):m.end()+100].replace('\n',' ')
+                  frag=re.sub(r'(?:eyJ[A-Za-z0-9._-]{40,}|sb_secret_[A-Za-z0-9_]+|sk_[A-Za-z0-9_-]{20,})','[REDACTED]',frag)
+                  print(' SNIP',frag)
+              elif p in ['/admin','/admin.html']:
+                print(' ADMIN_TITLE',re.findall(r'<title[^>]*>([^<]+)',data,re.I)[:2])
+            except Exception as e:
+              print('PATH',p,'ERROR',str(e)[:140])
+          PY
