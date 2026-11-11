@@ -31,7 +31,10 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
     if(!['123456','87654321'].includes(data.token))return respond({error:'invalid'},401);
     return respond({access_token:'token-alice',refresh_token:'refresh-alice',expires_in:3600});
    }
-   if(String(url).endsWith('/auth/v1/user'))return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
+   if(String(url).endsWith('/auth/v1/user')){
+    if(options?.headers?.Authorization==='Bearer token-admin')return respond({email:'admin@zikamansle.fr',email_confirmed_at:new Date().toISOString(),id:'user-admin'});
+    return options?.headers?.Authorization==='Bearer token-alice'?respond({email:names.alice,email_confirmed_at:new Date().toISOString(),id:'user-id'}):respond({error:'not authorized'},401);
+   }
    if(String(url).endsWith('/auth/v1/logout'))return respond({});
    return respond({error:'unexpected'},404);
   };
@@ -67,6 +70,21 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   const logout=await invoke('/zikateam/api/auth/logout',{},jar);
   assert.equal(logout.status,200);
   assert.ok(logout.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
+  const adminCookie='zika_team_access=token-admin';
+  const before=await invoke('/zikateam/api/me',undefined,adminCookie);
+  assert.equal(before.status,200);
+  const beforeBody=await before.json();
+  assert.equal(beforeBody.admin,true);
+  assert.equal(beforeBody.member,null,'un administrateur peut etre connecte sans fiche');
+  const created=await invoke('/zikateam/api/command',{op:'member.save',name:'Administrateur de test',email:'admin@zikamansle.fr',active:true},adminCookie);
+  assert.equal(created.status,200,'un administrateur peut creer sa propre fiche');
+  const after=await invoke('/zikateam/api/me',undefined,adminCookie);
+  assert.equal(after.status,200);
+  const saved=(await after.json()).member;
+  assert.equal(saved.name,'Administrateur de test');
+  const updated=await invoke('/zikateam/api/command',{op:'member.save',id:saved.id,name:'Nom modifie',email:'admin@zikamansle.fr',active:true},adminCookie);
+  assert.equal(updated.status,200,'la fiche est modifiable');
+  assert.equal((await (await invoke('/zikateam/api/me',undefined,adminCookie)).json()).member.name,'Nom modifie');
   db.close();
  }finally{globalThis.fetch=oldFetch;rmSync(dir,{recursive:true,force:true})}
 });
@@ -76,4 +94,13 @@ test('le formulaire ZikaTeam accepte les codes a 8 chiffres',()=>{
  assert.ok(ui.includes('pattern="[0-9]{6}|[0-9]{8}"'));
  assert.ok(ui.includes('maxlength="8"'));
  assert.ok(!ui.includes('code à six chiffres'));
+});
+
+test('l onglet Ma fiche permet de creer et modifier le profil administrateur',()=>{
+ const ui=readFileSync('public/zikateam.js','utf8');
+ assert.ok(ui.includes('Créer ma fiche personnelle'));
+ assert.ok(ui.includes('id="teamMyProfileForm"'));
+ assert.ok(ui.includes('Enregistrer ma fiche'));
+ assert.ok(ui.includes("if(f.id==='teamMyProfileForm')"));
+ assert.ok(ui.includes('email:state.me.email'));
 });
