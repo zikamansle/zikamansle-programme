@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,chatRooms:[],chatUnread:0,messages:[],chatMobileOpen:false,busy:false,freeLogin:false,loginEmail:'',loginName:'',inviteCode:'',invitationDraft:null,codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,chatRooms:[],chatUnread:0,messages:[],chatMobileOpen:false,busy:false,freeLogin:false,loginEmail:'',loginName:'',inviteCode:'',invitationDraft:null,codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',directoryImage:'all',directoryPhone:'all',directoryEmail:'all',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listImage:'all',listPhone:'all',listEmail:'all',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -388,12 +388,16 @@ function manageDues(){
  (rows.length?rows.map(d=>'<form class="team-dues-item team-form" data-dues-form="'+esc(d.member_id)+'"><div class="team-between"><div><strong>'+esc(d.name)+'</strong><p class="team-small">'+esc(d.contact.email||'')+' · '+esc(d.contact.phone||'Téléphone non renseigné')+'</p></div><span class="team-pill '+(d.paid?'ok':'warn')+'">'+(d.paid?'À jour':'En attente')+'</span></div><div class="team-split"><label>Statut<select name="paid"><option value="0" '+(!d.paid?'selected':'')+'>En attente</option><option value="1" '+(d.paid?'selected':'')+'>À jour</option></select></label><label>Règlement le (facultatif)<input type="date" name="paidOn" value="'+esc(d.paid_on||'')+'"></label><label>Moyen de paiement (facultatif)<select name="paymentMethod"><option value="">Non renseigné</option>'+Object.entries(paymentLabels).map(([k,v])=>'<option value="'+k+'" '+(d.payment_method===k?'selected':'')+'>'+v+'</option>').join('')+'</select></label></div><div class="team-row"><button class="team-button orange" type="submit">Enregistrer l’adhésion</button><button class="team-button light" type="reset">Annuler les modifications</button></div>'+(d.updated_at?'<p class="team-small team-muted">Modifiée le '+esc(shortdt(d.updated_at))+' par '+esc(d.updated_by)+'</p>':'')+'</form>').join(''):'<p>Aucune adhésion pour ce filtre.</p>')+'</section>';
 }
 
+const consentValue=(m,k)=>{const c=(state.manage?.consentsAdmin||[]).find(v=>v.member_id===m.member_id&&v.kind===k);return !c?'unset':Number(c.granted)===1?'yes':'no';};
+const consentLabel=v=>({yes:'Oui',no:'Non',unset:'Non renseigné'})[v]||'Non renseigné';
+const consentMatches=(m,k,v)=>v==='all'||consentValue(m,k)===v;
+const consentPicker=(id,title,value)=>'<label>'+title+'<select id="'+id+'">'+[['all','Tous'],['yes','Oui'],['no','Non'],['unset','Non renseigné']].map(([v,t])=>'<option value="'+v+'"'+(value===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>';
 function directoryFiltered(){
  const q=(state.directorySearch||'').toLocaleLowerCase('fr-FR').trim();
- return (state.manage?.contacts||[]).filter(m=>!q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q)));
+ return (state.manage?.contacts||[]).filter(m=>consentMatches(m,'image',state.directoryImage)&&consentMatches(m,'phone',state.directoryPhone)&&consentMatches(m,'email',state.directoryEmail)&&(!q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q))));
 }
 function directoryRows(){
- return [['Nom et prénom','E-mail','Téléphone','Adresse','Code postal','Ville'],...directoryFiltered().map(m=>[m.name,m.email,m.phone,m.address,m.postal_code,m.city])];
+ return [['Nom et prénom','E-mail','Téléphone','Adresse','Code postal','Ville','Droit à l’image','Communication téléphone','Communication e-mail'],...directoryFiltered().map(m=>[m.name,m.email,m.phone,m.address,m.postal_code,m.city,consentLabel(consentValue(m,'image')),consentLabel(consentValue(m,'phone')),consentLabel(consentValue(m,'email'))])];
 }
 function exportDirectoryCSV(){
  const safe=x=>{const s=String(x??'');return /^[=+\-@\t\r]/.test(s)?"'"+s:s;};
@@ -417,7 +421,7 @@ function manageDirectory(){
  const search=state.directorySearch||'';
  const rows=directoryFiltered();
  return '<section class="team-card team-accent-blue"><h2>Annuaire des bénévoles</h2><p>Coordonnées complètes réservées à l’administration et au secrétariat. Tu peux corriger chaque fiche, puis imprimer, créer un PDF ou exporter un tableau.</p>'+
- '<label class="team-directory-search">Rechercher un bénévole<input id="teamDirectorySearch" type="search" autocomplete="off" placeholder="Nom, e-mail, ville, téléphone…" value="'+esc(search)+'"></label>'+
+ '<label class="team-directory-search">Rechercher un bénévole<input id="teamDirectorySearch" type="search" autocomplete="off" placeholder="Nom, e-mail, ville, téléphone…" value="'+esc(search)+'"></label>'+'<div class="team-consent-filters">'+consentPicker('teamDirectoryImage','Droit à l’image',state.directoryImage)+consentPicker('teamDirectoryPhone','Communication du téléphone',state.directoryPhone)+consentPicker('teamDirectoryEmail','Communication de l’e-mail',state.directoryEmail)+'</div><p class="team-small team-muted">Non renseigné signifie qu’aucune réponse n’est enregistrée. Les exports reprennent les personnes filtrées.</p>'+
  '<div class="team-export-tools"><span class="team-pill">'+rows.length+' / '+all.length+' bénévoles</span><button type="button" class="team-button light" data-export-directory="csv">Exporter CSV</button><button type="button" class="team-button light" data-export-directory="print">Imprimer A4</button><button type="button" class="team-button orange" data-export-directory="pdf">Créer un PDF</button></div>'+
  (rows.length?rows.map(m=>'<form class="team-form team-directory-card" data-directory-form="'+esc(m.member_id)+'"><div class="team-between"><div><label>Nom et prénom<input name="name" value="'+esc(m.name)+'" required minlength="2" maxlength="110"></label><p class="team-small">'+esc(m.email)+'</p></div><span class="team-pill ok">Bénévole</span></div><div class="team-split"><label>Téléphone<input name="phone" type="tel" maxlength="40" value="'+esc(m.phone)+'" placeholder="06…"></label><label>Adresse<input name="address" maxlength="280" value="'+esc(m.address)+'" placeholder="Rue, numéro…"></label><label>Code postal<input name="postalCode" maxlength="16" value="'+esc(m.postal_code)+'" placeholder="16230"></label><label>Ville<input name="city" maxlength="120" value="'+esc(m.city)+'" placeholder="Mansle-les-Fontaines"></label></div><div class="team-row"><button class="team-button orange" type="submit">Enregistrer les coordonnées</button><button class="team-button light" type="reset">Annuler les modifications</button></div>'+(m.updated_at?'<p class="team-small team-muted">Modifié le '+shortdt(m.updated_at)+' par '+esc(m.updated_by)+'</p>':'')+'</form>').join(''):'<p>Aucun bénévole ne correspond à cette recherche.</p>')+
  '</section>';
@@ -440,19 +444,20 @@ function listsData(){
   if(state.listRole==='bureau'&&!m.roles.includes('bureau'))return false;
   if(state.listRole==='volunteer'&&(m.roles.includes('director')||m.roles.includes('bureau')||m.memberships.some(x=>x.role==='lead')))return false;
   if(state.listPole&&state.listPole!=='all'&&!m.memberships.some(x=>x.pole_id===state.listPole))return false;
+  if(!consentMatches(m,'image',state.listImage)||!consentMatches(m,'phone',state.listPhone)||!consentMatches(m,'email',state.listEmail))return false;
   const q=state.listSearch.toLocaleLowerCase('fr-FR').trim();
   return !q||[m.name,m.email,m.phone,m.address,m.postal_code,m.city,m.quality,...m.poles].some(x=>String(x||'').toLocaleLowerCase('fr-FR').includes(q));
  });
 }
-const listColumnLabels={name:'Nom et prénom',quality:'Qualité',poles:'Pôle(s)',paid:'Adhésion',phone:'Téléphone',email:'E-mail',address:'Adresse',postal_code:'CP',city:'Ville',paid_on:'Règlement le'};
-function listValue(m,key){return key==='poles'?m.poles.join(', '):key==='paid'?(m.paid?'À jour':'En attente'):m[key]||'';}
+const listColumnLabels={name:'Nom et prénom',quality:'Qualité',poles:'Pôle(s)',paid:'Adhésion',phone:'Téléphone',email:'E-mail',address:'Adresse',postal_code:'CP',city:'Ville',paid_on:'Règlement le',image_consent:'Droit à l’image',phone_consent:'Communication téléphone',email_consent:'Communication e-mail'};
+function listValue(m,key){if(key==='image_consent')return consentLabel(consentValue(m,'image'));if(key==='phone_consent')return consentLabel(consentValue(m,'phone'));if(key==='email_consent')return consentLabel(consentValue(m,'email'));return key==='poles'?m.poles.join(', '):key==='paid'?(m.paid?'À jour':'En attente'):m[key]||'';}
 function listOutputPeople(){
  if(!state.listEditor)return listsData();
  const all=state.manage?.contacts||[],order=new Map(state.listSelected.map((id,i)=>[id,i]));
- const previous={status:state.listStatus,role:state.listRole,pole:state.listPole,search:state.listSearch};
- state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';
+ const previous={status:state.listStatus,role:state.listRole,pole:state.listPole,image:state.listImage,phone:state.listPhone,email:state.listEmail,search:state.listSearch};
+ state.listStatus='all';state.listRole='all';state.listPole='';state.listImage='all';state.listPhone='all';state.listEmail='all';state.listSearch='';
  try{return listsData().filter(m=>order.has(m.member_id)).sort((a,b)=>order.get(a.member_id)-order.get(b.member_id));}
- finally{state.listStatus=previous.status;state.listRole=previous.role;state.listPole=previous.pole;state.listSearch=previous.search;}
+ finally{state.listStatus=previous.status;state.listRole=previous.role;state.listPole=previous.pole;state.listImage=previous.image;state.listPhone=previous.phone;state.listEmail=previous.email;state.listSearch=previous.search;}
 }
 function listsRows(){
  const columns=state.listEditor?state.listColumns:Object.keys(listColumnLabels);
@@ -464,7 +469,7 @@ function openSavedList(id){
   const columns=JSON.parse(found.columns_json),ids=JSON.parse(found.member_ids_json);
   if(!Array.isArray(columns)||!Array.isArray(ids)||!columns.length)return toast('Cette liste est invalide.');
   state.listEditor=true;state.listId=found.id;state.listTitle=found.title;state.listColumns=columns.filter(x=>Object.hasOwn(listColumnLabels,x));state.listSelected=ids;
-  state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();
+  state.listStatus='all';state.listRole='all';state.listPole='';state.listImage='all';state.listPhone='all';state.listEmail='all';state.listSearch='';render();
  }catch{toast('Impossible de lire cette liste.')}
 }
 function exportListsCSV(){
@@ -492,7 +497,7 @@ function manageLists(){
  '<div class="team-split"><label>Adhésions<select id="teamListStatus"><option value="all" '+(state.listStatus==='all'?'selected':'')+'>Toutes</option><option value="paid" '+(state.listStatus==='paid'?'selected':'')+'>À jour</option><option value="pending" '+(state.listStatus==='pending'?'selected':'')+'>Non à jour</option></select></label>'+
  '<label>Qualité / fonction<select id="teamListRole"><option value="all" '+(state.listRole==='all'?'selected':'')+'>Tous les bénévoles</option><option value="leaders" '+(state.listRole==='leaders'?'selected':'')+'>Responsables uniquement</option><option value="director" '+(state.listRole==='director'?'selected':'')+'>Dirigeants uniquement</option><option value="bureau" '+(state.listRole==='bureau'?'selected':'')+'>Bureau uniquement</option><option value="volunteer" '+(state.listRole==='volunteer'?'selected':'')+'>Bénévoles sans fonction</option></select></label>'+
  '<label>Par pôle<select id="teamListPole"><option value="all">Tous les pôles</option>'+(d.poles||[]).filter(p=>!p.archived).map(p=>'<option value="'+p.id+'" '+(state.listPole===p.id?'selected':'')+'>'+esc(p.name)+'</option>').join('')+'</select></label>'+
- '<label>Recherche<input id="teamListSearch" type="search" placeholder="Nom, ville, coordonnées…" value="'+esc(state.listSearch)+'"></label></div>'+
+ '<label>Recherche<input id="teamListSearch" type="search" placeholder="Nom, ville, coordonnées…" value="'+esc(state.listSearch)+'"></label></div>'+'<div class="team-consent-filters">'+consentPicker('teamListImage','Droit à l’image',state.listImage)+consentPicker('teamListPhone','Communication du téléphone',state.listPhone)+consentPicker('teamListEmail','Communication de l’e-mail',state.listEmail)+'</div>'+
  '<div class="team-export-tools"><button class="team-button light" type="button" data-list-apply>Appliquer les filtres</button><button class="team-button light" type="button" data-list-reset>Afficher tous</button><button class="team-button light" type="button" data-list-export="csv">Exporter CSV</button><button class="team-button light" type="button" data-list-export="print">Imprimer A4</button><button class="team-button orange" type="button" data-list-export="pdf">Créer un PDF</button></div><p><strong>'+rows.length+'</strong> personne(s) correspondent aux critères.</p>'+
  '<div class="team-table-wrap"><table class="team-table"><thead><tr>'+(state.listEditor?'<th>Choisir</th>':'')+'<th>Nom et prénom</th><th>Qualité</th><th>Pôle(s)</th><th>Adhésion</th><th>Téléphone</th><th>E-mail</th></tr></thead><tbody>'+
  (rows.map(m=>'<tr>'+(state.listEditor?'<td><label class="team-check"><input type="checkbox" data-list-check="'+m.member_id+'" '+(state.listSelected.includes(m.member_id)?'checked':'')+' aria-label="Ajouter '+esc(m.name)+'"></label></td>':'')+'<td>'+esc(m.name)+'</td><td>'+esc(m.quality)+'</td><td>'+esc(m.poles.join(', ')||'—')+'</td><td><span class="team-pill '+(m.paid?'ok':'warn')+'">'+(m.paid?'À jour':'Non à jour')+'</span></td><td>'+esc(m.phone||'—')+'</td><td>'+esc(m.email||'—')+'</td></tr>').join('')||'<tr><td colspan="'+(state.listEditor?'7':'6')+'">Aucun résultat.</td></tr>')+'</tbody></table></div></section>';
@@ -659,7 +664,7 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-pa
  if(b.dataset.listColumnMove){const i=state.listColumns.indexOf(b.dataset.column),j=i+(b.dataset.listColumnMove==='up'?-1:1);if(i>=0&&j>=0&&j<state.listColumns.length){[state.listColumns[i],state.listColumns[j]]=[state.listColumns[j],state.listColumns[i]];render();}return;}
  if(b.dataset.listMove){const i=state.listSelected.indexOf(b.dataset.member);const next=i+(b.dataset.listMove==='up'?-1:1);if(i>=0&&next>=0&&next<state.listSelected.length){[state.listSelected[i],state.listSelected[next]]=[state.listSelected[next],state.listSelected[i]];render();}return;}
  if(b.hasAttribute('data-list-apply')){state.listSearch=document.getElementById('teamListSearch')?.value||'';render();return;}
- if(b.hasAttribute('data-list-reset')){state.listStatus='all';state.listRole='all';state.listPole='';state.listSearch='';render();return;}
+ if(b.hasAttribute('data-list-reset')){state.listStatus='all';state.listRole='all';state.listPole='';state.listImage='all';state.listPhone='all';state.listEmail='all';state.listSearch='';render();return;}
  if(b.dataset.listExport){if(!state.me.admin&&!state.me.secretariat)return;b.dataset.listExport==='csv'?exportListsCSV():printLists(b.dataset.listExport);return;}
  if(b.dataset.printTeam){printTeam(b.dataset.printTeam);return;}
  if(b.hasAttribute('data-back-edit')){const type=b.dataset.backEdit;if(type==='activity')state.editActivity=null;if(type==='pole')state.editPole=null;if(type==='member')state.editMember=null;if(type==='shift')state.editShift=null;render();return;}
@@ -810,6 +815,8 @@ root.addEventListener('change',async e=>{
  if(e.target.id==='teamListStatus'){state.listStatus=e.target.value;render();return;}
  if(e.target.id==='teamListRole'){state.listRole=e.target.value;render();return;}
  if(e.target.id==='teamListPole'){state.listPole=e.target.value;render();return;}
+ const cf={teamDirectoryImage:'directoryImage',teamDirectoryPhone:'directoryPhone',teamDirectoryEmail:'directoryEmail',teamListImage:'listImage',teamListPhone:'listPhone',teamListEmail:'listEmail'};
+ if(Object.hasOwn(cf,e.target.id)){state[cf[e.target.id]]=e.target.value;render();return;}
  if(e.target.id==='teamSigningFilter'){state.signingFilter=e.target.value;state.signingSelection=[];render();return;}
  if(e.target.id==='teamSigningPole'){state.signingPole=e.target.value;state.signingSelection=[];render();return;}
  if(e.target.matches('#signingAddForm input[name="member"]')){state.signingSelection=[...e.target.form.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(x=>x.value);return;}
