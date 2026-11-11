@@ -69,6 +69,21 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   assert.equal((await api(S,{op:'pole.delete',id:pole})).status,403,'le secrétariat ne peut supprimer un pôle');
 
   await okay(A,{op:'assignment.set',memberId:other,poleId:outsidePole,role:'member'});
+  // Les conversations et les compteurs restent personnels aux groupes autorisés.
+  const roomsB=(await invoke(B,'/zikateam/api/chat-summary')).payload.rooms;
+  assert.ok(roomsB.some(x=>x.channel==='general'));
+  assert.ok(roomsB.some(x=>x.channel==='pole'&&x.id===pole));
+  assert.equal(roomsB.some(x=>x.channel==='pole'&&x.id===outsidePole),false,'aucun groupe extérieur visible');
+  assert.equal((await invoke(B,'/zikateam/api/messages?channel=pole&id='+outsidePole)).status,403,'lecture du groupe extérieur interdite');
+  assert.equal((await api(B,{op:'message.send',channel:'pole',channelId:outsidePole,body:'interdit'})).status,403,'écriture du groupe extérieur interdite');
+  await okay(A,{op:'message.send',channel:'general',body:'Bonjour les bénévoles'});
+  const unreadBefore=(await invoke(B,'/zikateam/api/chat-summary')).payload;
+  assert.equal(unreadBefore.rooms.find(x=>x.channel==='general').unread,1,'nouveau message non lu');
+  const msgRead=await invoke(B,'/zikateam/api/messages?channel=general');
+  assert.equal(msgRead.status,200);
+  assert.equal(msgRead.payload.messages.at(-1).author_id,adminMemberId);
+  assert.equal((await invoke(B,'/zikateam/api/chat-summary')).payload.rooms.find(x=>x.channel==='general').unread,0,'ouverture du salon marque les messages lus');
+
   // Le partage des coordonnées est choisi par la personne, et ne concerne que son pôle.
   await okay(A,{op:'contact.set',memberId:member,phone:'0600000016',city:'Mansle-les-Fontaines'});
   const noShare=(await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member);
