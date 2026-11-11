@@ -75,6 +75,12 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   const yesShare=(await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member);
   assert.equal(yesShare.email,B);
   assert.equal(yesShare.phone,'0600000016');
+  const leadRoster=(await invoke(L,'/zikateam/api/me')).payload.poles.find(p=>p.id===pole).membersDetails.find(m=>m.id===member);
+  assert.equal(leadRoster.phone,'0600000016','le responsable consulte les coordonnées autorisées');
+  const volunteerRoster=(await invoke(B,'/zikateam/api/me')).payload.poles.find(p=>p.id===pole).membersDetails.find(m=>m.id===lead);
+  assert.equal(volunteerRoster.phone,'','un bénévole ne voit pas le téléphone de ses collègues');
+  assert.equal(volunteerRoster.email,'','un bénévole ne voit pas leur e-mail');
+
   assert.equal((await invoke(B,'/zikateam/api/me')).payload.consents.phone,true);
   await okay(B,{op:'consents.save',consents:{image:false,phone:false,email:false}});
   assert.equal((await invoke(L,'/zikateam/api/manage')).payload.members.find(m=>m.id===member).phone,'','le retrait du consentement est immédiat');
