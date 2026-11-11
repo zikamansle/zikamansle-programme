@@ -44,3 +44,13 @@ test('le bénévole validé peut renseigner son téléphone sans accéder aux au
  assert.ok(client.includes('id="teamSelfContactForm"'));
  assert.ok(client.includes("await command('contact.self',{phone:d.phone})"));
 });
+
+test('les photos privées respectent le consentement et sont sans cache',()=>{
+ assert.ok(server.includes("if(!consent)return fail('Droit à l’image non accordé.',403)"));
+ assert.ok(server.includes("AND p.archived=0 LIMIT 1"));
+ assert.ok(server.includes("'Cache-Control':'private, no-store'"));
+});
+
+test('les convocations du bureau incluent les dirigeants',()=>{
+ assert.ok(server.includes("r.role IN ('bureau','director')"));
+});
