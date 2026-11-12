@@ -25,6 +25,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
@@ -188,6 +189,16 @@ public final class ZikaWebActivity extends Activity {
     private void startWebView(Uri incoming) {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        // Android 15/16 impose l'affichage edge-to-edge : protéger la WebView et
+        // sa navigation sans utiliser statusBarColor/navigationBarColor obsolètes.
+        if (Build.VERSION.SDK_INT >= 35) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets safe = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                return insets;
+            });
+        }
         status = new TextView(this);
         status.setText("Ouverture de ZikaMansle…");
         status.setPadding(24, 22, 24, 22);
