@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -67,7 +68,8 @@ final class ZikaPushRegistration {
         Uri uri=Uri.parse(url);
         // A signed release may register ONLY with the official production host.
         // Without a configured URL, registration remains disabled.
-        String expectedHost=BuildConfig.DEBUG
+        boolean debug=(context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)!=0;
+        String expectedHost=debug
             ? "zikamansle-app-staging.zikamansle.workers.dev"
             : "app.zikamansle.fr";
         if (!"https".equals(uri.getScheme()) ||
