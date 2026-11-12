@@ -20,8 +20,8 @@ test('Actualités et notifications : JavaScript complet et syntaxiquement valide
  assert.ok(js.includes("no.onclick=()=>change('disable')"));
 });
 
-test('push 410/404 : un seul réabonnement automatique avec la clé VAPID de cette origine',()=>{
- assert.match(js,/result\.code===404\|\|result\.code===410/);
+test('push 403/404/410 : réabonnement automatique avec la clé VAPID de cette origine',()=>{
+ assert.match(js,/\[403,404,410\]\.includes\(result\.code\)/);
  assert.match(js,/await renewSubscription\(sub\)/);
  assert.match(js,/await existing\.unsubscribe\(\)/);
  assert.match(js,/await reg\.pushManager\.subscribe\(\{userVisibleOnly:true,applicationServerKey:key\}\)/);
