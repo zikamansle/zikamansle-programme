@@ -21,31 +21,61 @@ adb pull /sdcard/zika-screen.png /tmp/zika-screen.png >/dev/null || true
 python3 - <<'PY'
 import re
 import subprocess
+import time
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-p=Path('/tmp/zika-ui.xml')
-ui=p.read_text(errors='replace') if p.exists() else ''
-if 'Notifications ZikaMansle' in ui:
+def ui_dump():
+    subprocess.run(['adb','shell','uiautomator','dump','/sdcard/window.xml'],
+                   stdout=subprocess.DEVNULL,check=False)
+    result=subprocess.run(['adb','shell','cat','/sdcard/window.xml'],
+                          capture_output=True,text=True)
     try:
-        root=ET.fromstring(ui)
-        buttons=[n for n in root.iter('node') if n.attrib.get('text','').strip().casefold()=='activer']
-        if not buttons:
-            buttons=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
-        if not buttons:
-            print('Visible UI nodes:',[(n.attrib.get('text',''),n.attrib.get('resource-id','')) for n in root.iter('node') if n.attrib.get('text','') or n.attrib.get('resource-id','')][-25:])
-            raise ValueError('Notification approval button not found in Android dialog')
-        bounds=buttons[0].attrib.get('bounds','')
-        match=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',bounds)
-        if not match:
-            raise ValueError('Activer button has no valid bounds')
-        x1,y1,x2,y2=map(int,match.groups())
-        subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
-        print('PASS: Activer notifications selected in the ZikaMansle app')
-    except (ET.ParseError, ValueError) as e:
-        raise SystemExit('FAIL: cannot operate notification dialog: '+str(e))
+        return ET.fromstring(result.stdout)
+    except ET.ParseError:
+        return None
+
+def is_prompt(root):
+    return root is not None and any(
+        'Notifications ZikaMansle' in n.attrib.get('text','')
+        for n in root.iter('node'))
+
+def click_approve(root):
+    buttons=[n for n in root.iter('node')
+             if n.attrib.get('text','').strip().casefold()=='activer']
+    if not buttons:
+        buttons=[n for n in root.iter('node')
+                 if n.attrib.get('resource-id','').endswith(':id/button1')]
+    if not buttons: raise SystemExit('FAIL: Android notification approval button absent')
+    bounds=buttons[0].attrib.get('bounds','')
+    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',bounds)
+    if not m: raise SystemExit('FAIL: Notification approval button has invalid bounds')
+    x1,y1,x2,y2=map(int,m.groups())
+    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],
+                   check=True)
+
+root=None
+for attempt in range(6):
+    root=ui_dump()
+    if root is not None and any(n.attrib.get('text') for n in root.iter('node')):
+        break
+    time.sleep(2)
+if root is None:
+    raise SystemExit('FAIL: Android UI never became available after startup')
+if is_prompt(root):
+    click_approve(root)
+    print('PASS: Activer notifications selected in the ZikaMansle app')
+    time.sleep(2)
+    for attempt in range(5):
+        root=ui_dump()
+        if root is not None and not is_prompt(root): break
+        time.sleep(2)
+    else:
+        raise SystemExit('FAIL: Notifications consent dialog stayed open after Activer')
 else:
-    print('No first-run notification dialog appeared, verifying app window directly')
+    texts=[n.attrib.get('text','') for n in root.iter('node') if n.attrib.get('text','')]
+    if len(texts)<3: raise SystemExit('FAIL: Android UI missing or incomplete')
+    print('No first-run notification dialog; normal app UI available')
 PY
 
 # The consent dialog must not be the end of the test: the in-app WebView
