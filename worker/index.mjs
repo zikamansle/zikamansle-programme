@@ -37,7 +37,7 @@ export default {
     else if (path === '/internal/native/send'||path === '/internal/native/preflight') {
       response = await handleNativeRelay(request,env);
     }
-    else if (path === '/api/native/subscribe'||path === '/api/native/unsubscribe'||path === '/api/native/config'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
+    else if (path === '/api/native/subscribe'||path === '/api/native/selftest'||path === '/api/native/unsubscribe'||path === '/api/native/config'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
       response = env.APP_ENV==='production'?await handleNativeProduction(request,env,isAdmin):await handleNative(request,env,isAdmin);
     }
     else if (path.startsWith('/api/push/') || isAdminAPI(path)) {
