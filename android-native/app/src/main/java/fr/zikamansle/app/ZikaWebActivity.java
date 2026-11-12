@@ -95,7 +95,7 @@ public final class ZikaWebActivity extends Activity {
                 if(web==null||isFinishing()||isDestroyed())return;
                 Uri current=Uri.parse(web.getUrl());
                 if(!sameOrigin(current)||!current.getPath().startsWith("/zikateam"))return;
-                String cookies=CookieManager.getInstance().getCookie("https://app.zikamansle.fr/");
+                String cookies=CookieManager.getInstance().getCookie("https://app.zikamansle.fr/zikateam/api/command");
                 ZikaPushRegistration.linkTeam(ZikaWebActivity.this,cookies);
             });
         }
