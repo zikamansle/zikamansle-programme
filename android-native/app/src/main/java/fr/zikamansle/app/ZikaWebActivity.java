@@ -29,6 +29,7 @@ import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
+import android.widget.FrameLayout;
 
 /**
  * Stable in-app entry point for the existing ZikaMansle web application.
@@ -48,6 +49,11 @@ public final class ZikaWebActivity extends Activity {
     private LinearLayout root;
     private TextView status;
     private boolean loadError;
+    // HTML5 full-screen content (ZikaRun) needs a native WebChromeClient host.
+    private FrameLayout fullscreenContainer;
+    private View fullscreenView;
+    private WebChromeClient.CustomViewCallback fullscreenCallback;
+    private int previousSystemUiVisibility;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -246,6 +252,33 @@ public final class ZikaWebActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (fullscreenView != null || isFinishing() || isDestroyed()) {
+                    callback.onCustomViewHidden();
+                    return;
+                }
+                fullscreenView = view;
+                fullscreenCallback = callback;
+                previousSystemUiVisibility = getWindow().getDecorView().getSystemUiVisibility();
+                fullscreenContainer = new FrameLayout(ZikaWebActivity.this);
+                fullscreenContainer.setBackgroundColor(android.graphics.Color.BLACK);
+                fullscreenContainer.addView(view, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+                addContentView(fullscreenContainer, new android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            }
+
+            @Override public void onHideCustomView() {
+                closeFullscreen();
+            }
             @Override public boolean onShowFileChooser(WebView view,
                 ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFiles != null) pendingFiles.onReceiveValue(null);
@@ -372,6 +405,25 @@ public final class ZikaWebActivity extends Activity {
           + "       if(el.getAttribute('aria-hidden')!=='true')el.setAttribute('aria-hidden','true');"
           + "     }"
           + "   });"
+          + "   document.querySelectorAll('iframe[src]').forEach(function(frame){"
+          + "     if(!/zikarun/i.test(frame.getAttribute('src')||''))return;"
+          + "     frame.setAttribute('allowfullscreen','');"
+          + "     frame.setAttribute('webkitallowfullscreen','');"
+          + "     var allow=frame.getAttribute('allow')||'';"
+          + "     if(!/(?:^|[;\\s])fullscreen(?:[;\\s]|$)/i.test(allow))frame.setAttribute('allow',(allow?allow+'; ':'')+'fullscreen');"
+          + "     if(frame.hasAttribute('data-zikarun-fullscreen-added'))return;"
+          + "     frame.setAttribute('data-zikarun-fullscreen-added','true');"
+          + "     var button=document.createElement('button');"
+          + "     button.type='button';button.textContent='⛶ Jouer en plein écran';"
+          + "     button.setAttribute('aria-label','Afficher ZikaRun en plein écran');"
+          + "     button.style.cssText='display:block;margin:10px auto;padding:12px 18px;background:#ff912e;color:#071b2d;border:0;border-radius:12px;font-size:16px;font-weight:700;';"
+          + "     frame.parentNode.insertBefore(button,frame);"
+          + "     button.addEventListener('click',function(){"
+          + "       if(frame.requestFullscreen){frame.requestFullscreen().catch(function(){"
+          + "         window.open(frame.src,'_blank');"
+          + "       });}else{window.open(frame.src,'_blank');}"
+          + "     });"
+          + "   });"
           + "   if(!isNews())return;"
           + "   var heading=Array.from(document.querySelectorAll('h2,h3')).find(function(h){return /gardons le contact/i.test(text(h));});"
           + "   if(!heading)return;"
@@ -434,6 +486,24 @@ public final class ZikaWebActivity extends Activity {
             android.util.Log.i("ZikaMansle", "ZIKA_NATIVE_UI_CLEANUP_READY"));
     }
 
+    private void closeFullscreen() {
+        if (fullscreenView == null) return;
+        if (fullscreenContainer != null) {
+            fullscreenContainer.removeView(fullscreenView);
+            android.view.ViewParent parent = fullscreenContainer.getParent();
+            if (parent instanceof android.view.ViewGroup)
+                ((android.view.ViewGroup) parent).removeView(fullscreenContainer);
+        }
+        fullscreenView = null;
+        fullscreenContainer = null;
+        getWindow().getDecorView().setSystemUiVisibility(previousSystemUiVisibility);
+        if (fullscreenCallback != null) {
+            WebChromeClient.CustomViewCallback callback = fullscreenCallback;
+            fullscreenCallback = null;
+            callback.onCustomViewHidden();
+        }
+    }
+
     private boolean sameOrigin(Uri url) {
         return url != null && "https".equals(url.getScheme())
             && officialUrl.getHost().equalsIgnoreCase(url.getHost())
@@ -458,11 +528,16 @@ public final class ZikaWebActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
+        if (fullscreenView != null) {
+            closeFullscreen();
+            return;
+        }
         if (web != null && web.canGoBack()) web.goBack();
         else super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
+        closeFullscreen();
         if (pendingFiles != null) {
             pendingFiles.onReceiveValue(null);
             pendingFiles = null;
