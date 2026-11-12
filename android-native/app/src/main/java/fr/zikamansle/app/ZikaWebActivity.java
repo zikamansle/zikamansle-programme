@@ -355,7 +355,7 @@ public final class ZikaWebActivity extends Activity {
           + "   var card=heading.closest('section,article,.card')||heading.parentElement.parentElement;"
           + "   if(!card)return;"
           + "   var buttons=Array.from(card.querySelectorAll('button,a,[role=button]')).filter(function(el){"
-          + "     return /^(?:activer|autoriser|recevoir).{0,35}notifications?/i.test(text(el));"
+          + "     return !el.closest(\'#zika-native-notification-controls\') && /^(?:activer|autoriser|recevoir).{0,35}notifications?/i.test(text(el));"
           + "   });"
           + "   buttons.forEach(function(b){if(b.style.display!=='none')b.style.setProperty('display','none','important');});"
           + "   Array.from(card.querySelectorAll('p,div')).filter(function(p){"
