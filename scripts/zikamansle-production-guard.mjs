@@ -7,6 +7,13 @@ if(config.d1_databases?.[0]?.database_name!=='zikamansle-app-production')fail('N
 if(config.r2_buckets?.[0]?.bucket_name!=='zikamansle-app-production')fail('Bucket non dédié');
 if(config.workers_dev!==true||config.routes||config.route||config.env)fail('DNS ou routage automatique interdit');
 if(config.vars.PUSH_SEND_ENABLED!=='true'||config.vars.TEAM_PUSH_ENABLED!=='true')fail('Les notifications autorisées doivent être activées en production');
+if(config.vars.NATIVE_PUSH_ENABLED!=='true')fail('Notifications Firebase Android natives non activées');
+if(config.services?.length!==1||config.services[0].binding!=='FIREBASE_RELAY'||config.services[0].service!=='zikamansle-app-staging')
+ fail('Relais Firebase non limité au Worker Cloudflare interne autorisé');
+const native=readFileSync('server/native-production.mjs','utf8');
+if(!native.includes("handleNativeRelay(request,env)")||!native.includes("nativeDeliveryReady(env)")||
+ !native.includes("linkNativeMember(db,memberId,token)")||!native.includes("queueNativeActivity(db,activity,reason,members)"))
+ fail('Circuit Firebase natif incomplet');
 const worker=readFileSync('worker/index.mjs','utf8');
 const push=readFileSync('server/push-api.mjs','utf8');
 const auth=readFileSync('server/admin-auth.mjs','utf8');
