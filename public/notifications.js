@@ -29,15 +29,31 @@ async function renewSubscription(previous){
  await api('subscribe',{subscription:replacement.toJSON()});
  return replacement;
 }
-async function prepareTest(){const reg=await registration(true),sub=await reg.pushManager.getSubscription();if(sub)await api('subscribe',{subscription:sub.toJSON()});return sub}
+function pushKeyBytes(key){return Uint8Array.from(atob(key.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))}
+function keyMatches(sub,key){
+ const stored=sub?.options?.applicationServerKey;
+ if(!stored)return false;
+ const actual=new Uint8Array(stored),expected=pushKeyBytes(key);
+ return actual.length===expected.length&&actual.every((byte,i)=>byte===expected[i]);
+}
+async function currentSubscription({repair=true}={}){
+ const reg=await registration(true),sub=await reg.pushManager.getSubscription();
+ if(!sub)return null;
+ if(!repair)return sub;
+ const {publicKey}=await api('config');
+ if(!keyMatches(sub,publicKey))return renewSubscription(sub);
+ await api('subscribe',{subscription:sub.toJSON()});
+ return sub;
+}
+async function prepareTest(){return currentSubscription()}
 async function remoteTest(report){
  if(!supported()||Notification.permission!=='granted')throw Error('Activez les notifications sur ce téléphone avant le test.');
  report('Mise à jour de la réception des notifications…');
  const sub=await prepareTest();if(!sub)throw Error('Activez les notifications sur ce téléphone avant le test.');
  let subscription=sub.toJSON();report('Envoi du push depuis le serveur…');
  let result=await api('selftest',{subscription});
- if(!result.accepted&&(result.code===404||result.code===410)){
-  report('Abonnement expiré (code '+result.code+'). Réinscription de ce téléphone…');
+ if(!result.accepted&&[403,404,410].includes(result.code)){
+  report('Abonnement push refusé (code '+result.code+'). Réinscription de ce téléphone…');
   const replacement=await renewSubscription(sub);
   subscription=replacement.toJSON();
   report('Nouvel abonnement créé. Nouvel envoi du test…');
@@ -55,13 +71,14 @@ async function remoteTest(report){
  }
  report('Push accepté, mais aucune réception confirmée après 30 secondes. La réception peut être retardée. Le problème se situe avant la confirmation du navigateur ; ce test n’est pas considéré comme réussi.');
 }
-async function subscription(){return supported()?(await registration()).pushManager.getSubscription():null}
+async function subscription(){return supported()?currentSubscription():null}
 async function enable(){
  if(!supported())throw Error('Sur iPhone, ajoutez d’abord l’application à l’écran d’accueil depuis Safari, puis ouvrez-la. Sinon, utilisez un navigateur compatible.');
  const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Notifications non autorisées. Vous pouvez changer ce choix dans les réglages du navigateur ou du téléphone.');
- const reg=await registration(true);let sub=await reg.pushManager.getSubscription();
- if(!sub)return renewSubscription();
- try{await api('subscribe',{subscription:sub.toJSON()})}catch(err){throw Error('Impossible d’enregistrer cet appareil : '+err.message)}return sub;
+ try{
+  const sub=await currentSubscription();
+  return sub||await renewSubscription();
+ }catch(err){throw Error('Impossible d’enregistrer cet appareil : '+err.message)}
 }
 async function disable(){const sub=await subscription();if(sub){await api('unsubscribe',{subscription:sub.toJSON()});await sub.unsubscribe()}}
 function mediaHTML(raw){try{const m=typeof raw==='string'?JSON.parse(raw):raw;if(!m||!/^\/api\/push\/media\?id=[a-f0-9-]{36}$/.test(m.url))return '';const url=escape(m.url);if(m.type?.startsWith('image/'))return '<img class="news-media" src="'+url+'" alt="Visuel de l’annonce" loading="lazy">';if(m.type==='video/mp4')return '<video class="news-media" src="'+url+'" controls preload="metadata"></video>';if(m.type==='application/pdf')return '<a class="small-link" href="'+url+'" target="_blank" rel="noopener">Ouvrir le document PDF →</a>';return ''}catch{return ''}}
