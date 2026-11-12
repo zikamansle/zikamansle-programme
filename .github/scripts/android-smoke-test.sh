@@ -31,7 +31,7 @@ if 'Notifications ZikaMansle' in ui:
         if not buttons:
             raise ValueError('Activer button not found in Android notification dialog')
         bounds=buttons[0].attrib.get('bounds','')
-        match=re.fullmatch(r'\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]',bounds)
+        match=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',bounds)
         if not match:
             raise ValueError('Activer button has no valid bounds')
         x1,y1,x2,y2=map(int,match.groups())
