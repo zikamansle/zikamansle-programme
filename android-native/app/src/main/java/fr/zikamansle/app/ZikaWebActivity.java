@@ -118,20 +118,14 @@ public final class ZikaWebActivity extends Activity {
 
         @JavascriptInterface public void disableNotifications() {
             runOnUiThread(() -> {
-                if (isFinishing() || isDestroyed() || !sameOrigin(Uri.parse(web.getUrl()))) return;
-                new AlertDialog.Builder(ZikaWebActivity.this)
-                    .setTitle("Désactiver les notifications ?")
-                    .setMessage("Tu ne recevras plus les alertes du festival sur ce téléphone. Tu pourras les réactiver ici.")
-                    .setNegativeButton("Annuler", (dialog, which) -> {})
-                    .setPositiveButton("Désactiver", (dialog, which) -> {
-                        recordNotificationPrompt();
-                        ZikaPushRegistration.setApproved(ZikaWebActivity.this, false);
-                        updateNativeNotificationControls();
-                        Toast.makeText(ZikaWebActivity.this,
-                            "Notifications désactivées pour ce téléphone.",
-                            Toast.LENGTH_LONG).show();
-                    })
-                    .show();
+                if (isFinishing() || isDestroyed() || web == null
+                    || !sameOrigin(Uri.parse(web.getUrl()))) return;
+                recordNotificationPrompt();
+                ZikaPushRegistration.setApproved(ZikaWebActivity.this, false);
+                updateNativeNotificationControls();
+                Toast.makeText(ZikaWebActivity.this,
+                    "Notifications désactivées pour ce téléphone.",
+                    Toast.LENGTH_LONG).show();
             });
         }
     }
