@@ -122,6 +122,38 @@ final class ZikaPushRegistration {
             return false;
         }
     }
+    static void test(Context context){
+        if(!approved(context)||!permissionGranted(context)||registrationUrl(context)==null||
+           FirebaseApp.getApps(context).isEmpty())return;
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token->{
+            if(token==null||token.isEmpty())return;
+            new Thread(()->{
+                String outcome="Test impossible : vérifiez Firebase et votre connexion.";
+                if(registerSync(context,token)){
+                    try{
+                        Uri uri=Uri.parse(registrationUrl(context));
+                        JSONObject body=new JSONObject();body.put("token",token);
+                        HttpURLConnection conn=post(uri.buildUpon().path("/api/native/selftest").build().toString(),body,null,null);
+                        try{
+                            int code=conn.getResponseCode();
+                            if(code==200)outcome="Notification envoyée par Firebase : vérifiez les notifications Android.";
+                            else if(code==429)outcome="Attendez une minute entre deux tests.";
+                            else outcome="Le serveur Firebase a refusé le test (HTTP "+code+").";
+                        }finally{conn.disconnect();}
+                    }catch(Exception ignored){}
+                }
+                if(context instanceof android.app.Activity){
+                    final String label=outcome;
+                    ((android.app.Activity)context).runOnUiThread(()->
+                        android.widget.Toast.makeText(context,label,android.widget.Toast.LENGTH_LONG).show());
+                }
+            },"zika-native-selftest").start();
+        }).addOnFailureListener(error->{
+            if(context instanceof android.app.Activity)
+                ((android.app.Activity)context).runOnUiThread(()->
+                    android.widget.Toast.makeText(context,"Jeton Firebase indisponible.",android.widget.Toast.LENGTH_LONG).show());
+        });
+    }
     /** Called only after ZikaTeam has returned a verified, charter-accepted session. */
     static void linkTeam(Context context,String cookies){
         if(!approved(context)||!permissionGranted(context)||
