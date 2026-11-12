@@ -1,4 +1,5 @@
 import {isAdmin} from './admin-auth.mjs';
+import {queueNativeNews,drainNativePush} from './native-production.mjs';
 import {enc,b64,un64,validEndpoint,safePath,sendPush} from './webpush.mjs';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const hash=async s=>b64(await crypto.subtle.digest('SHA-256',enc(s)));
@@ -103,6 +104,7 @@ export async function handle(req,env,authorize=isAdmin){
    await db.prepare('UPDATE push_deliveries SET status=?,code=? WHERE message=? AND subscription=?').bind(code>=200&&code<300?'accepted':'failed',code,n.id,s.subscription).run();
    if(code===404||code===410)await db.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(s.subscription).run();
   }));
+  if(!n.test){await queueNativeNews(env,n);await drainNativePush(env,25)}
   const pending=await db.prepare("SELECT COUNT(*) n FROM push_deliveries WHERE message=? AND status='pending'").bind(n.id).first();return json({pending:pending.n});
  }
  return json({error:'Introuvable'},404);

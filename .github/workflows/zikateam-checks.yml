@@ -1,0 +1,28 @@
+name: Vérifier ZikaTeam (sans publication)
+on:
+  pull_request:
+    branches: [migration/application-autonome]
+    paths:
+      - 'public/zikateam*'
+      - 'public/notifications.js'
+      - 'server/zikateam.mjs'
+      - 'worker/index.mjs'
+      - 'drizzle/010*.sql'
+      - 'tests/zikateam.test.mjs'
+      - 'scripts/github-config.mjs'
+      - '.github/workflows/zikateam-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

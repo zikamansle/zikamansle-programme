@@ -2,11 +2,13 @@ import {handle} from '../server/push-api.mjs';
 import {siteContent} from '../server/site-content.mjs';
 import {isAdmin} from '../server/admin-auth.mjs';
 import {handleNative} from '../server/native-push.mjs';
+import {handleNativeProduction,drainNativePush,handleNativeRelay} from '../server/native-production.mjs';
+import {handleZikaTeam, scheduleTeamReminders, drainTeamPush} from '../server/zikateam.mjs';
 import catalog from '../public/data/site.json' with {type:'json'};
 
 const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(path);
 const isAdminPage = path => /^\/administration\/notifications\/?$/.test(path);
-const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-status|native-diagnostics|native-test)$/.test(path);
+const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-diagnostics|native-test)$/.test(path);
 
 // Static Assets normalizes .html to an extensionless URL. Fetch the canonical
 // extensionless asset directly, otherwise /administration/notifications redirects
@@ -18,7 +20,8 @@ export function adminAssetRequest(request) {
 }
 
 export default {
-  async fetch(request, env) {
+  async scheduled(event,env,execution) { execution.waitUntil(Promise.all([scheduleTeamReminders(env), drainTeamPush(env),drainNativePush(env)])); },
+  async fetch(request, env, execution) {
     const url = new URL(request.url);
     const path = url.pathname;
     // Old bookmarks are redirected to a single protected administration prefix.
@@ -26,8 +29,16 @@ export default {
       return Response.redirect(new URL('/administration/notifications',url),302);
     }
     let response;
-    if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
-      response = await handleNative(request,env,isAdmin);
+    if (path === '/zikateam.html') return Response.redirect(new URL('/zikateam',url),302);
+    if (path === '/administration/zikateam') return Response.redirect(new URL('/zikateam',url),302);
+    if (path === '/zikateam' || path.startsWith('/zikateam/')) {
+      response=await handleZikaTeam(request,env,execution);
+    }
+    else if (path === '/internal/native/send'||path === '/internal/native/preflight') {
+      response = await handleNativeRelay(request,env);
+    }
+    else if (path === '/api/native/subscribe'||path === '/api/native/selftest'||path === '/api/native/unsubscribe'||path === '/api/native/config'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
+      response = env.APP_ENV==='production'?await handleNativeProduction(request,env,isAdmin):await handleNative(request,env,isAdmin);
     }
     else if (path.startsWith('/api/push/') || isAdminAPI(path)) {
       // Both legacy and new API routes enforce the cryptographically verified Access JWT.
@@ -42,7 +53,7 @@ export default {
     response = new Response(response.body,response);
     response.headers.set('X-Content-Type-Options','nosniff');
     response.headers.set('Referrer-Policy','strict-origin-when-cross-origin');
-    if (path.startsWith('/administration/')) response.headers.set('Cache-Control','no-store');
+    if (path.startsWith('/administration/') || path==='/zikateam' || path.startsWith('/zikateam/')) response.headers.set('Cache-Control','private, no-store');
     if (path === '/sw.js') {response.headers.set('Cache-Control','no-cache');response.headers.set('Service-Worker-Allowed','/');}
     return response;
   }
