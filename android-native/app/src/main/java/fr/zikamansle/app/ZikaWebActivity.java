@@ -97,7 +97,10 @@ public final class ZikaWebActivity extends Activity {
                 return true;
             }
             @Override public void onPageFinished(WebView view, String url) {
-                if (!loadError) status.setVisibility(View.GONE);
+                if (!loadError) {
+                    status.setVisibility(View.GONE);
+                    android.util.Log.i("ZikaMansle", "ZIKA_WEBVIEW_PAGE_FINISHED host=" + Uri.parse(url).getHost());
+                }
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request,
                 WebResourceError error) {
