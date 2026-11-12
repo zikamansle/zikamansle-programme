@@ -4,11 +4,15 @@ set -euo pipefail
 APK="android-native/app/build/outputs/apk/debug/app-debug.apk"
 test -s "$APK" || { echo "Missing debug APK: $APK"; exit 1; }
 adb install -r "$APK"
+# Pre-grant the Android notification permission to exercise the application's
+# explicit 'Activer' button and Firebase callback without an OS dialog race.
+adb shell pm grant fr.zikamansle.app.debug android.permission.POST_NOTIFICATIONS
 adb logcat -c
 adb shell am start -W -n fr.zikamansle.app.debug/fr.zikamansle.app.ZikaLauncherActivity | tee /tmp/zika-launch.txt
 grep -q "Status: ok" /tmp/zika-launch.txt
 
-# Do not consent to test push notifications or register an emulator device.
+# The app is already open behind the optional notification dialog.
+# Tap 'Activer' to exercise the path that failed on the real Android phone.
 sleep 5
 adb shell uiautomator dump /sdcard/window.xml >/dev/null || true
 adb shell cat /sdcard/window.xml > /tmp/zika-ui.xml || true
@@ -16,14 +20,27 @@ python3 - <<'PY'
 import re
 import subprocess
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
-path=Path('/tmp/zika-ui.xml')
-ui=path.read_text(errors='replace') if path.exists() else ''
-match=re.search(r'text="Plus tard"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', ui)
-if match:
-    x1,y1,x2,y2=map(int,match.groups())
-    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
-    print('Notification consent declined for emulator startup test')
+p=Path('/tmp/zika-ui.xml')
+ui=p.read_text(errors='replace') if p.exists() else ''
+if 'Notifications ZikaMansle' in ui:
+    try:
+        root=ET.fromstring(ui)
+        buttons=[n for n in root.iter('node') if n.attrib.get('text','').strip()=='Activer']
+        if not buttons:
+            raise ValueError('Activer button not found in Android notification dialog')
+        bounds=buttons[0].attrib.get('bounds','')
+        match=re.fullmatch(r'\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]',bounds)
+        if not match:
+            raise ValueError('Activer button has no valid bounds')
+        x1,y1,x2,y2=map(int,match.groups())
+        subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+        print('PASS: Activer notifications selected in the ZikaMansle app')
+    except (ET.ParseError, ValueError) as e:
+        raise SystemExit('FAIL: cannot operate notification dialog: '+str(e))
+else:
+    print('No first-run notification dialog appeared, verifying app window directly')
 PY
 
 # The consent dialog must not be the end of the test: the in-app WebView
