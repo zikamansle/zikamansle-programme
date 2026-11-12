@@ -85,12 +85,9 @@ jobs:
             adb logcat -c
             adb shell am start -W -n fr.zikamansle.app.debug/fr.zikamansle.app.ZikaLauncherActivity
             # Un émulateur fraichement démarré peut perdre le réseau plusieurs secondes.
-            for i in 1 2 3 4 5 6 7 8; do
-              sleep 10
-              adb logcat -d -v brief > android-startup-log.txt
-              if grep -Fq 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt; then break; fi
-              adb shell svc wifi enable || true
-            done
+            # Le runner exécute les lignes du script séparément: pas de boucle shell multilignes ici.
+            sleep 30
+            adb logcat -d -v brief > android-startup-log.txt
             adb shell dumpsys activity activities > android-startup-activity.txt
             adb exec-out screencap -p > android-production-screen.png
             python3 android-native/scripts/check_startup.py
