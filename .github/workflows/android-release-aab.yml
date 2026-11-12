@@ -78,8 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$SIGNED" != "true" ]]; then
-            echo "::error::La clé de signature Google Play existante doit être configurée dans les secrets GitHub. Aucun AAB non signé ne sera considéré comme livrable."
-            exit 1
+            echo "::warning::Clé Google Play absente : compilation R8 pour diagnostic seulement, aucun AAB non signé ne sera livré comme version publiable."
           fi
           for expected in '1:569737641618:android:da9fefbd482d105deff04b' \
              'zikamansle-d0c4e' 'https://app.zikamansle.fr/api/native/subscribe'; do
@@ -96,7 +95,6 @@ jobs:
           gradle -p android-native :app:bundleRelease --no-daemon \
             -PzikaLaunchUrl=https://app.zikamansle.fr/
       - name: Enregistrer la table R8 pour les diagnostics Android
-        if: steps.signing.outputs.signed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: zikamansle-google-play-r8-mapping-v1015
