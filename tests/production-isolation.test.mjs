@@ -47,7 +47,16 @@ test('Migration DNS : le navigateur remplace une ancienne clé VAPID et réessai
  const client=readFileSync(new URL('../public/notifications.js',import.meta.url),'utf8');
  assert.match(client,/function keyMatches\(sub,key\)/);
  assert.match(client,/sub\?\.options\?\.applicationServerKey/);
- assert.match(client,/if\(!keyMatches\(sub,publicKey\)\)return renewSubscription\(sub\)/);
+ assert.match(client,/if\(!keyMatches\(sub,publicKey\)\)return repair\?renewSubscription\(sub\):null/);
  assert.match(client,/\[403,404,410\]\.includes\(result\.code\)/);
  assert.match(client,/async function prepareTest\(\)\{return currentSubscription\(\)\}/);
+});
+
+test('ne pas tenter de re-souscrire aux push sans geste utilisateur',()=>{
+ const team=readFileSync(new URL('../public/zikateam.js',import.meta.url),'utf8');
+ const ui=readFileSync(new URL('../public/notifications.js',import.meta.url),'utf8');
+ assert.doesNotMatch(team,/\(await window\.ZikaPush\.subscription\(\)\)\|\|\(await window\.ZikaPush\.enable\(\)\)/);
+ assert.match(ui,/async function currentSubscription\(\{repair=false\}/);
+ assert.match(ui,/async function prepareTest\(\)\{return currentSubscription\(\{repair:true\}\)\}/);
+ assert.match(ui,/push service error/);
 });
