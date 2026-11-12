@@ -27,7 +27,7 @@
   ],
   "vars": {
     "APP_ENV": "production",
-    "PUSH_SEND_ENABLED": "false",
+    "PUSH_SEND_ENABLED": "true",
     "PUSH_TEST_ENABLED": "true",
     "TEAM_PUSH_ENABLED": "false",
     "TEAM_AUTH_PROVIDER": "supabase",
