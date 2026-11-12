@@ -161,9 +161,9 @@ test('Entrée envoie un message et Maj + Entrée garde un saut de ligne',()=>{
 });
 
 test('la publication d’une réunion utilise deux actions explicites',()=>{
- assert.ok(client.includes('name="publishAction" value="published"'));
- assert.ok(client.includes('name="publishAction" value="draft"'));
- assert.ok(client.includes('Publier la réunion'));
+ assert.ok(client.includes('data-activity-action="published"'));
+ assert.ok(client.includes('data-activity-action="draft"'));
+ assert.ok(client.includes('Publier et convoquer'));
  assert.ok(!client.includes('Publier et prévenir les bénévoles'));
  assert.ok(!client.slice(client.indexOf('function manageActivities(){'),client.indexOf('function shiftForm(){')).includes('<label>État<select name="status">'));
  assert.ok(client.includes('Impossible d’enregistrer : '));
@@ -227,8 +227,8 @@ test('la fiche bénévole est enregistrée sans blocage de validation HTML nativ
  assert.ok(client.includes("if(f.id==='memberForm')"));
  assert.ok(client.includes("const saved=await command('member.save'"));
  assert.ok(client.includes("const data=await api('manage')"));
- assert.ok(client.includes("const actual=new Map((data.memberships||[])"));
- assert.ok(client.includes("La fiche est enregistrée, mais certaines affectations aux pôles"));
+ assert.ok(client.includes("if(saved.rolesSaved!==changes.roles.length||saved.polesSaved!==changes.poleRoles.length)"));
+ assert.ok(client.includes('Fiche, fonctions et pôles enregistrés dans la base.'));
  assert.ok(client.includes("const active=f.querySelector('input[name=\"active\"]')"));
 });
 
@@ -245,5 +245,5 @@ test('boutons fiche et fonctions enregistrent même sur navigateur mobile',()=>{
  assert.ok(client.includes("if(f.id==='teamMemberFunctionsForm')"));
  assert.ok(client.includes("const saved=await command('member.functions.set'"));
  assert.ok(client.includes("const data=await api('manage')"));
- assert.ok(client.includes("Les fonctions n’ont pas été confirmées par la base."));
+ assert.ok(client.includes('Le serveur n’a pas confirmé toutes les fonctions et affectations.'));
 });
