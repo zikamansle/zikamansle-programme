@@ -102,6 +102,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: zikamansle-android-test-apk
           path: android-native/app/build/outputs/apk/debug/*.apk
