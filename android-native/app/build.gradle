@@ -23,8 +23,8 @@ android {
         applicationId 'fr.zikamansle.app'
         minSdk 24
         targetSdk 36
-        versionCode 7
-        versionName '1.0.6'
+        versionCode 8
+        versionName '1.0.7'
         resValue 'string', 'zika_launch_url', nativeLaunch(launchUrl)
 
     }
@@ -56,8 +56,8 @@ android {
             resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID') ?: '569737641618'
             resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID') ?: 'zikamansle-d0c4e'
             resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe'
-            // The debug APK opens the same public app as the release to verify real behavior.\n            // Firebase push registration remains restricted to staging.
-            resValue 'string', 'zika_launch_url', nativeLaunch((project.findProperty('zikaLaunchUrl') ?: 'https://app.zikamansle.fr/').toString())
+            // The integrated test opens the complete Cloudflare staging application,\n            // including /zikateam under the SAME origin. Release is unchanged.
+            resValue 'string', 'zika_launch_url', nativeLaunch((project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString())
         }
         release {
             // Sign only when a complete private Play upload key is provided.
