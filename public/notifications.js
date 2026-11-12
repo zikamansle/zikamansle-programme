@@ -25,7 +25,12 @@ async function renewSubscription(previous){
  const existing=previous||await reg.pushManager.getSubscription();
  if(existing){try{await api('unsubscribe',{subscription:existing.toJSON()})}catch{}const cleared=await existing.unsubscribe();if(!cleared)throw Error('Impossible de réinitialiser cet abonnement. Fermez et rouvrez ZikaMansle.')}
  const key=Uint8Array.from(atob(config.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
- const replacement=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+ let replacement;
+ try{replacement=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key})}
+ catch(error){
+  if(error?.name==='AbortError'||/push service error|registration failed/i.test(error?.message||''))throw Error('Le service push de Chrome/Google a refusé la nouvelle inscription. Vérifiez la connexion Internet et les services Google Play, puis réessayez. Si le problème persiste : Chrome → Paramètres → Paramètres des sites → Toutes les données des sites → app.zikamansle.fr → Effacer et réinitialiser, puis activez de nouveau les notifications.');
+  throw error;
+ }
  await api('subscribe',{subscription:replacement.toJSON()});
  return replacement;
 }
@@ -36,16 +41,16 @@ function keyMatches(sub,key){
  const actual=new Uint8Array(stored),expected=pushKeyBytes(key);
  return actual.length===expected.length&&actual.every((byte,i)=>byte===expected[i]);
 }
-async function currentSubscription({repair=true}={}){
+async function currentSubscription({repair=false}={}){
  const reg=await registration(true),sub=await reg.pushManager.getSubscription();
  if(!sub)return null;
  if(!repair)return sub;
  const {publicKey}=await api('config');
- if(!keyMatches(sub,publicKey))return renewSubscription(sub);
- await api('subscribe',{subscription:sub.toJSON()});
+ if(!keyMatches(sub,publicKey))return repair?renewSubscription(sub):null;
+ if(repair)await api('subscribe',{subscription:sub.toJSON()});
  return sub;
 }
-async function prepareTest(){return currentSubscription()}
+async function prepareTest(){return currentSubscription({repair:true})}
 async function remoteTest(report){
  if(!supported()||Notification.permission!=='granted')throw Error('Activez les notifications sur ce téléphone avant le test.');
  report('Mise à jour de la réception des notifications…');
@@ -71,16 +76,16 @@ async function remoteTest(report){
  }
  report('Push accepté, mais aucune réception confirmée après 30 secondes. La réception peut être retardée. Le problème se situe avant la confirmation du navigateur ; ce test n’est pas considéré comme réussi.');
 }
-async function subscription(){return supported()?currentSubscription():null}
+async function subscription(){return supported()?currentSubscription({repair:false}):null}
 async function enable(){
  if(!supported())throw Error('Sur iPhone, ajoutez d’abord l’application à l’écran d’accueil depuis Safari, puis ouvrez-la. Sinon, utilisez un navigateur compatible.');
  const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Notifications non autorisées. Vous pouvez changer ce choix dans les réglages du navigateur ou du téléphone.');
  try{
-  const sub=await currentSubscription();
+  const sub=await currentSubscription({repair:true});
   return sub||await renewSubscription();
  }catch(err){throw Error('Impossible d’enregistrer cet appareil : '+err.message)}
 }
-async function disable(){const sub=await subscription();if(sub){await api('unsubscribe',{subscription:sub.toJSON()});await sub.unsubscribe()}}
+async function disable(){const reg=await registration(),sub=await reg.pushManager.getSubscription();if(sub){try{await api('unsubscribe',{subscription:sub.toJSON()})}catch{}await sub.unsubscribe()}}
 function mediaHTML(raw){try{const m=typeof raw==='string'?JSON.parse(raw):raw;if(!m||!/^\/api\/push\/media\?id=[a-f0-9-]{36}$/.test(m.url))return '';const url=escape(m.url);if(m.type?.startsWith('image/'))return '<img class="news-media" src="'+url+'" alt="Visuel de l’annonce" loading="lazy">';if(m.type==='video/mp4')return '<video class="news-media" src="'+url+'" controls preload="metadata"></video>';if(m.type==='application/pdf')return '<a class="small-link" href="'+url+'" target="_blank" rel="noopener">Ouvrir le document PDF →</a>';return ''}catch{return ''}}
 window.zikaMediaHTML=mediaHTML;
 window.ZikaPush={api,enable,subscription,prepareTest,localTest,remoteTest};
