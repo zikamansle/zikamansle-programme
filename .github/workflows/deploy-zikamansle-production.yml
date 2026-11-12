@@ -1,4 +1,4 @@
-name: Préparer le Worker ZikaMansle production (manuel uniquement)
+name: Préparer le Worker ZikaMansle production (approbation explicite)
 on:
   push:
     branches: [feat/zikateam-fiches-notifications]
