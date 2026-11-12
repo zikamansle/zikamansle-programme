@@ -140,8 +140,7 @@ adb shell screencap -p /sdcard/zika-plus-screen.png >/dev/null || true
 adb pull /sdcard/zika-plus-screen.png /tmp/zika-plus-screen.png >/dev/null || true
 # Exercise the actual on/off buttons on the Actualités & notifications page,
 # not merely the first-launch Android notification permission dialog.
-# Reopen the festival home, so we do not depend on ZikaTeam's private
-# browser history or where the WebView back button returns.
+# We are already in Plus; validate Actualités before opening private ZikaTeam.
 python3 - <<'PY'
 import re,subprocess,time
 from pathlib import Path
@@ -151,7 +150,10 @@ def dump():
     subprocess.run(['adb','shell','uiautomator','dump','/sdcard/zika-current.xml'],
         stdout=subprocess.DEVNULL,check=False)
     raw=subprocess.check_output(['adb','shell','cat','/sdcard/zika-current.xml'],text=True)
-    Path('/tmp/zika-news-ui.xml').write_text(raw)\n    subprocess.run(['adb','shell','screencap','-p','/sdcard/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)\n    subprocess.run(['adb','pull','/sdcard/zika-news-screen.png','/tmp/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)\n    return ET.fromstring(raw)
+    Path('/tmp/zika-news-ui.xml').write_text(raw)
+    subprocess.run(['adb','shell','screencap','-p','/sdcard/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)
+    subprocess.run(['adb','pull','/sdcard/zika-news-screen.png','/tmp/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)
+    return ET.fromstring(raw)
 
 def find(root,needle):
     return [n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
@@ -200,7 +202,7 @@ if not find(root,'Notifications activées'):
 print('PASS: Activer restores the Android native notification opt-in')
 # Return to the existing Plus menu to continue the unchanged ZikaTeam test.
 out=subprocess.check_output(['adb','shell','wm','size'],text=True)
-dims=re.search(r'(\\d+)x(\\d+)',out)
+dims=re.search(r'(\d+)x(\d+)',out)
 if not dims:raise SystemExit('FAIL: Screen dimensions missing')
 width,height=map(int,dims.groups())
 subprocess.run(['adb','shell','input','tap',str(round(width*0.875)),str(round(height*0.945))],check=True)
