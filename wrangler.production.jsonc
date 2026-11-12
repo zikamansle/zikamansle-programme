@@ -5,6 +5,7 @@
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "keep_vars": true,
+  "services": [{"binding":"FIREBASE_RELAY","service":"zikamansle-app-staging"}],
   "preview_urls": false,
   "assets": {
     "directory": "./public",
