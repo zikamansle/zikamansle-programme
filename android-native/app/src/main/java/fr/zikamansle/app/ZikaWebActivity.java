@@ -126,6 +126,13 @@ public final class ZikaWebActivity extends Activity {
             });
         }
 
+        @JavascriptInterface public void testNotifications() {
+            runOnUiThread(() -> {
+                if(web==null||isFinishing()||isDestroyed()||!sameOrigin(Uri.parse(web.getUrl())))return;
+                ZikaPushRegistration.test(ZikaWebActivity.this);
+            });
+        }
+
         @JavascriptInterface public void disableNotifications() {
             runOnUiThread(() -> {
                 if (isFinishing() || isDestroyed() || web == null
@@ -373,6 +380,9 @@ public final class ZikaWebActivity extends Activity {
           + "   var on=document.createElement('button');"
           + "   on.type='button';on.textContent='Activer les notifications';on.setAttribute('data-zika-notifications-enable','');"
           + "   on.style.cssText='background:#ff912e;color:#071b2d;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:16px;';"
+          + "   var test=document.createElement('button');"
+          + "   test.type='button';test.textContent='Tester les notifications';test.setAttribute('data-zika-notifications-test','');"
+          + "   test.style.cssText='background:#f59e0b;color:#071b2d;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:16px;';"
           + "   var off=document.createElement('button');"
           + "   off.type='button';off.textContent='Désactiver les notifications';off.setAttribute('data-zika-notifications-disable','');"
           + "   off.style.cssText='background:#10263a;color:white;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:16px;';"
@@ -380,7 +390,7 @@ public final class ZikaWebActivity extends Activity {
           + "   status.setAttribute('data-zika-notification-status','');"
           + "   status.setAttribute('role','status');status.setAttribute('aria-live','polite');"
           + "   status.style.cssText='width:100%;margin:4px 0 0;color:#526270;font-size:14px;';"
-          + "   box.append(on,off,status);"
+          + "   box.append(on,off,test,status);"
           + "   if(buttons[0])buttons[0].insertAdjacentElement('afterend',box);"
           + "   else card.appendChild(box);"
           + "   refresh();"
@@ -391,6 +401,10 @@ public final class ZikaWebActivity extends Activity {
           + "   if(button.hasAttribute('data-zika-notifications-enable')){"
           + "     e.preventDefault();e.stopImmediatePropagation();"
           + "     window.ZikaAndroid.enableNotifications();return;"
+          + "   }"
+          + "   if(button.hasAttribute('data-zika-notifications-test')){"
+          + "     e.preventDefault();e.stopImmediatePropagation();"
+          + "     window.ZikaAndroid.testNotifications();return;"
           + "   }"
           + "   if(button.hasAttribute('data-zika-notifications-disable')){"
           + "     e.preventDefault();e.stopImmediatePropagation();"
