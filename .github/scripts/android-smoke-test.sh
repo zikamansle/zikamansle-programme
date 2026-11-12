@@ -73,3 +73,36 @@ if grep -E 'FATAL EXCEPTION|Unable to start activity|ClassNotFoundException' /tm
     exit 1
 fi
 echo 'PASS: ZikaMansle launcher returned success without detected Android crash'
+# ZikaTeam is a section of the SAME installed Android app, not another APK.
+adb shell uiautomator dump /sdcard/zika-nav.xml >/dev/null || true
+adb shell cat /sdcard/zika-nav.xml > /tmp/zika-nav.xml
+python3 - <<'PY'
+import re
+import subprocess
+from xml.etree import ElementTree as ET
+from pathlib import Path
+ui=Path('/tmp/zika-nav.xml').read_text(errors='replace')
+root=ET.fromstring(ui)
+nodes=[n for n in root.iter('node') if n.attrib.get('text','').strip()=='ZikaTeam']
+if not nodes:
+    raise SystemExit('FAIL: No ZikaTeam section inside the installed ZikaMansle app')
+bounds=nodes[0].attrib.get('bounds','')
+match=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',bounds)
+if not match:
+    raise SystemExit('FAIL: Cannot locate ZikaTeam tab on screen')
+x1,y1,x2,y2=map(int,match.groups())
+subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+print('PASS: Navigated to ZikaTeam within the SAME Android app')
+PY
+sleep 15
+adb shell dumpsys activity activities > /tmp/zika-team-activity.txt
+adb logcat -d -v threadtime > /tmp/zika-team-logcat.txt
+if ! grep -E '(topResumedActivity|mResumedActivity|ResumedActivity)' /tmp/zika-team-activity.txt | grep -q 'ZikaWebActivity'; then
+    echo 'FAIL: ZikaTeam navigation left the app'
+    exit 1
+fi
+if ! grep -q 'ZIKA_WEBVIEW_PAGE_FINISHED host=zikamansle-app-staging.zikamansle.workers.dev' /tmp/zika-team-logcat.txt; then
+    echo 'FAIL: ZikaTeam did not finish loading inside the Android app'
+    exit 1
+fi
+echo 'PASS: Festival and ZikaTeam both open inside one ZikaMansle APK'
