@@ -2,12 +2,13 @@ import {handle} from '../server/push-api.mjs';
 import {siteContent} from '../server/site-content.mjs';
 import {isAdmin} from '../server/admin-auth.mjs';
 import {handleNative} from '../server/native-push.mjs';
+import {handleNativeProduction,drainNativePush} from '../server/native-production.mjs';
 import {handleZikaTeam, scheduleTeamReminders, drainTeamPush} from '../server/zikateam.mjs';
 import catalog from '../public/data/site.json' with {type:'json'};
 
 const isLegacyAdminPath = path => /^\/admin-notifications(?:\.html)?\/?$/.test(path);
 const isAdminPage = path => /^\/administration\/notifications\/?$/.test(path);
-const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-status|native-diagnostics|native-test)$/.test(path);
+const isAdminAPI = path => /^\/administration\/api\/(admin|upload|create|send|clear-history|native-diagnostics|native-test)$/.test(path);
 
 // Static Assets normalizes .html to an extensionless URL. Fetch the canonical
 // extensionless asset directly, otherwise /administration/notifications redirects
@@ -19,7 +20,7 @@ export function adminAssetRequest(request) {
 }
 
 export default {
-  async scheduled(event,env,execution) { execution.waitUntil(Promise.all([scheduleTeamReminders(env), drainTeamPush(env)])); },
+  async scheduled(event,env,execution) { execution.waitUntil(Promise.all([scheduleTeamReminders(env), drainTeamPush(env),drainNativePush(env)])); },
   async fetch(request, env, execution) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -33,8 +34,8 @@ export default {
     if (path === '/zikateam' || path.startsWith('/zikateam/')) {
       response=await handleZikaTeam(request,env,execution);
     }
-    else if (path === '/api/native/subscribe'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
-      response = await handleNative(request,env,isAdmin);
+    else if (path === '/api/native/subscribe'||path === '/api/native/unsubscribe'||path === '/api/native/config'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
+      response = env.APP_ENV==='production'?await handleNativeProduction(request,env,isAdmin):await handleNative(request,env,isAdmin);
     }
     else if (path.startsWith('/api/push/') || isAdminAPI(path)) {
       // Both legacy and new API routes enforce the cryptographically verified Access JWT.
