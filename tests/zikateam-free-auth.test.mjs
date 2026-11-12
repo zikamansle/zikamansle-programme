@@ -17,7 +17,7 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   const {handleZikaTeam}=await import(pathToFileURL(join(dir,'zikateam.mjs')));
   const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');
   for(const sql of readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort())db.exec(readFileSync('drizzle/'+sql,'utf8'));
-  const DB={prepare(sql){const stmt=db.prepare(sql);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
+  const DB={batch:async(statements)=>{db.exec('BEGIN');try{const results=[];for(const statement of statements)results.push(await statement.run());db.exec('COMMIT');return results}catch(error){db.exec('ROLLBACK');throw error}},prepare(sql){const stmt=db.prepare(sql);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
   const env={DB,ADMIN_EMAIL:'admin@zikamansle.fr',TEAM_AUTH_PROVIDER:'supabase',TEAM_SUPABASE_URL:'https://project.supabase.co',TEAM_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_public-test',TEAM_PUSH_ENABLED:'false',BUCKET:{get:async()=>null}};
   const names={alice:'alice@zikamansle.fr',outsider:'outsider@example.org'};
   db.prepare('INSERT INTO team_members(id,name,email,active,created_at,updated_at) VALUES(?,?,?,?,?,?)').run('10000000-0000-4000-a000-000000000001','Alice',names.alice,1,Date.now(),Date.now());
