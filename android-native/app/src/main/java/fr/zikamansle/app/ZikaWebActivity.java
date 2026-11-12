@@ -131,7 +131,8 @@ public final class ZikaWebActivity extends Activity {
         // authenticated session as the in-app site.
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             Uri download = Uri.parse(url);
-            if (!"https".equals(download.getScheme()) || !sameOrigin(download)) {
+            if (!"https".equals(download.getScheme())
+                || (!sameOrigin(download) && !isTeamOrigin(download))) {
                 Toast.makeText(this, "Téléchargement refusé : lien non sécurisé.", Toast.LENGTH_LONG).show();
                 return;
             }
