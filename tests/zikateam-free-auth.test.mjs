@@ -13,6 +13,7 @@ test('ZikaTeam : comptes Supabase gratuits sans sièges Zero Trust et droits D1'
   writeFileSync(join(dir,'zikateam.mjs'),readFileSync('server/zikateam.mjs'));
   writeFileSync(join(dir,'zikateam-login.mjs'),readFileSync('server/zikateam-login.mjs'));
   writeFileSync(join(dir,'admin-auth.mjs'),"export async function verifyAccessIdentity(){throw new Error('Cloudflare Access ne doit pas être appelé')}");
+  writeFileSync(join(dir,'native-production.mjs'),"export async function queueNativeActivity(){return 0}; export async function linkNativeMember(){return false}; export async function drainNativePush(){return {sent:0,disabled:true}}; ");
   writeFileSync(join(dir,'webpush.mjs'),"export const enc=s=>new TextEncoder().encode(s);export const b64=s=>'';export async function sendPush(){return 201}");
   const {handleZikaTeam}=await import(pathToFileURL(join(dir,'zikateam.mjs')));
   const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');
