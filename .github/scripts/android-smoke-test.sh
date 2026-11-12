@@ -16,6 +16,8 @@ grep -q "Status: ok" /tmp/zika-launch.txt
 sleep 5
 adb shell uiautomator dump /sdcard/window.xml >/dev/null || true
 adb shell cat /sdcard/window.xml > /tmp/zika-ui.xml || true
+adb shell screencap -p /sdcard/zika-screen.png >/dev/null || true
+adb pull /sdcard/zika-screen.png /tmp/zika-screen.png >/dev/null || true
 python3 - <<'PY'
 import re
 import subprocess
@@ -27,9 +29,12 @@ ui=p.read_text(errors='replace') if p.exists() else ''
 if 'Notifications ZikaMansle' in ui:
     try:
         root=ET.fromstring(ui)
-        buttons=[n for n in root.iter('node') if n.attrib.get('text','').strip()=='Activer']
+        buttons=[n for n in root.iter('node') if n.attrib.get('text','').strip().casefold()=='activer']
         if not buttons:
-            raise ValueError('Activer button not found in Android notification dialog')
+            buttons=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
+        if not buttons:
+            print('Visible UI nodes:',[(n.attrib.get('text',''),n.attrib.get('resource-id','')) for n in root.iter('node') if n.attrib.get('text','') or n.attrib.get('resource-id','')][-25:])
+            raise ValueError('Notification approval button not found in Android dialog')
         bounds=buttons[0].attrib.get('bounds','')
         match=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',bounds)
         if not match:
