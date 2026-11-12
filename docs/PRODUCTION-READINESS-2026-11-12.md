@@ -98,3 +98,16 @@ Ne jamais confondre cette sauvegarde temporaire de staging avec la sauvegarde du
 - Route/custom domain Cloudflare : aucune zone DNS `zikamansle.fr` n'est connectée au compte Cloudflare ; **NE PAS** simplement transformer le CNAME IONOS `app` en cible `*.workers.dev` sans configuration Cloudflare de domaine personnalisé, TLS et sauvegarde du routage existant.
 
 **Prochaines vérifications impératives :** tester le nouveau Worker sur Redmi, confirmer l'e-mail exact de l'administrateur ZikaTeam, obtenir un raccordement HTTPS contrôlé du sous-domaine côté hébergement/DNS (sans perturber le Wix et les e-mails du domaine), activer les notifications générales seulement après recette. Si l'ancien site utilise une VAPID différente, les navigateurs devront se réabonner sur l'origine publique.
+
+## Préparation du domaine Cloudflare (12 novembre 2026 — zone non activée)
+
+- L'adresse administrateur `zikamansle@gmail.com` a été vérifiée présente dans `auth.users` Supabase et configurée sur le Worker de production comme secret `ADMIN_EMAIL`. La clé VAPID privée reste un secret Cloudflare.
+- Zone Cloudflare `zikamansle.fr` créée en mode **full**, `status=pending`. Aucune modification des serveurs de noms IONOS n'a été effectuée.
+- Serveurs de noms Cloudflare indiqués par cette zone : `destiny.ns.cloudflare.com` et `noel.ns.cloudflare.com`. **Ne pas les renseigner chez IONOS avant finalisation des contrôles.**
+- Le scanner DNS Cloudflare a identifié 9 enregistrements publics ; ces neuf enregistrements ont été acceptés dans la zone en attente sans activer le domaine.
+- Reprises manuelles depuis la capture DNS IONOS : les deux `CNAME s1-ionos._domainkey` et `s2-ionos._domainkey`, et `TXT _cf-custom-hostname.app`. Total : **12 enregistrements** visibles dans la zone Cloudflare en attente.
+- Vérifications de non-régression : `A @` vers Wix `185.230.63.107`, `CNAME www` vers `pointing.wixdns.net`, `MX` vers `mx00.ionos.fr` / `mx01.ionos.fr` priorité 10, SPF IONOS, DMARC, DKIM et autodiscover, le tout non proxifié. `CNAME app` est encore `custom-domains.chatgpt.site`, pour ne pas couper l'ancienne application avant le passage final.
+- **Enregistrement encore manquant :** `TXT _openai-site-verification...` dont nom complet et contenu sont tronqués dans la capture ; la rétention des vérifications d'ancien domaine est à évaluer avant la bascule, et les autres entrées éventuellement masquées doivent être vérifiées.
+- Les Workers Custom Domains requièrent une **zone Cloudflare active** ; sans cela, `app.zikamansle.fr` ne peut pas encore être associé en HTTPS à `zikamansle-app-production`. Voir https://developers.cloudflare.com/workers/configuration/routing/custom-domains/ .
+- Une zone `full` nécessite un changement des serveurs de noms autoritaires chez IONOS. Ce changement affecterait **toutes** les entrées du domaine, y compris Wix et la messagerie. À ne faire qu'après une vérification exhaustive des enregistrements et du statut DNSSEC, puis en maintenant un plan de retour arrière.
+- L'ancienne application reste en ligne via `app.zikamansle.fr`. Le serveur Cloudflare production est disponible sur son adresse `workers.dev`, avec les notifications individuelles validées sur Redmi par l'utilisateur.
