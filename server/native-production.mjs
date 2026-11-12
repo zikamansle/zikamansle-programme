@@ -188,7 +188,8 @@ export async function handleNativeProduction(request,env,isAdmin){
 }
 
 /**
- * Private Firebase relay. The staging secret never leaves its Worker.
+ * Private Firebase relay for the official Android app (never browser push).
+ * The staging secret never leaves its Worker.
  * Both a Cloudflare Worker service binding and a 256-bit shared secret are
  * required by the production sender. Public requests cannot send FCM messages.
  */
