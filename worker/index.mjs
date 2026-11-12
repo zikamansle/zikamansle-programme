@@ -2,7 +2,7 @@ import {handle} from '../server/push-api.mjs';
 import {siteContent} from '../server/site-content.mjs';
 import {isAdmin} from '../server/admin-auth.mjs';
 import {handleNative} from '../server/native-push.mjs';
-import {handleNativeProduction,drainNativePush} from '../server/native-production.mjs';
+import {handleNativeProduction,drainNativePush,handleNativeRelay} from '../server/native-production.mjs';
 import {handleZikaTeam, scheduleTeamReminders, drainTeamPush} from '../server/zikateam.mjs';
 import catalog from '../public/data/site.json' with {type:'json'};
 
@@ -33,6 +33,9 @@ export default {
     if (path === '/administration/zikateam') return Response.redirect(new URL('/zikateam',url),302);
     if (path === '/zikateam' || path.startsWith('/zikateam/')) {
       response=await handleZikaTeam(request,env,execution);
+    }
+    else if (path === '/internal/native/send'||path === '/internal/native/preflight') {
+      response = await handleNativeRelay(request,env);
     }
     else if (path === '/api/native/subscribe'||path === '/api/native/unsubscribe'||path === '/api/native/config'||path === '/administration/api/native-status'||path === '/administration/api/native-diagnostics'||path === '/administration/api/native-test') {
       response = env.APP_ENV==='production'?await handleNativeProduction(request,env,isAdmin):await handleNative(request,env,isAdmin);
