@@ -3,7 +3,7 @@ package fr.zikamansle.app;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.media.RingtoneManager;
+
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
@@ -14,11 +14,11 @@ import android.os.Build;
  * Do not rename this ID in future updates unless a new sound is intentionally chosen.
  */
 final class ZikaNotificationChannels {
-    static final String CHANNEL_ID = "festival-zikamansle-alerts-v3";
+    static final String CHANNEL_ID = "festival-zikamansle-alerts-v4";
     private ZikaNotificationChannels() { }
 
     static Uri customSound(Context context) {
-        return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        return Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.zika_notification);
     }
 
     static void ensure(Context context) {
@@ -31,7 +31,7 @@ final class ZikaNotificationChannels {
             CHANNEL_ID, "ZikaMansle · alertes et réunions",
             NotificationManager.IMPORTANCE_DEFAULT
         );
-        channel.setDescription("Réunions, informations et annonces du festival. Sonnerie Android réglable.");
+        channel.setDescription("Réunions, informations et annonces du festival. Son ZikaMansle officiel par défaut, réglable dans Android.");
         AudioAttributes attributes = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
