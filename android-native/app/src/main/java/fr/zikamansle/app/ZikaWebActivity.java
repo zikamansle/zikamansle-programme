@@ -80,7 +80,7 @@ public final class ZikaWebActivity extends Activity {
     }
 
     /** Native opt-in for buttons on our Android-embedded ZikaMansle site. */
-    private final class NativeNotificationBridge {
+    public final class NativeNotificationBridge {
         @JavascriptInterface public void enableNotifications() {
             runOnUiThread(() -> {
                 if (isFinishing() || isDestroyed()) return;
