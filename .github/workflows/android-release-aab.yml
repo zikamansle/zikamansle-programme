@@ -71,6 +71,12 @@ jobs:
           fi
       - name: Build Android release AAB
         shell: bash
+        env:
+          ZIKA_FIREBASE_APP_ID: ${{ vars.ZIKA_FIREBASE_APP_ID }}
+          ZIKA_FIREBASE_API_KEY: ${{ secrets.ZIKA_FIREBASE_API_KEY }}
+          ZIKA_FIREBASE_SENDER_ID: ${{ vars.ZIKA_FIREBASE_SENDER_ID }}
+          ZIKA_FIREBASE_PROJECT_ID: ${{ vars.ZIKA_FIREBASE_PROJECT_ID }}
+          ZIKA_NATIVE_REGISTRATION_URL: ${{ vars.ZIKA_NATIVE_REGISTRATION_URL }}
         run: |
           gradle -p android-native :app:bundleRelease --no-daemon \
             -PzikaLaunchUrl=https://app.zikamansle.fr/
