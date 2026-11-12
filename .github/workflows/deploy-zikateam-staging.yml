@@ -68,7 +68,7 @@ jobs:
             const base='https://zikamansle-app-staging.zikamansle.workers.dev';
             for(const [path,checks] of [
               ['/zikateam',['ZikaTeam']],
-              ['/zikateam.js',['teamInviteForm','teamNotificationsForm','Publier la réunion','team-wa-app']],
+              ['/zikateam.js',['teamInviteForm','teamNotificationsForm','activitySaveFeedback','team-wa-app']],
               ['/zikateam.css',['team-wa-app','team-notifications-settings']]
             ]){
               const r=await fetch(base+path,{cache:'no-store'});
