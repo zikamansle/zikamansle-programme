@@ -1,7 +1,11 @@
 package fr.zikamansle.app;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import com.google.firebase.FirebaseApp;
 import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -26,6 +30,9 @@ import android.widget.Button;
  */
 public final class ZikaWebActivity extends Activity {
     private static final int FILE_PICKER_REQUEST = 710;
+    private static final int NOTIFICATION_REQUEST = 701;
+    private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
+    private static final String ASKED = "notification_permission_asked";
     private WebView web;
     private ValueCallback<Uri[]> pendingFiles;
     private Uri officialUrl;
@@ -41,6 +48,52 @@ public final class ZikaWebActivity extends Activity {
             return;
         }
         startWebView(getIntent() != null ? getIntent().getData() : null);
+        // The app window exists before any notification prompt is shown.
+        askNotificationPermissionIfNeeded();
+    }
+
+    private void askNotificationPermissionIfNeeded() {
+        if (FirebaseApp.getApps(this).isEmpty()) return;
+        if (getSharedPreferences(NOTIFICATION_PREFS, MODE_PRIVATE).getBoolean(ASKED, false)) {
+            ZikaPushRegistration.refresh(this);
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("Notifications ZikaMansle")
+            .setMessage("Souhaitez-vous recevoir les annonces et les informations pratiques du festival sur votre téléphone ? Vous pourrez modifier ce choix dans les paramètres Android.")
+            .setPositiveButton("Activer", (dialog, which) -> requestNotificationPermission())
+            .setNegativeButton("Plus tard", (dialog, which) -> {
+                recordNotificationPrompt();
+                ZikaPushRegistration.setApproved(this, false);
+            })
+            .setCancelable(false)
+            .show();
+    }
+
+    private void recordNotificationPrompt() {
+        getSharedPreferences(NOTIFICATION_PREFS, MODE_PRIVATE).edit()
+            .putBoolean(ASKED, true).apply();
+    }
+
+    private void requestNotificationPermission() {
+        recordNotificationPrompt();
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                NOTIFICATION_REQUEST);
+        } else {
+            ZikaPushRegistration.setApproved(this, true);
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(code, permissions, results);
+        if (code == NOTIFICATION_REQUEST) {
+            ZikaPushRegistration.setApproved(this,
+                results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED);
+            // The WebView remains open: no activity transition or finish() here.
+        }
     }
 
     private void startWebView(Uri incoming) {
