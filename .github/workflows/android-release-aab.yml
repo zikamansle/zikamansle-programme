@@ -1,6 +1,9 @@
-name: ZikaMansle Android App Bundle (unsigned)
+name: ZikaMansle Google Play internal AAB
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - prepare/google-play-android-2026
 
 permissions:
   contents: read
@@ -43,14 +46,60 @@ jobs:
               raise SystemExit('Official icon is not a PNG')
           print('Official icon verified:',len(data),'bytes')
           PY
-      - name: Build production-package unsigned AAB for internal testing
+      - name: Prepare private upload signing key (if configured)
+        id: signing
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ZIKA_ANDROID_KEYSTORE_BASE64 }}
+          ZIKA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ZIKA_ANDROID_KEYSTORE_PASSWORD }}
+          ZIKA_ANDROID_KEY_ALIAS: ${{ secrets.ZIKA_ANDROID_KEY_ALIAS }}
+          ZIKA_ANDROID_KEY_PASSWORD: ${{ secrets.ZIKA_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$KEYSTORE_B64" && -n "$ZIKA_ANDROID_KEYSTORE_PASSWORD" && -n "$ZIKA_ANDROID_KEY_ALIAS" && -n "$ZIKA_ANDROID_KEY_PASSWORD" ]]; then
+            umask 077
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/zika-upload-key.jks"
+            test -s "$RUNNER_TEMP/zika-upload-key.jks"
+            echo "ZIKA_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/zika-upload-key.jks" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEYSTORE_PASSWORD=$ZIKA_ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEY_ALIAS=$ZIKA_ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEY_PASSWORD=$ZIKA_ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "Upload signing key is not fully configured; build will remain unsigned."
+          fi
+      - name: Build Android release AAB
         shell: bash
         run: |
           gradle -p android-native :app:bundleRelease --no-daemon \
             -PzikaLaunchUrl=https://app.zikamansle.fr/
-      - uses: actions/upload-artifact@v4
+      - name: Verify AAB signature when signing is configured
+        if: steps.signing.outputs.signed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB="$(find android-native/app/build/outputs/bundle/release -name '*.aab' -type f | head -n 1)"
+          test -s "$AAB"
+          jarsigner -verify -strict -certs "$AAB"
+          echo "Signed AAB verified for internal Play upload."
+      - name: Upload signed bundle for Google Play internal testing
+        if: steps.signing.outputs.signed == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          name: zikamansle-google-play-aab-unsigned
+          name: zikamansle-google-play-aab-signed
           path: android-native/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
+      - name: Keep unsigned bundle for diagnostics only
+        if: steps.signing.outputs.signed != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-google-play-aab-unsigned-NOT-FOR-PLAY
+          path: android-native/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove temporary upload key
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/zika-upload-key.jks"
