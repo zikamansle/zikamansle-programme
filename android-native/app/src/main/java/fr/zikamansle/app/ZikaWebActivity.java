@@ -38,14 +38,9 @@ public final class ZikaWebActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 701;
     private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
     private static final String ASKED = "notification_permission_asked";
-    // One Android app. The existing protected ZikaTeam service remains isolated
-    // from production data until its integration on the official domain is ready.
-    private static final String ZIKATEAM_URL =
-        "https://zikamansle-app-staging.zikamansle.workers.dev/zikateam";
     private WebView web;
     private ValueCallback<Uri[]> pendingFiles;
     private Uri officialUrl;
-    private Uri teamUrl;
     private LinearLayout root;
     private TextView status;
     private boolean loadError;
@@ -53,7 +48,6 @@ public final class ZikaWebActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         officialUrl = Uri.parse(getString(R.string.zika_launch_url));
-        teamUrl = Uri.parse(ZIKATEAM_URL);
         if (!"https".equals(officialUrl.getScheme()) || officialUrl.getHost() == null) {
             showProblem("Adresse de l’application incorrecte.");
             return;
@@ -118,21 +112,6 @@ public final class ZikaWebActivity extends Activity {
         web.setId(View.generateViewId());
         root.addView(web, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        LinearLayout navigation = new LinearLayout(this);
-        navigation.setOrientation(LinearLayout.HORIZONTAL);
-        navigation.setPadding(8, 4, 8, 4);
-        navigation.setBackgroundColor(0xff182c55);
-        Button festivalTab = new Button(this);
-        festivalTab.setText("Festival");
-        festivalTab.setOnClickListener(view -> openSection(officialUrl));
-        navigation.addView(festivalTab, new LinearLayout.LayoutParams(
-            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        Button teamTab = new Button(this);
-        teamTab.setText("ZikaTeam");
-        teamTab.setOnClickListener(view -> openSection(teamUrl));
-        navigation.addView(teamTab, new LinearLayout.LayoutParams(
-            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        root.addView(navigation);
         setContentView(root);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -148,7 +127,7 @@ public final class ZikaWebActivity extends Activity {
         // authenticated session as the in-app site.
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             Uri download = Uri.parse(url);
-            if (!"https".equals(download.getScheme()) || !isInternalAppUrl(download)) {
+            if (!"https".equals(download.getScheme()) || !sameOrigin(download)) {
                 Toast.makeText(this, "Téléchargement refusé : lien non sécurisé.", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -188,7 +167,7 @@ public final class ZikaWebActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri target = request.getUrl();
-                if (isInternalAppUrl(target)) return false;
+                if (sameOrigin(target)) return false;
                 if ("https".equals(target.getScheme()) || "http".equals(target.getScheme()) ||
                     "mailto".equals(target.getScheme()) || "tel".equals(target.getScheme())) {
                     try {
@@ -204,22 +183,7 @@ public final class ZikaWebActivity extends Activity {
                 if (!loadError) {
                     status.setVisibility(View.GONE);
                     android.util.Log.i("ZikaMansle", "ZIKA_WEBVIEW_PAGE_FINISHED host=" + Uri.parse(url).getHost());
-                    Uri completed = Uri.parse(url);
-                    if (matchesOrigin(completed, teamUrl)
-                        && completed.getPath() != null
-                        && completed.getPath().startsWith("/zikateam")) {
-                        // Verify the real protected ZikaTeam interface, not just
-                        // a blank page, redirect, or HTTP error document.
-                        view.evaluateJavascript(
-                            "Boolean(document.getElementById('teamRoot'))",
-                            result -> {
-                                if ("true".equals(result)) {
-                                    android.util.Log.i("ZikaMansle", "ZIKA_TEAM_CONTENT_READY");
-                                } else {
-                                    android.util.Log.w("ZikaMansle", "ZIKA_TEAM_CONTENT_NOT_FOUND");
-                                }
-                            });
-                    }
+
                 }
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request,
@@ -231,26 +195,14 @@ public final class ZikaWebActivity extends Activity {
                 }
             }
         });
-        Uri target = isInternalAppUrl(incoming) ? incoming : officialUrl;
+        Uri target = sameOrigin(incoming) ? incoming : officialUrl;
         web.loadUrl(target.toString());
     }
 
-    private void openSection(Uri target) {
-        if (web == null) return;
-        loadError = false;
-        status.setText("Ouverture de ZikaMansle…");
-        status.setVisibility(View.VISIBLE);
-        web.loadUrl(target.toString());
-    }
-
-    private boolean isInternalAppUrl(Uri url) {
-        if (url == null || !"https".equals(url.getScheme())) return false;
-        return matchesOrigin(url, officialUrl) || matchesOrigin(url, teamUrl);
-    }
-
-    private boolean matchesOrigin(Uri url, Uri origin) {
-        return origin.getHost() != null && origin.getHost().equalsIgnoreCase(url.getHost())
-            && origin.getPort() == url.getPort();
+    private boolean sameOrigin(Uri url) {
+        return url != null && "https".equals(url.getScheme())
+            && officialUrl.getHost().equalsIgnoreCase(url.getHost())
+            && officialUrl.getPort() == url.getPort();
     }
 
     private void showProblem(String message) {
