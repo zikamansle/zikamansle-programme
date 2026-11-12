@@ -23,7 +23,7 @@ test('ZikaTeam : rôles, convocations ciblées, charte, réponses, tâches et po
   for(const name of readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort()){
    db.exec(readFileSync('drizzle/'+name,'utf8'));
   }
-  const DB={prepare(q){const stmt=db.prepare(q);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
+  const DB={batch:async(statements)=>{db.exec('BEGIN');try{const results=[];for(const statement of statements)results.push(await statement.run());db.exec('COMMIT');return results}catch(error){db.exec('ROLLBACK');throw error}},prepare(q){const stmt=db.prepare(q);return {bind(...args){return {all:async()=>({results:stmt.all(...args)}),first:async()=>stmt.get(...args),run:async()=>({meta:{changes:stmt.run(...args).changes}})}}}}};
   const env={DB,TEAM_ACCESS_AUD:'team-test',ACCESS_TEAM_DOMAIN:'example.cloudflareaccess.com',ADMIN_EMAIL:'admin@example.org',TEAM_PUSH_ENABLED:'false',BUCKET:{get:async()=>null}};
   async function invoke(email,path,data){
    const req=new Request('https://example.org'+path,{method:data?'POST':'GET',headers:{'Cf-Access-Jwt-Assertion':email,origin:'https://example.org','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
