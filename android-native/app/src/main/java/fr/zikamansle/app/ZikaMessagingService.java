@@ -6,6 +6,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 
@@ -52,6 +54,9 @@ public final class ZikaMessagingService extends FirebaseMessagingService {
             .setContentText(body).setAutoCancel(true).setContentIntent(click)
             .setCategory(Notification.CATEGORY_EVENT)
             .setStyle(new Notification.BigTextStyle().bigText(body));
+        // The full official Zika head is the large image; the white Z stays the small status-bar icon.
+        Bitmap largeIcon=BitmapFactory.decodeResource(getResources(),R.drawable.zika_icon);
+        if(largeIcon!=null)builder.setLargeIcon(largeIcon);
         manager.notify(notificationId,builder.build());
     }
 }
