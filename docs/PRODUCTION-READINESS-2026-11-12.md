@@ -50,3 +50,19 @@ La capture du gestionnaire DNS IONOS montre explicitement :
 Le projet ChatGPT Site doit être identifié avant d'envisager un export ou une reprise du service existant ; une capture DNS n'autorise pas à modifier un déploiement ChatGPT Sites. Les abonnements push du domaine existant sont spécifiques à leur origine et au couple de clés VAPID ; la nouvelle paire de test n'est pas interchangeable.
 
 Documentation officielle : https://help.openai.com/fr-fr/articles/20001339-creating-and-using-chatgpt-sites
+
+## Audit lecture seule des bases (12 novembre 2026)
+
+À partir des connexions utilisateur, sans exporter ni modifier de données personnelles :
+
+| Source | Vérification |
+| --- | --- |
+| Supabase `ZikaMansle-Programme` | 2 tables publiques sous RLS : `zika_events` (18 lignes estimées), `zika_settings` (27 lignes estimées). Cela ne constitue pas une base des bénévoles. |
+| Cloudflare D1 `zikamansle-app-staging` | Schéma ZikaTeam présent, dont membres, pôles, activités, messages, émargements, consentements, chartes et rôles. |
+| D1 staging : effectifs à cet instant | `team_members` 2 ; `team_poles` 14 ; `team_activities` 1 ; `team_messages` 3 ; `team_signing_sessions` 6. |
+| D1 staging : notifications | `push_subscriptions` 2 et `push_notifications` 4. |
+| ChatGPT Sites, version publique | Capture fournie : `push_config`, `push_deliveries`, `push_notifications`, `push_subscriptions`. Le nombre d'abonnements actifs et les exportations réelles ne sont pas encore vérifiés. |
+
+**Décision de sécurité :** ne pas considérer la base D1 de test comme une copie exhaustive de la base publique ; ne jamais effectuer de bascule du CNAME ou de suppression du Site public tant qu'un export sauvegardé et une procédure de reprise des abonnements push / des données existantes n'ont pas été effectivement vérifiés. Les 2 abonnements de staging sont propres au domaine de test et ne remplacent pas les abonnements du domaine public.
+
+Le fait que le compte utilisateur donne accès au code GitHub, à Cloudflare et à Supabase ne confère pas automatiquement la permission de lire les tables privées d'un ChatGPT Site : accès séparé nécessaire.
