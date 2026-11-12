@@ -74,6 +74,8 @@ jobs:
             /tmp/zika-home-ui.xml
             /tmp/zika-plus-ui.xml
             /tmp/zika-plus-screen.png
+            /tmp/zika-news-ui.xml
+            /tmp/zika-news-screen.png
             /tmp/zika-team-logcat.txt
           if-no-files-found: ignore
           retention-days: 7
