@@ -83,7 +83,7 @@ from xml.etree import ElementTree as ET
 from pathlib import Path
 ui=Path('/tmp/zika-nav.xml').read_text(errors='replace')
 root=ET.fromstring(ui)
-nodes=[n for n in root.iter('node') if n.attrib.get('text','').strip()=='ZikaTeam']
+nodes=[n for n in root.iter('node') if n.attrib.get('text','').strip().casefold()=='zikateam']
 if not nodes:
     raise SystemExit('FAIL: No ZikaTeam section inside the installed ZikaMansle app')
 bounds=nodes[0].attrib.get('bounds','')
