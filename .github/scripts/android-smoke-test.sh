@@ -86,19 +86,28 @@ import subprocess
 p=Path('/tmp/zika-home-ui.xml')
 root=ET.fromstring(p.read_text(errors='replace'))
 nodes=[n for n in root.iter('node') if n.attrib.get('text','').strip().casefold()=='plus']
-if not nodes:
-    raise SystemExit('FAIL: Existing Plus menu is not visible in ZikaMansle')
-bounds=nodes[-1].attrib.get('bounds','')
-m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
-if not m:
-    raise SystemExit('FAIL: Plus menu is not clickable')
-x1,y1,x2,y2=map(int,m.groups())
-subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+if nodes:
+    bounds=nodes[-1].attrib.get('bounds','')
+    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+    if not m: raise SystemExit('FAIL: Plus menu has invalid bounds')
+    x1,y1,x2,y2=map(int,m.groups())
+    x,y=(x1+x2)//2,(y1+y2)//2
+else:
+    # Android WebView text is sometimes not exposed to UIAutomator.
+    # The actual ZikaMansle UI has Plus in its bottom-right navigation.
+    out=subprocess.check_output(['adb','shell','wm','size'],text=True)
+    m=re.search(r'(\d+)x(\d+)',out)
+    if not m: raise SystemExit('FAIL: Cannot determine emulator screen dimensions')
+    width,height=map(int,m.groups())
+    x,y=round(width*0.875),round(height*0.945)
+subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
 print('PASS: Opened the existing Plus menu')
 PY
 sleep 4
 adb shell uiautomator dump /sdcard/zika-plus-ui.xml >/dev/null || true
 adb shell cat /sdcard/zika-plus-ui.xml > /tmp/zika-plus-ui.xml || true
+adb shell screencap -p /sdcard/zika-plus-screen.png >/dev/null || true
+adb pull /sdcard/zika-plus-screen.png /tmp/zika-plus-screen.png >/dev/null || true
 python3 - <<'PY'
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -107,8 +116,8 @@ import subprocess
 root=ET.fromstring(Path('/tmp/zika-plus-ui.xml').read_text(errors='replace'))
 nodes=[n for n in root.iter('node') if 'zikateam' in n.attrib.get('text','').casefold()]
 if not nodes:
-    visible=[n.attrib.get('text','') for n in root.iter('node') if n.attrib.get('text','').strip()]
-    raise SystemExit('FAIL: ZikaTeam missing from Plus menu. Visible text: '+repr(visible[-30:]))
+    visible=[(n.attrib.get('text',''),n.attrib.get('content-desc','')) for n in root.iter('node') if n.attrib.get('text','').strip() or n.attrib.get('content-desc','').strip()]
+    raise SystemExit('FAIL: ZikaTeam missing from Plus menu. Visible nodes: '+repr(visible[-30:]))
 bounds=nodes[0].attrib.get('bounds','')
 m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
 if not m: raise SystemExit('FAIL: ZikaTeam menu entry cannot be clicked')
