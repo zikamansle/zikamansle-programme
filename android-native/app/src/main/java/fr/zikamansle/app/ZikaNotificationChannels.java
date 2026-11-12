@@ -14,11 +14,11 @@ import android.os.Build;
  * Do not rename this ID in future updates unless a new sound is intentionally chosen.
  */
 final class ZikaNotificationChannels {
-    static final String CHANNEL_ID = "festival-zikamansle-alerts-v4";
+    static final String CHANNEL_ID = "festival-zikamansle-alerts-v5";
     private ZikaNotificationChannels() { }
 
     static Uri customSound(Context context) {
-        return Uri.parse("android.resource://" + context.getPackageName() + "/raw/zika_notification");
+        return Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.zika_notification);
     }
 
     static void ensure(Context context) {
