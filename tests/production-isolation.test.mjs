@@ -42,3 +42,12 @@ test('ZikaTeam : notifications réservées aux membres autorisés et rappels hor
  assert.match(team,/export async function drainTeamPush\(env,maximum=40\)/);
  assert.match(worker,/scheduleTeamReminders\(env\), drainTeamPush\(env\)/);
 });
+
+test('Migration DNS : le navigateur remplace une ancienne clé VAPID et réessaie un push 403',()=>{
+ const client=readFileSync(new URL('../public/notifications.js',import.meta.url),'utf8');
+ assert.match(client,/function keyMatches\(sub,key\)/);
+ assert.match(client,/sub\?\.options\?\.applicationServerKey/);
+ assert.match(client,/if\(!keyMatches\(sub,publicKey\)\)return renewSubscription\(sub\)/);
+ assert.match(client,/\[403,404,410\]\.includes\(result\.code\)/);
+ assert.match(client,/async function prepareTest\(\)\{return currentSubscription\(\)\}/);
+});
