@@ -65,10 +65,15 @@ final class ZikaPushRegistration {
         if (!approved(context) || !permissionGranted(context) || token == null || token.isEmpty()) return;
         String url=context.getString(R.string.zika_native_registration_url);
         Uri uri=Uri.parse(url);
-        // Registration is staging-only until the production server is explicitly approved.
+        // A signed release may register ONLY with the official production host.
+        // Without a configured URL, registration remains disabled.
+        String expectedHost=BuildConfig.DEBUG
+            ? "zikamansle-app-staging.zikamansle.workers.dev"
+            : "app.zikamansle.fr";
         if (!"https".equals(uri.getScheme()) ||
-            !"zikamansle-app-staging.zikamansle.workers.dev".equals(uri.getHost()) ||
-            !"/api/native/subscribe".equals(uri.getPath())) return;
+            !expectedHost.equals(uri.getHost()) ||
+            !"/api/native/subscribe".equals(uri.getPath()) ||
+            uri.getPort()!=-1 || uri.getUserInfo()!=null) return;
         new Thread(() -> {
             HttpURLConnection connection=null;
             try {
