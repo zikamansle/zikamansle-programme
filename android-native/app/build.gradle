@@ -23,8 +23,8 @@ android {
         applicationId 'fr.zikamansle.app'
         minSdk 24
         targetSdk 36
-        versionCode 15
-        versionName '1.0.14'
+        versionCode 16
+        versionName '1.0.15'
         resValue 'string', 'zika_launch_url', nativeLaunch(launchUrl)
 
     }
@@ -64,7 +64,10 @@ android {
             if (signingConfigs.findByName('playUpload') != null) {
                 signingConfig signingConfigs.playUpload
             }
-            minifyEnabled false
+            // R8 shrinking, optimisation et obfuscation pour Google Play Android vitals.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // Public client configuration from the official Firebase Android app:
             // fr.zikamansle.app (different from the .debug Firebase application).
             // Firebase service-account keys remain server-side only.

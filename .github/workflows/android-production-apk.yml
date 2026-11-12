@@ -2,7 +2,7 @@ name: ZikaMansle APK Android - domaine officiel
 
 on:
   push:
-    branches: [prepare/google-play-android-2026]
+    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112]
     paths:
       - .github/workflows/android-production-apk.yml
       - android-native/**
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   production-apk:
-    runs-on: macos-15-intel
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -60,10 +60,16 @@ jobs:
           grep -F 'builder.setLargeIcon(largeIcon)' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
       - name: Vérifier l'accès HTTPS officiel depuis le runner
         run: curl --fail --location --max-time 18 https://app.zikamansle.fr/healthz
+      - name: Autoriser l'accélération KVM pour l'émulateur Android
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - name: Tester le démarrage réel de l'APK sur Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: 35
           target: google_apis
           arch: x86_64
           profile: pixel_3a
@@ -97,7 +103,7 @@ jobs:
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
         with:
-          name: ZikaMansle-1.0.14-Android-Firebase-test
+          name: ZikaMansle-1.0.15-Android-Firebase-test
           path: android-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

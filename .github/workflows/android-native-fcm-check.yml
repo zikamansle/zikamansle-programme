@@ -2,7 +2,7 @@ name: Vérifier l'intégration native Android ZikaMansle
 
 on:
   push:
-    branches: [prepare/google-play-android-2026]
+    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112]
     paths:
       - android-native/**
       - .github/workflows/android-native-fcm-check.yml
