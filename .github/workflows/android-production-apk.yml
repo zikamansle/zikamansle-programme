@@ -53,7 +53,7 @@ jobs:
           test -s android-native/app/build/outputs/apk/debug/app-debug.apk
           test -s android-native/app/src/main/res/raw/zika_notification.m4a
           grep -F 'festival-zikamansle-alerts-v5' android-native/app/src/main/AndroidManifest.xml
-          grep -F '/raw/zika_notification' android-native/app/src/main/java/fr/zikamansle/app/ZikaNotificationChannels.java
+          grep -F 'R.raw.zika_notification' android-native/app/src/main/java/fr/zikamansle/app/ZikaNotificationChannels.java
           grep -F 'ZIKA_NATIVE_TEAM_LINKED' android-native/app/src/main/java/fr/zikamansle/app/ZikaPushRegistration.java
           grep -F 'app.zikamansle.fr/api/native/subscribe' android-native/app/build/generated/res/resValues/debug/values/gradleResValues.xml
           grep -F 'R.drawable.zika_notification_small' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
