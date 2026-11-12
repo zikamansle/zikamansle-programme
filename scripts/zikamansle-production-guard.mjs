@@ -21,4 +21,4 @@ if(!team.includes("scheduleTeamReminders")||!team.includes("export async functio
 
 if(config.vars.TEAM_AUTH_PROVIDER!=='supabase')fail('Fournisseur authentification incorrect');
 if(!process.env.CLOUDFLARE_API_TOKEN||!process.env.CLOUDFLARE_ACCOUNT_ID)fail('Identifiants CI absents');
-console.log('Garde production : actualités protégées, notifications ZikaTeam ciblées et autorisées, aucun changement DNS.');
+console.log('Garde production : actualités et ZikaTeam protégés, correction des abonnements push navigateur, aucun changement DNS.');
