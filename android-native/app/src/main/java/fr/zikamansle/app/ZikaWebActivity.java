@@ -14,6 +14,7 @@ import com.google.firebase.FirebaseApp;
 import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -78,6 +79,32 @@ public final class ZikaWebActivity extends Activity {
             .show();
     }
 
+    /** Native opt-in for buttons on our Android-embedded ZikaMansle site. */
+    private final class NativeNotificationBridge {
+        @JavascriptInterface public void enableNotifications() {
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (FirebaseApp.getApps(ZikaWebActivity.this).isEmpty()) {
+                    Toast.makeText(ZikaWebActivity.this,
+                        "Notifications non configurées dans cette version.",
+                        Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (Build.VERSION.SDK_INT >= 33 &&
+                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_REQUEST);
+                } else {
+                    ZikaPushRegistration.setApproved(ZikaWebActivity.this, true);
+                    Toast.makeText(ZikaWebActivity.this,
+                        "Notifications Android autorisées. Enregistrement du téléphone demandé.",
+                        Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+    }
+
     private void recordNotificationPrompt() {
         getSharedPreferences(NOTIFICATION_PREFS, MODE_PRIVATE).edit()
             .putBoolean(ASKED, true).apply();
@@ -98,8 +125,12 @@ public final class ZikaWebActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
         if (code == NOTIFICATION_REQUEST) {
-            ZikaPushRegistration.setApproved(this,
-                results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED);
+            boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+            ZikaPushRegistration.setApproved(this, granted);
+            Toast.makeText(this, granted
+                ? "Notifications Android autorisées. Enregistrement du téléphone demandé."
+                : "Notifications désactivées. Tu peux les autoriser dans les réglages Android.",
+                Toast.LENGTH_LONG).show();
             // The WebView remains open: no activity transition or finish() here.
         }
     }
@@ -126,6 +157,7 @@ public final class ZikaWebActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
+        web.addJavascriptInterface(new NativeNotificationBridge(), "ZikaAndroid");
         // Allow ZikaTeam PDF exports and downloadable files to use the same
         // authenticated session as the in-app site.
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
@@ -248,6 +280,21 @@ public final class ZikaWebActivity extends Activity {
           + "       source.insertAdjacentElement('afterend',item);"
           + "     }"
           + "   }"
+          + "   // Bind the site's notification opt-in to Android (not Web Push inside WebView)."
+          + "   document.querySelectorAll('button,[role=\\\"button\\\"]').forEach(function(el){"
+          + "     var label=text(el);"
+          + "     if(el.hasAttribute('data-link-push')||/^activer (?:les )?notifications(?:\\\\s|$)/i.test(label)){"
+          + "       if(el.dataset.zikaNativePushBound)return;"
+          + "       el.dataset.zikaNativePushBound='1';"
+          + "       el.addEventListener('click',function(event){"
+          + "         if(!window.ZikaAndroid||!window.ZikaAndroid.enableNotifications)return;"
+          + "         event.preventDefault();event.stopImmediatePropagation();"
+          + "         window.ZikaAndroid.enableNotifications();"
+          + "         var msg=document.getElementById('teamPushStatus');"
+          + "         if(msg)msg.textContent='Autorisation Android demandée. La réception des alertes ZikaTeam reste à vérifier.';"
+          + "       },true);"
+          + "     }"
+          + "   });"
           + "   // In the installed Android app the Play Store supplies the install action."
           + "   document.querySelectorAll('a,button,[role=\"button\"]').forEach(function(el){"
           + "     var label=text(el);"
