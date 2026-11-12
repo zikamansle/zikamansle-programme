@@ -1,6 +1,7 @@
 import {verifyAccessIdentity} from './admin-auth.mjs';
 import {getTeamSupabaseIdentity,handleTeamLogin} from './zikateam-login.mjs';
 import {sendPush, b64, enc} from './webpush.mjs';
+import {queueNativeActivity,linkNativeMember,drainNativePush} from './native-production.mjs';
 
 const reply=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
@@ -173,6 +174,7 @@ async function enqueue(db,a,reason){
   for(const l of links){await db.prepare("INSERT INTO team_push_jobs(id,activity_id,member_id,subscription_id,reason,status,created_at) VALUES (?,?,?,?,?,'pending',?) ON CONFLICT(activity_id,subscription_id,reason) DO UPDATE SET status='pending',code=NULL,created_at=excluded.created_at")
    .bind(uuid(),a.id,memberId,l.subscription_id,reason,now()).run();}
  }
+ await queueNativeActivity(db,a,reason,memberIds);
  return memberIds.length;
 }
 // Envoi désactivé par défaut. En staging, seuls les IDs explicites de test
@@ -562,6 +564,11 @@ async function memberAction(db,ctx,d,env){
   }
   await audit(db,ctx.email,'push.selftest',memberId,accepted+' acceptés, '+failed+' refusés');
   return reply({ok:accepted>0,accepted,failed,message:accepted>0?'Service push a accepté le test. Vérifie la notification sur le téléphone.':'Le service push a refusé le test.'},accepted?200:502);
+ }
+ if(d.op==='native.link'){
+  if(ctx.pending||!ctx.member?.active||!await requireCharter(db,ctx))return fail('Compte bénévole non autorisé.',403);
+  if(!await linkNativeMember(db,memberId,d.token))return fail('Appareil Android non enregistré.',403);
+  return reply({ok:true});
  }
  if(d.op==='push.link'){
   const sub=d.subscription;if(typeof sub?.endpoint!=='string'||typeof sub?.keys?.auth!=='string'||sub.endpoint.length>4000)return fail('Abonnement invalide.');
@@ -1196,9 +1203,9 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(locked&&!['charter.accept'].includes(data.op)&&!ownProfile&&!firstCharter)return fail(notice,403);
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
-    if(['charter.accept','activity.rsvp','shift.signup','push.link','push.test','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute'].includes(data.op))result=await memberAction(db,ctx,data,env);
+    if(['charter.accept','activity.rsvp','shift.signup','push.link','push.test','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute','native.link'].includes(data.op))result=await memberAction(db,ctx,data,env);
     else result=await adminAction(db,ctx,data);
-    if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(drainTeamPush(env).catch(()=>{}));}
+    if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(Promise.all([drainTeamPush(env),drainNativePush(env)]).catch(()=>{}));}
     if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
     return result;
    }
