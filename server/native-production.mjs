@@ -13,6 +13,21 @@ const configured=env=>ownCredential(env)||relayConfigured(env);
 const all=async(db,sql,...params)=>(await db.prepare(sql).bind(...params).all()).results;
 const one=async(db,sql,...params)=>db.prepare(sql).bind(...params).first();
 
+let readyAt=0,readyResult=false;
+export async function nativeDeliveryReady(env){
+ if(!enabled(env)||!configured(env))return false;
+ if(ownCredential(env))return (await firebasePreflight(env)).ready===true;
+ if(Date.now()-readyAt<180000)return readyResult;
+ try{
+  const response=await env.FIREBASE_RELAY.fetch('https://zikamansle-app-staging.zikamansle.workers.dev/internal/native/preflight',{
+   method:'GET',headers:{'X-Zika-Relay-Authorization':env.FCM_RELAY_TOKEN},signal:AbortSignal.timeout(15000)
+  });
+  const state=await response.json();
+  readyResult=response.ok&&state?.ready===true;
+ }catch{readyResult=false}
+ readyAt=Date.now();
+ return readyResult;
+}
 let cachedToken=null,expiresAt=0;
 async function fcmAccess(env,fetcher=fetch){
  const parsed=classifyFirebaseCredentials(env.FCM_SERVICE_ACCOUNT_JSON);
@@ -98,7 +113,7 @@ async function memberStillAllowed(db,activity,memberId){
  return !!await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0 AND ap.activity_id=? LIMIT 1",memberId,activity.id);
 }
 export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
- if(!enabled(env)||!configured(env))return {sent:0,disabled:true};
+ if(!await nativeDeliveryReady(env))return {sent:0,disabled:true};
  const db=env.DB,rows=await all(db,"SELECT * FROM native_delivery_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
  let sent=0;
  for(const job of rows){
@@ -138,7 +153,7 @@ export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
 export async function handleNativeProduction(request,env,isAdmin){
  if(!enabled(env))return json({error:'Notifications Android indisponibles.'},503);
  const u=new URL(request.url),path=u.pathname,db=env.DB;
- if(path==='/api/native/config'&&request.method==='GET')return json({enabled:true,deliveryReady:configured(env)});
+ if(path==='/api/native/config'&&request.method==='GET')return json({enabled:true,deliveryReady:await nativeDeliveryReady(env)});
  if(path==='/api/native/subscribe'&&request.method==='POST'){
   if(!request.headers.get('content-type')?.startsWith('application/json')||Number(request.headers.get('content-length')||0)>4600)return json({error:'Requête invalide'},400);
   const body=await request.text();if(body.length>4600)return json({error:'Requête trop longue'},413);
@@ -153,7 +168,7 @@ export async function handleNativeProduction(request,env,isAdmin){
   }
   await db.prepare('INSERT INTO native_push_devices(id,token,created,last_seen,ip_hash) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET last_seen=excluded.last_seen')
    .bind(id,data.token,time,time,ip).run();
-  return json({ok:true,deliveryReady:configured(env)});
+  return json({ok:true,deliveryReady:await nativeDeliveryReady(env)});
  }
  if(path==='/api/native/unsubscribe'&&request.method==='POST'){
   const data=await request.json().catch(()=>null);
@@ -167,7 +182,7 @@ export async function handleNativeProduction(request,env,isAdmin){
   if(!await isAdmin(request,env))return json({error:'Accès requis'},403);
   const counts=await one(db,'SELECT COUNT(*) AS n FROM native_push_devices');
   const queued=await one(db,"SELECT COUNT(*) AS n FROM native_delivery_jobs WHERE status='pending'");
-  return json({devices:counts?.n||0,queued:queued?.n||0,deliveryReady:configured(env)});
+  return json({devices:counts?.n||0,queued:queued?.n||0,deliveryReady:await nativeDeliveryReady(env)});
  }
  return json({error:'Route introuvable'},404);
 }
