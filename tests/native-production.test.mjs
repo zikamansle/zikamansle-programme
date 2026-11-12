@@ -34,6 +34,7 @@ const readyEnv=DB=>({
  FCM_RELAY_TOKEN:'f'.repeat(64),
  FIREBASE_RELAY:{fetch:async(_url,options)=>{
   assert.equal(options.headers['X-Zika-Relay-Authorization'],'f'.repeat(64));
+  if(String(_url).endsWith('/internal/native/preflight'))return Response.json({ready:true,stage:'OAUTH_OK'});
   const message=JSON.parse(options.body);
   assert.equal(message.token,token);
   return Response.json({accepted:true,code:200});
