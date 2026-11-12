@@ -87,6 +87,16 @@ export async function linkNativeMember(db,memberId,token){
   .bind(id,memberId,Date.now()).run();
  return true;
 }
+async function memberStillAllowed(db,activity,memberId){
+ if(activity.audience==='all')return true;
+ if(activity.audience==='bureau'||activity.audience==='leaders'&&await one(db,'SELECT activity_id FROM team_activity_bureau_audience WHERE activity_id=?',activity.id)){
+  return !!await one(db,"SELECT 1 AS ok FROM team_member_roles WHERE member_id=? AND role IN ('bureau','director') LIMIT 1",memberId);
+ }
+ if(activity.audience==='leaders'){
+  return !!await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND tm.role='lead' AND p.archived=0 LIMIT 1",memberId);
+ }
+ return !!await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0 AND ap.activity_id=? LIMIT 1",memberId,activity.id);
+}
 export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
  if(!enabled(env)||!configured(env))return {sent:0,disabled:true};
  const db=env.DB,rows=await all(db,"SELECT * FROM native_delivery_jobs WHERE status='pending' ORDER BY created_at LIMIT ?",maximum);
@@ -97,11 +107,22 @@ export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
   const device=await one(db,'SELECT token FROM native_push_devices WHERE id=?',job.device_id);
   let allowed=Boolean(device);
   if(allowed&&job.source_type==='team'){
-   const activity=await one(db,'SELECT status FROM team_activities WHERE id=?',job.source_id);
+   const activity=await one(db,'SELECT * FROM team_activities WHERE id=?',job.source_id);
    const link=await one(db,'SELECT member_id FROM native_push_links WHERE device_id=? AND member_id=?',job.device_id,job.member_id);
    const member=await one(db,'SELECT active FROM team_members WHERE id=?',job.member_id);
-   const prefs=await one(db,'SELECT activity_enabled,urgent_enabled FROM team_notification_preferences WHERE member_id=?',job.member_id);
-   allowed=Boolean(activity&&link&&member?.active&&((job.reason==='cancelled'&&activity.status==='cancelled'&&prefs?.urgent_enabled!==0)||(job.reason!=='cancelled'&&activity.status==='published'&&prefs?.activity_enabled!==0)));
+   const prefs=await one(db,'SELECT activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end FROM team_notification_preferences WHERE member_id=?',job.member_id);
+   allowed=Boolean(activity&&link&&member?.active&&
+    ((job.reason==='cancelled'&&activity.status==='cancelled'&&prefs?.urgent_enabled!==0)||
+    (job.reason!=='cancelled'&&activity.status==='published'&&prefs?.activity_enabled!==0))&&
+    await memberStillAllowed(db,activity,job.member_id));
+   if(allowed&&prefs?.quiet_enabled&&job.reason!=='cancelled'){
+    const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false});
+    const start=prefs.quiet_start||'22:00',end=prefs.quiet_end||'08:00';
+    if(start<=end?(local>=start&&local<end):(local>=start||local<end)){
+     await db.prepare("UPDATE native_delivery_jobs SET status='pending' WHERE id=?").bind(job.id).run();
+     continue;
+    }
+   }
   }
   if(!allowed){await db.prepare("UPDATE native_delivery_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
   let code=0;
