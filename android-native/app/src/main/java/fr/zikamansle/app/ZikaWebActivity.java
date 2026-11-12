@@ -204,6 +204,22 @@ public final class ZikaWebActivity extends Activity {
                 if (!loadError) {
                     status.setVisibility(View.GONE);
                     android.util.Log.i("ZikaMansle", "ZIKA_WEBVIEW_PAGE_FINISHED host=" + Uri.parse(url).getHost());
+                    Uri completed = Uri.parse(url);
+                    if (matchesOrigin(completed, teamUrl)
+                        && completed.getPath() != null
+                        && completed.getPath().startsWith("/zikateam")) {
+                        // Verify the real protected ZikaTeam interface, not just
+                        // a blank page, redirect, or HTTP error document.
+                        view.evaluateJavascript(
+                            "Boolean(document.getElementById('teamRoot'))",
+                            result -> {
+                                if ("true".equals(result)) {
+                                    android.util.Log.i("ZikaMansle", "ZIKA_TEAM_CONTENT_READY");
+                                } else {
+                                    android.util.Log.w("ZikaMansle", "ZIKA_TEAM_CONTENT_NOT_FOUND");
+                                }
+                            });
+                    }
                 }
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request,
