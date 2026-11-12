@@ -220,28 +220,49 @@ public final class ZikaWebActivity extends Activity {
      * ZikaTeam is an entry within "Plus", NOT an extra native navigation tab.
      * The original menu items and routing remain untouched.
      */
+    /** Hide PWA installation buttons inside Android; ZikaTeam stays a single menu section. */
     private void installZikaTeamMenu(WebView view) {
-        String js =
-            "(function(){if(window.__zikaTeamMenuInstalled)return;"
-          + "window.__zikaTeamMenuInstalled=true;"
-          + "var teamUrl=window.location.origin+'/zikateam';"
-          + "function install(){"
-          + "if(document.querySelector('[data-zikateam-native-menu]'))return;"
-          + "var anchors=Array.from(document.querySelectorAll('a[href]'));"
-          + "var source=anchors.find(function(a){return /Devenir partenaire/i.test(a.textContent||'');});"
-          + "if(!source)return;"
-          + "var item=source.cloneNode(true);"
-          + "item.removeAttribute('id');item.setAttribute('href',teamUrl);"
-          + "item.removeAttribute('target');"
-          + "item.setAttribute('data-zikateam-native-menu','true');"
-          + "item.removeAttribute('onclick');"
-          + "item.replaceChildren(document.createTextNode('ZikaTeam — Bénévoles, responsables et secrétariat'));"
-          + "source.insertAdjacentElement('afterend',item);"
-          + "}"
-          + "install();new MutationObserver(install).observe(document.documentElement,{subtree:true,childList:true});"
+        String js = ""
+          + "(function(){"
+          + " if(window.__zikaNativeUiCleanup)return;"
+          + " window.__zikaNativeUiCleanup=true;"
+          + " function text(el){return (el.textContent||'').replace(/\\s+/g,' ').trim();}"
+          + " function isTeam(a){return a.matches('a[href]')&&(/(?:^|\\/)zikateam(?:\\/|$|[?#])/i.test(a.getAttribute('href')||'')||/^ZikaTeam(?:\\s|$)/i.test(text(a)));}"
+          + " function run(){"
+          + "   var anchors=Array.from(document.querySelectorAll('a[href]'));"
+          + "   var teamLinks=anchors.filter(isTeam);"
+          + "   var official=teamLinks.find(function(a){return !a.hasAttribute('data-zikateam-native-menu');});"
+          + "   // Prefer the website's original entry, only create a fallback when missing."
+          + "   if(official){"
+          + "     teamLinks.forEach(function(a){if(a!==official&&a.hasAttribute('data-zikateam-native-menu'))a.remove();});"
+          + "   }else if(!teamLinks.length){"
+          + "     var source=anchors.find(function(a){return /Devenir partenaire/i.test(text(a));});"
+          + "     if(source){"
+          + "       var item=source.cloneNode(true);"
+          + "       item.removeAttribute('id');"
+          + "       item.removeAttribute('onclick');"
+          + "       item.removeAttribute('target');"
+          + "       item.setAttribute('data-zikateam-native-menu','true');"
+          + "       item.href=location.origin+'/zikateam';"
+          + "       item.replaceChildren(document.createTextNode('ZikaTeam — Bénévoles, responsables et secrétariat'));"
+          + "       source.insertAdjacentElement('afterend',item);"
+          + "     }"
+          + "   }"
+          + "   // In the installed Android app the Play Store supplies the install action."
+          + "   document.querySelectorAll('a,button,[role=\"button\"]').forEach(function(el){"
+          + "     var label=text(el);"
+          + "     if(/^(?:installer(?:\\s+(?:l['’]application|l['’]appli|zika(?:mansle)?|sur (?:le )?téléphone))?|installer maintenant|ajouter (?:à|sur) l['’]écran d['’]accueil)(?:\\s*[›→↗])?$/i.test(label)){"
+          + "       el.style.setProperty('display','none','important');"
+          + "       el.setAttribute('aria-hidden','true');"
+          + "       el.setAttribute('data-zika-native-hide-install','true');"
+          + "     }"
+          + "   });"
+          + " }"
+          + " run();"
+          + " new MutationObserver(run).observe(document.documentElement,{subtree:true,childList:true});"
           + "})();";
         view.evaluateJavascript(js, result ->
-            android.util.Log.i("ZikaMansle", "ZIKA_TEAM_MENU_SCRIPT_INSTALLED"));
+            android.util.Log.i("ZikaMansle", "ZIKA_NATIVE_UI_CLEANUP_READY"));
     }
 
     private boolean sameOrigin(Uri url) {
