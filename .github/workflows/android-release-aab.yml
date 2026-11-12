@@ -94,6 +94,14 @@ jobs:
         run: |
           gradle -p android-native :app:bundleRelease --no-daemon \
             -PzikaLaunchUrl=https://app.zikamansle.fr/
+      - name: Conserver le bundle non signé pour signature hors du dépôt
+        if: steps.signing.outputs.signed != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZikaMansle-1.0.15-UNSIGNED-NOT-FOR-PLAY
+          path: android-native/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 7
       - name: Enregistrer la table R8 pour les diagnostics Android
         uses: actions/upload-artifact@v4
         with:
