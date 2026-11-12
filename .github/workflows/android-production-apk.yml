@@ -5,6 +5,7 @@ on:
     branches: [prepare/google-play-android-2026]
     paths:
       - .github/workflows/android-production-apk.yml
+      - android-native/**
   workflow_dispatch:
 
 permissions:
@@ -43,8 +44,8 @@ jobs:
           PY
       - name: Construire un APK de test qui ouvre le domaine OFFICIEL
         env:
-          # Pas d'envoi FCM vers staging depuis cette version de test pointant production.
-          ZIKA_NATIVE_REGISTRATION_URL: 'disabled'
+          # FCM natif Android, strictement sur le même domaine HTTPS officiel.
+          ZIKA_NATIVE_REGISTRATION_URL: 'https://app.zikamansle.fr/api/native/subscribe'
         run: gradle -p android-native :app:assembleDebug --no-daemon -PzikaLaunchUrl=https://app.zikamansle.fr/
       - name: Vérifier icône, son et canal Android
         shell: bash
@@ -53,6 +54,8 @@ jobs:
           test -s android-native/app/src/main/res/raw/zika_notification.m4a
           grep -F 'festival-zikamansle-alerts-v4' android-native/app/src/main/AndroidManifest.xml
           grep -F '/raw/zika_notification' android-native/app/src/main/java/fr/zikamansle/app/ZikaNotificationChannels.java
+          grep -F 'ZIKA_NATIVE_TEAM_LINKED' android-native/app/src/main/java/fr/zikamansle/app/ZikaPushRegistration.java
+          grep -F 'app.zikamansle.fr/api/native/subscribe' android-native/app/build/generated/res/resValues/debug/values/gradleResValues.xml
           grep -F 'R.drawable.zika_notification_small' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
           grep -F 'builder.setLargeIcon(largeIcon)' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
       - name: Autoriser l'émulateur accéléré
@@ -85,7 +88,7 @@ jobs:
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
         with:
-          name: ZikaMansle-1.0.13-APK-test-domaine-officiel
+          name: ZikaMansle-1.0.14-Android-Firebase-test
           path: android-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
