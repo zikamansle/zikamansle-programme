@@ -1,0 +1,31 @@
+name: Vérifier Firebase Android en production (sans envoyer)
+on:
+  push:
+    branches: [feat/zikateam-fiches-notifications]
+    paths: [.github/workflows/verify-native-production.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Contrôler le relais FCM réel sur le domaine officiel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request, sys
+          for origin in ('https://zikamansle-app-production.zikamansle.workers.dev',
+                         'https://app.zikamansle.fr'):
+              req=urllib.request.Request(origin+'/api/native/config',headers={'User-Agent':'ZikaMansle-native-readiness/1.0'})
+              with urllib.request.urlopen(req,timeout=18) as response:
+                  data=json.loads(response.read(1024))
+              print(origin, 'nativeEnabled=',data.get('enabled'),'fcmOAuthReady=',data.get('deliveryReady'))
+              if not data.get('enabled'):
+                  sys.exit('FAIL: notifications Android native non activées sur '+origin)
+              if not data.get('deliveryReady'):
+                  sys.exit('FAIL: relais Firebase / OAuth non opérationnel sur '+origin)
+          print('PASS: les deux domaines font répondre le relais Firebase OAuth, sans envoyer de message ni exposer de secret')
+          PY
