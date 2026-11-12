@@ -105,4 +105,9 @@ if ! grep -q 'ZIKA_WEBVIEW_PAGE_FINISHED host=zikamansle-app-staging.zikamansle.
     echo 'FAIL: ZikaTeam did not finish loading inside the Android app'
     exit 1
 fi
+if ! grep -q 'ZIKA_TEAM_CONTENT_READY' /tmp/zika-team-logcat.txt; then
+    echo 'FAIL: ZikaTeam interface was not found inside the application'
+    grep -E 'ZIKA_TEAM_CONTENT|ZIKA_WEBVIEW_PAGE_FINISHED' /tmp/zika-team-logcat.txt | tail -15 || true
+    exit 1
+fi
 echo 'PASS: Festival and ZikaTeam both open inside one ZikaMansle APK'
