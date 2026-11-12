@@ -163,7 +163,7 @@ async function getManage(db,ctx){
  const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
  return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,invitations,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists});
 }
-async function enqueue(db,a,reason){
+async function enqueue(db,a,reason,native=false){
  const memberIds=await audienceMembers(db,a);
  for(const memberId of memberIds){
   await db.prepare("INSERT INTO team_activity_notices(id,activity_id,member_id,reason,created_at,seen_at) VALUES(?,?,?,?,?,NULL) ON CONFLICT(activity_id,member_id,reason) DO UPDATE SET created_at=excluded.created_at,seen_at=NULL").bind(uuid(),a.id,memberId,reason,now()).run();
@@ -174,7 +174,7 @@ async function enqueue(db,a,reason){
   for(const l of links){await db.prepare("INSERT INTO team_push_jobs(id,activity_id,member_id,subscription_id,reason,status,created_at) VALUES (?,?,?,?,?,'pending',?) ON CONFLICT(activity_id,subscription_id,reason) DO UPDATE SET status='pending',code=NULL,created_at=excluded.created_at")
    .bind(uuid(),a.id,memberId,l.subscription_id,reason,now()).run();}
  }
- await queueNativeActivity(db,a,reason,memberIds);
+ if(native)await queueNativeActivity(db,a,reason,memberIds);
  return memberIds.length;
 }
 // Envoi désactivé par défaut. En staging, seuls les IDs explicites de test
@@ -406,7 +406,7 @@ async function setMemberFunctions(db,ctx,d){
  await audit(db,ctx.email,'member.functions.set',member.id,JSON.stringify({roles:labels,poleRoles}).slice(0,500));
  return reply({ok:true,rolesSaved:labels.length,polesSaved:poleRoles.length});
 }
-async function saveActivity(db,ctx,d){
+async function saveActivity(db,ctx,d,env){
  if(!ctx.admin&&!ctx.leadPoles.length)return fail('Réservé aux responsables.',403);
  if(!(validKind(d.kind)||d.kind==='other')||!validAudience(d.audience)||!clean(d.title,120)||!dateok(d.starts_at)||!dateok(d.ends_at)||Date.parse(d.ends_at)<=Date.parse(d.starts_at)||Date.parse(d.ends_at)-Date.parse(d.starts_at)>90*86400000)return fail('Titre, type, public ou dates invalides.');
  const customKind=d.kind==='other'?clean(d.customKind,90):'';
@@ -431,9 +431,9 @@ async function saveActivity(db,ctx,d){
  if(d.audience==='poles')for(const pole of selected)await db.prepare('INSERT INTO team_activity_poles(activity_id,pole_id) VALUES (?,?)').bind(id,pole).run();
  const result=await one(db,'SELECT * FROM team_activities WHERE id=?',id);
  let invites=0;
- if(status==='published'&&previous?.status!=='published')invites=await enqueue(db,result,'created');
- else if(previous?.status==='published'&&status==='cancelled')invites=await enqueue(db,result,'cancelled');
- else if(previous?.status==='published'&&status==='published'&&(wasBureau!==(d.audience==='bureau')||[previous.title,previous.starts_at,previous.ends_at,previous.place,previous.audience].join('|')!==[result.title,result.starts_at,result.ends_at,result.place,result.audience].join('|')))invites=await enqueue(db,result,'updated');
+ if(status==='published'&&previous?.status!=='published')invites=await enqueue(db,result,'created',env?.NATIVE_PUSH_ENABLED==='true'&&env?.APP_ENV==='production');
+ else if(previous?.status==='published'&&status==='cancelled')invites=await enqueue(db,result,'cancelled',env?.NATIVE_PUSH_ENABLED==='true'&&env?.APP_ENV==='production');
+ else if(previous?.status==='published'&&status==='published'&&(wasBureau!==(d.audience==='bureau')||[previous.title,previous.starts_at,previous.ends_at,previous.place,previous.audience].join('|')!==[result.title,result.starts_at,result.ends_at,result.place,result.audience].join('|')))invites=await enqueue(db,result,'updated',env?.NATIVE_PUSH_ENABLED==='true'&&env?.APP_ENV==='production');
  await audit(db,ctx.email,'activity.save',id,`${result.kind} · ${result.title} · ${status}`);
  return reply({ok:true,id,invitedMembers:invites,pushEnabled:false});
 }
@@ -566,6 +566,7 @@ async function memberAction(db,ctx,d,env){
   return reply({ok:accepted>0,accepted,failed,message:accepted>0?'Service push a accepté le test. Vérifie la notification sur le téléphone.':'Le service push a refusé le test.'},accepted?200:502);
  }
  if(d.op==='native.link'){
+  if(env.APP_ENV!=='production'||env.NATIVE_PUSH_ENABLED!=='true')return fail('Notifications natives indisponibles.',503);
   if(ctx.pending||!ctx.member?.active||!await requireCharter(db,ctx))return fail('Compte bénévole non autorisé.',403);
   if(!await linkNativeMember(db,memberId,d.token))return fail('Appareil Android non enregistré.',403);
   return reply({ok:true});
@@ -707,7 +708,7 @@ async function signingAction(db,ctx,d){
  return fail('Commande d’émargement inconnue.',404);
 }
 
-async function adminAction(db,ctx,d){
+async function adminAction(db,ctx,d,env){
  if(d.op==='invite.create'){
   if(!ctx.admin)return fail('Seul un administrateur peut inviter de nouveaux bénévoles.',403);
   const email=clean(d.email,254).toLowerCase(),name=clean(d.name,110);
@@ -858,7 +859,7 @@ async function adminAction(db,ctx,d){
   await db.prepare('UPDATE team_poles SET archived=?,updated_at=? WHERE id=?').bind(d.archived===false?0:1,now(),d.id).run();await audit(db,ctx.email,'pole.archive',d.id);return reply({ok:true});
  }
  if(d.op==='assignment.set')return assign(db,ctx,d);
- if(d.op==='activity.save')return saveActivity(db,ctx,d);
+ if(d.op==='activity.save')return saveActivity(db,ctx,d,env);
  if(d.op==='shift.save')return saveShift(db,ctx,d);
  if(d.op==='task.save')return saveTask(db,ctx,d);
  if(d.op==='task.delete'){
@@ -1204,7 +1205,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(ctx.pending&&!['charter.accept','consents.save'].includes(data.op))return fail('Ton inscription attend l’accord de l’administration.',403);
     let result;
     if(['charter.accept','activity.rsvp','shift.signup','push.link','push.test','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute','native.link'].includes(data.op))result=await memberAction(db,ctx,data,env);
-    else result=await adminAction(db,ctx,data);
+    else result=await adminAction(db,ctx,data,env);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(Promise.all([drainTeamPush(env),drainNativePush(env)]).catch(()=>{}));}
     if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
     return result;
