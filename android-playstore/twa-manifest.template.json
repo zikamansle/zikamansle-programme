@@ -1,0 +1,26 @@
+{
+  "packageId": "fr.zikamansle.app",
+  "host": "app.zikamansle.fr",
+  "name": "ZikaMansle",
+  "launcherName": "ZikaMansle",
+  "display": "standalone",
+  "themeColor": "#071426",
+  "themeColorDark": "#071426",
+  "navigationColor": "#071426",
+  "navigationColorDark": "#071426",
+  "backgroundColor": "#071426",
+  "startUrl": "/",
+  "iconUrl": "REMPLACER_PAR_HTTPS_ICONE_TETE_DE_ZIKA_512_PX",
+  "maskableIconUrl": "REMPLACER_PAR_HTTPS_ICONE_TETE_DE_ZIKA_MASKABLE_512_PX",
+  "enableNotifications": true,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "appVersion": "1.0.0",
+  "minSdkVersion": 24,
+  "fallbackType": "customtabs",
+  "additionalTrustedOrigins": [],
+  "webManifestUrl": "https://app.zikamansle.fr/manifest.webmanifest"
+}

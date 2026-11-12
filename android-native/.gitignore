@@ -1,0 +1,11 @@
+# Never commit signing secrets or generated packages.
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.apk
+*.aab

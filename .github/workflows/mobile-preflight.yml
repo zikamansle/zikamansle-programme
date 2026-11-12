@@ -1,0 +1,24 @@
+name: Mobile app preflight
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  static-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app.js
+          node --check sw.js
+          node --check programme-ui.js
+      - name: Check Web Push open and routing logic
+        run: node --test android-playstore/tests/push.test.mjs
+      - name: Check mandatory PWA files
+        run: |
+          node -e "const fs=require('fs');let m=JSON.parse(fs.readFileSync('manifest.webmanifest'));for(const f of ['index.html','app.js','sw.js','plan.html','icons/icon-192.png','icons/icon-512.png'])if(!fs.existsSync(f))throw Error('Missing: '+f);if(m.name!=='ZikaMansle')throw Error('Wrong app name')"

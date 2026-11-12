@@ -1,0 +1,16 @@
+# Android outputs and credentials: always keep private
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.aab
+*.apk
+*.pem
+*.key
+*.env
+.env.*
+android-genere/
+ZikaMansle-Android/
+.gradle/
+build/
+app/build/

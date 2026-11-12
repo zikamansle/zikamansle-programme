@@ -1,0 +1,111 @@
+name: ZikaMansle Google Play internal AAB
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prepare/google-play-android-2026
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 16 SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          fi
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Get official 512px Zika icon from association's Wix Media Manager
+        shell: bash
+        run: |
+          mkdir -p android-native/app/src/release/res/drawable-nodpi
+          curl --fail --show-error --location --retry 3 \
+            "https://static.wixstatic.com/media/685632_388f80525cec40c2b56e806e82fd6a60~mv2.png" \
+            --output android-native/app/src/release/res/drawable-nodpi/zika_icon.png
+          file android-native/app/src/release/res/drawable-nodpi/zika_icon.png
+          python3 - <<'PY'
+          from pathlib import Path
+          data=Path('android-native/app/src/release/res/drawable-nodpi/zika_icon.png').read_bytes()
+          if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Official icon is not a PNG')
+          print('Official icon verified:',len(data),'bytes')
+          PY
+      - name: Prepare private upload signing key (if configured)
+        id: signing
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ZIKA_ANDROID_KEYSTORE_BASE64 }}
+          ZIKA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ZIKA_ANDROID_KEYSTORE_PASSWORD }}
+          ZIKA_ANDROID_KEY_ALIAS: ${{ secrets.ZIKA_ANDROID_KEY_ALIAS }}
+          ZIKA_ANDROID_KEY_PASSWORD: ${{ secrets.ZIKA_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$KEYSTORE_B64" && -n "$ZIKA_ANDROID_KEYSTORE_PASSWORD" && -n "$ZIKA_ANDROID_KEY_ALIAS" && -n "$ZIKA_ANDROID_KEY_PASSWORD" ]]; then
+            umask 077
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/zika-upload-key.jks"
+            test -s "$RUNNER_TEMP/zika-upload-key.jks"
+            echo "ZIKA_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/zika-upload-key.jks" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEYSTORE_PASSWORD=$ZIKA_ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEY_ALIAS=$ZIKA_ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ZIKA_ANDROID_KEY_PASSWORD=$ZIKA_ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "Upload signing key is not fully configured; build will remain unsigned."
+          fi
+      - name: Build Android release AAB
+        shell: bash
+        env:
+          ZIKA_FIREBASE_APP_ID: ${{ vars.ZIKA_FIREBASE_APP_ID }}
+          ZIKA_FIREBASE_API_KEY: ${{ secrets.ZIKA_FIREBASE_API_KEY }}
+          ZIKA_FIREBASE_SENDER_ID: ${{ vars.ZIKA_FIREBASE_SENDER_ID }}
+          ZIKA_FIREBASE_PROJECT_ID: ${{ vars.ZIKA_FIREBASE_PROJECT_ID }}
+          ZIKA_NATIVE_REGISTRATION_URL: ${{ vars.ZIKA_NATIVE_REGISTRATION_URL }}
+        run: |
+          gradle -p android-native :app:bundleRelease --no-daemon \
+            -PzikaLaunchUrl=https://app.zikamansle.fr/
+      - name: Verify AAB signature when signing is configured
+        if: steps.signing.outputs.signed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB="$(find android-native/app/build/outputs/bundle/release -name '*.aab' -type f | head -n 1)"
+          test -s "$AAB"
+          jarsigner -verify -strict -certs "$AAB"
+          echo "Signed AAB verified for internal Play upload."
+      - name: Upload signed bundle for Google Play internal testing
+        if: steps.signing.outputs.signed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-google-play-aab-signed
+          path: android-native/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
+      - name: Keep unsigned bundle for diagnostics only
+        if: steps.signing.outputs.signed != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-google-play-aab-unsigned-NOT-FOR-PLAY
+          path: android-native/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove temporary upload key
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/zika-upload-key.jks"

@@ -1,0 +1,86 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The Android shell loads the live ZikaMansle mobile app at an HTTPS origin.
+// Verify the actual live app and its domain association before public production distribution.
+def launchUrl = (project.findProperty('zikaLaunchUrl') ?: 'https://app.zikamansle.fr/').toString()
+if (!launchUrl.startsWith('https://')) {
+    throw new GradleException('ZikaMansle requires an HTTPS launch URL')
+}
+
+// Public Firebase project identifiers can be supplied by a CI build or local Gradle properties.
+// No Firebase credential is embedded in the repository or required for baseline builds.
+// Harmless UI marker: hide install prompts when the site is loaded inside our APK.
+def nativeLaunch = url -> url + (url.contains('?') ? '&' : '?') + 'zika_native=1'
+def firebaseString = name -> (project.findProperty(name) ?: System.getenv(name) ?: '').toString()
+
+android {
+    namespace 'fr.zikamansle.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'fr.zikamansle.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 15
+        versionName '1.0.14'
+        resValue 'string', 'zika_launch_url', nativeLaunch(launchUrl)
+
+    }
+
+    // Play upload credentials are read from CI/local environment only.
+    // No private keystore or password is stored in Git.
+    signingConfigs {
+        if (System.getenv('ZIKA_ANDROID_KEYSTORE_PATH') &&
+            System.getenv('ZIKA_ANDROID_KEYSTORE_PASSWORD') &&
+            System.getenv('ZIKA_ANDROID_KEY_ALIAS') &&
+            System.getenv('ZIKA_ANDROID_KEY_PASSWORD')) {
+            playUpload {
+                storeFile file(System.getenv('ZIKA_ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ZIKA_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ZIKA_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ZIKA_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-test'
+            // Debug Firebase client values are public mobile identifiers, not an admin key.
+            // Keep the downloaded google-services.json and all service-account keys OUT of Git.
+            resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID') ?: '1:569737641618:android:0987a69da922b0e6eff04b'
+            resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY') ?: 'AIzaSyDDdF-KeVQFBrlptNj6dOwSRWNRgETOJm4'
+            resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID') ?: '569737641618'
+            resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID') ?: 'zikamansle-d0c4e'
+            resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/api/native/subscribe'
+            // The integrated test opens the complete Cloudflare staging application,\n            // including /zikateam under the SAME origin. Release is unchanged.
+            resValue 'string', 'zika_launch_url', nativeLaunch((project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString())
+        }
+        release {
+            // Sign only when a complete private Play upload key is provided.
+            if (signingConfigs.findByName('playUpload') != null) {
+                signingConfig signingConfigs.playUpload
+            }
+            minifyEnabled false
+            // Production remains deliberately disconnected until the signed release is tested.
+            resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID')
+            resValue 'string', 'zika_firebase_api_key', firebaseString('ZIKA_FIREBASE_API_KEY')
+            resValue 'string', 'zika_firebase_sender_id', firebaseString('ZIKA_FIREBASE_SENDER_ID')
+            resValue 'string', 'zika_firebase_project_id', firebaseString('ZIKA_FIREBASE_PROJECT_ID')
+            resValue 'string', 'zika_native_registration_url', firebaseString('ZIKA_NATIVE_REGISTRATION_URL')
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation platform('com.google.firebase:firebase-bom:35.1.0')
+    implementation 'com.google.firebase:firebase-messaging'
+}
