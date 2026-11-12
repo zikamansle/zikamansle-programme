@@ -30,6 +30,7 @@
     "PUSH_SEND_ENABLED": "true",
     "PUSH_TEST_ENABLED": "true",
     "TEAM_PUSH_ENABLED": "true",
+    "NATIVE_PUSH_ENABLED": "true",
     "TEAM_AUTH_PROVIDER": "supabase",
     "TEAM_SUPABASE_URL": "https://kuipdwzqamiduhosofjb.supabase.co",
     "TEAM_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_22bY8y3TXUNg_h6xrBztEw_g2nzc2d3"
