@@ -2,7 +2,7 @@ name: ZikaMansle APK Android - domaine officiel
 
 on:
   push:
-    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112, fix/android-notification-sound-v1016-20261112]
+    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112, fix/android-notification-sound-v1016-20261112, fix/zikarun-fullscreen-android-v1017]
     paths:
       - .github/workflows/android-production-apk.yml
       - android-native/**
@@ -96,7 +96,7 @@ jobs:
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
         with:
-          name: ZikaMansle-1.0.16-Android-Firebase-test
+          name: ZikaMansle-1.0.17-Android-Firebase-test
           path: android-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
