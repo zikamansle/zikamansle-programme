@@ -138,6 +138,77 @@ adb shell uiautomator dump /sdcard/zika-plus-ui.xml >/dev/null || true
 adb shell cat /sdcard/zika-plus-ui.xml > /tmp/zika-plus-ui.xml || true
 adb shell screencap -p /sdcard/zika-plus-screen.png >/dev/null || true
 adb pull /sdcard/zika-plus-screen.png /tmp/zika-plus-screen.png >/dev/null || true
+# Exercise the actual on/off buttons on the Actualités & notifications page,
+# not merely the first-launch Android notification permission dialog.
+# Reopen the festival home, so we do not depend on ZikaTeam's private
+# browser history or where the WebView back button returns.
+python3 - <<'PY'
+import re,subprocess,time
+from pathlib import Path
+from xml.etree import ElementTree as ET
+
+def dump():
+    subprocess.run(['adb','shell','uiautomator','dump','/sdcard/zika-current.xml'],
+        stdout=subprocess.DEVNULL,check=False)
+    raw=subprocess.check_output(['adb','shell','cat','/sdcard/zika-current.xml'],text=True)
+    Path('/tmp/zika-news-ui.xml').write_text(raw)\n    subprocess.run(['adb','shell','screencap','-p','/sdcard/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)\n    subprocess.run(['adb','pull','/sdcard/zika-news-screen.png','/tmp/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)\n    return ET.fromstring(raw)
+
+def find(root,needle):
+    return [n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
+        and n.attrib.get('bounds')!='[0,0][0,0]']
+
+def tap(node):
+    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
+    if not m: raise SystemExit('FAIL: cannot tap element '+repr(node.attrib.get('text')))
+    x1,y1,x2,y2=map(int,m.groups())
+    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+
+root=dump()
+news=find(root,'Actualités & notifications')
+if not news: raise SystemExit('FAIL: Actualités & notifications entry missing from Plus')
+tap(news[0]);time.sleep(5)
+for attempt in range(7):
+    root=dump()
+    enable=find(root,'Activer les notifications')
+    disable=find(root,'Désactiver les notifications')
+    if enable and disable:break
+    subprocess.run(['adb','shell','input','swipe','160','520','160','205','400'],check=True)
+    time.sleep(2)
+else:
+    raise SystemExit('FAIL: Native Activer/Désactiver controls not present in Actualités')
+print('PASS: Both Activer and Désactiver buttons are available in Actualités')
+
+tap(disable[0]);time.sleep(2)
+root=dump()
+confirm=find(root,'Désactiver')
+if not confirm:raise SystemExit('FAIL: Disable confirmation dialog absent')
+# Prefer native positive button resource id (not the underlying WebView button).
+positive=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
+if not positive:raise SystemExit('FAIL: Native disable confirmation missing')
+tap(positive[0]);time.sleep(3)
+root=dump()
+if not find(root,'Notifications désactivées'):
+    raise SystemExit('FAIL: Notification-off state not displayed')
+print('PASS: Désactiver really updates Android native push state')
+
+enable=find(root,'Activer les notifications')
+if not enable: raise SystemExit('FAIL: Enable button missing after disabling')
+tap(enable[0]);time.sleep(5)
+root=dump()
+if not find(root,'Notifications activées'):
+    raise SystemExit('FAIL: Notification-on state not displayed')
+print('PASS: Activer restores the Android native notification opt-in')
+# Return to the existing Plus menu to continue the unchanged ZikaTeam test.
+out=subprocess.check_output(['adb','shell','wm','size'],text=True)
+dims=re.search(r'(\\d+)x(\\d+)',out)
+if not dims:raise SystemExit('FAIL: Screen dimensions missing')
+width,height=map(int,dims.groups())
+subprocess.run(['adb','shell','input','tap',str(round(width*0.875)),str(round(height*0.945))],check=True)
+time.sleep(4)
+if not find(dump(),'ZikaTeam'):
+    raise SystemExit('FAIL: Could not return to Plus from Actualités')
+PY
+
 python3 - <<'PY'
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -177,72 +248,3 @@ fi
 echo 'PASS: Festival and private ZikaTeam section load in one ZikaMansle app'
 
 
-# Exercise the actual on/off buttons on the Actualités & notifications page,
-# not merely the first-launch Android notification permission dialog.
-# Reopen the festival home, so we do not depend on ZikaTeam's private
-# browser history or where the WebView back button returns.
-adb shell am force-stop fr.zikamansle.app.debug
-adb shell am start -W -n fr.zikamansle.app.debug/fr.zikamansle.app.ZikaLauncherActivity >/dev/null
-sleep 18
-python3 - <<'PY'
-import re,subprocess,time
-from xml.etree import ElementTree as ET
-
-def dump():
-    subprocess.run(['adb','shell','uiautomator','dump','/sdcard/zika-current.xml'],
-        stdout=subprocess.DEVNULL,check=False)
-    raw=subprocess.check_output(['adb','shell','cat','/sdcard/zika-current.xml'],text=True)
-    return ET.fromstring(raw)
-
-def find(root,needle):
-    return [n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
-        and n.attrib.get('bounds')!='[0,0][0,0]']
-
-def tap(node):
-    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
-    if not m: raise SystemExit('FAIL: cannot tap element '+repr(node.attrib.get('text')))
-    x1,y1,x2,y2=map(int,m.groups())
-    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
-
-out=subprocess.check_output(['adb','shell','wm','size'],text=True)
-dims=re.search(r'(\d+)x(\d+)',out)
-if not dims: raise SystemExit('FAIL: Cannot get emulator dimensions')
-width,height=map(int,dims.groups())
-subprocess.run(['adb','shell','input','tap',str(round(width*0.875)),str(round(height*0.945))],check=True)
-time.sleep(4)
-root=dump()
-news=find(root,'Actualités & notifications')
-if not news: raise SystemExit('FAIL: Actualités & notifications entry missing from Plus after reopening app')
-tap(news[0]);time.sleep(5)
-for attempt in range(7):
-    root=dump()
-    enable=find(root,'Activer les notifications')
-    disable=find(root,'Désactiver les notifications')
-    if enable and disable:break
-    subprocess.run(['adb','shell','input','swipe','160','520','160','205','400'],check=True)
-    time.sleep(2)
-else:
-    raise SystemExit('FAIL: Native Activer/Désactiver controls not present in Actualités')
-print('PASS: Both Activer and Désactiver buttons are available in Actualités')
-
-tap(disable[0]);time.sleep(2)
-root=dump()
-confirm=find(root,'Désactiver')
-if not confirm:raise SystemExit('FAIL: Disable confirmation dialog absent')
-# Prefer native positive button resource id (not the underlying WebView button).
-positive=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
-if not positive:raise SystemExit('FAIL: Native disable confirmation missing')
-tap(positive[0]);time.sleep(3)
-root=dump()
-if not find(root,'Notifications désactivées'):
-    raise SystemExit('FAIL: Notification-off state not displayed')
-print('PASS: Désactiver really updates Android native push state')
-
-enable=find(root,'Activer les notifications')
-if not enable: raise SystemExit('FAIL: Enable button missing after disabling')
-tap(enable[0]);time.sleep(5)
-root=dump()
-if not find(root,'Notifications activées'):
-    raise SystemExit('FAIL: Notification-on state not displayed')
-print('PASS: Activer restores the Android native notification opt-in')
-PY
