@@ -95,7 +95,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Vérifier le cloisonnement de production
+      - name: Vérifier le cloisonnement de production avant toute écriture
         run: node scripts/zikamansle-production-guard.mjs
       - name: Vérifier la compilation spécifique production
         run: npx wrangler deploy --dry-run --outdir dist-production --config wrangler.production.jsonc
