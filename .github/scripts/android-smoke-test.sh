@@ -58,12 +58,12 @@ if ! grep -E '(topResumedActivity|mResumedActivity|ResumedActivity)' /tmp/zika-a
     grep -E 'ZikaWebActivity|topResumedActivity|mResumedActivity' /tmp/zika-activity.txt | tail -15 || true
     exit 1
 fi
-if ! grep -q 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' /tmp/zika-android-logcat.txt; then
-    echo 'FAIL: The integrated ZikaMansle app did not finish loading its official URL'
+if ! grep -q 'ZIKA_WEBVIEW_PAGE_FINISHED host=zikamansle-app-staging.zikamansle.workers.dev' /tmp/zika-android-logcat.txt; then
+    echo 'FAIL: The unified ZikaMansle test app did not finish loading the integrated staging site'
     grep -F 'ZikaMansle' /tmp/zika-android-logcat.txt | tail -20 || true
     exit 1
 fi
-echo 'PASS: The official ZikaMansle app is visible after the notification prompt'
+echo 'PASS: The unified ZikaMansle staging app is visible after notification consent'
 if grep -A 25 'FATAL EXCEPTION' /tmp/zika-android-logcat.txt | grep -Eq 'fr[.]zikamansle[.]app|ManageDataLauncherActivity'; then
     echo 'FAIL: ZikaMansle Android crashed during startup'
     exit 1
