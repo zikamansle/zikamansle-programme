@@ -359,7 +359,7 @@ public final class ZikaWebActivity extends Activity {
           + "   });"
           + "   buttons.forEach(function(b){if(b.style.display!=='none')b.style.setProperty('display','none','important');});"
           + "   Array.from(card.querySelectorAll('p,div')).filter(function(p){"
-          + "     return p.children.length===0&&/notifications non prises en charge sur ce navigateur/i.test(text(p));"
+          + "     return p.children.length===0&&/(?:notifications non prises en charge sur ce navigateur|sur iphone\\s*:)/i.test(text(p));"
           + "   }).forEach(function(p){if(p.style.display!=='none')p.style.setProperty('display','none','important');});"
           + "   if(card.querySelector('#zika-native-notification-controls'))return;"
           + "   var box=document.createElement('div');"
