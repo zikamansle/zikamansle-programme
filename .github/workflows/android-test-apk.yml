@@ -71,6 +71,10 @@ jobs:
             /tmp/zika-ui.xml
             /tmp/zika-screen.png
             /tmp/zika-activity.txt
+            /tmp/zika-home-ui.xml
+            /tmp/zika-plus-ui.xml
+            /tmp/zika-plus-screen.png
+            /tmp/zika-team-logcat.txt
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
