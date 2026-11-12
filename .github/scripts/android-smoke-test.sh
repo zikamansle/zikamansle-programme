@@ -115,6 +115,13 @@ import re
 import subprocess
 root=ET.fromstring(Path('/tmp/zika-plus-ui.xml').read_text(errors='replace'))
 nodes=[n for n in root.iter('node') if 'zikateam' in n.attrib.get('text','').casefold()]
+if len(nodes)>1:
+    raise SystemExit('FAIL: Duplicate ZikaTeam menu items found: '+repr([n.attrib.get('text') for n in nodes]))
+install=[n.attrib.get('text','') for n in root.iter('node')
+         if n.attrib.get('text','').strip().casefold().startswith(('installer l', 'installer zika', 'installer maintenant'))]
+if install:
+    raise SystemExit('FAIL: PWA install buttons still visible inside Android: '+repr(install))
+print('PASS: Only one ZikaTeam entry, no redundant Install button in Plus menu')
 if not nodes:
     visible=[(n.attrib.get('text',''),n.attrib.get('content-desc','')) for n in root.iter('node') if n.attrib.get('text','').strip() or n.attrib.get('content-desc','').strip()]
     raise SystemExit('FAIL: ZikaTeam missing from Plus menu. Visible nodes: '+repr(visible[-30:]))
