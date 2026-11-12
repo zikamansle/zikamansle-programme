@@ -2,7 +2,7 @@ name: ZikaMansle APK Android - domaine officiel
 
 on:
   push:
-    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112]
+    branches: [prepare/google-play-android-2026, fix/android-play-v1015-quality-20261112, fix/android-notification-sound-v1016-20261112]
     paths:
       - .github/workflows/android-production-apk.yml
       - android-native/**
