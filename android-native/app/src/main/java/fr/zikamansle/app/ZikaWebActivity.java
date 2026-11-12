@@ -87,7 +87,17 @@ public final class ZikaWebActivity extends Activity {
             if (Build.VERSION.SDK_INT >= 33 &&
                 checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) return "blocked";
-            return "enabled";
+            return ZikaPushRegistration.deliveryReady(ZikaWebActivity.this)?"enabled":"server_pending";
+        }
+
+        @JavascriptInterface public void linkZikaTeam() {
+            runOnUiThread(() -> {
+                if(web==null||isFinishing()||isDestroyed())return;
+                Uri current=Uri.parse(web.getUrl());
+                if(!sameOrigin(current)||!current.getPath().startsWith("/zikateam"))return;
+                String cookies=CookieManager.getInstance().getCookie("https://app.zikamansle.fr/");
+                ZikaPushRegistration.linkTeam(ZikaWebActivity.this,cookies);
+            });
         }
 
         @JavascriptInterface public void enableNotifications() {
@@ -311,6 +321,7 @@ public final class ZikaWebActivity extends Activity {
           + "   if(status){"
           + "     status.textContent=enabled==='enabled'?'Notifications activées sur ce téléphone. La réception d’une alerte reste à vérifier.':"
           + "       enabled==='blocked'?'Notifications bloquées par Android. Autorise-les dans les paramètres du téléphone.':"
+          + "       enabled==='server_pending'?'Téléphone autorisé, mais envoi Firebase officiel non encore disponible.':"
           + "       enabled==='unconfigured'?'Notifications non configurées dans cette version.':"
           + "       'Notifications désactivées sur ce téléphone.';"
           + "   }"
