@@ -41,6 +41,9 @@ public final class ZikaWebActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> pendingFiles;
     private Uri officialUrl;
+    private Uri teamUrl;
+    private static final String ZIKATEAM_URL =
+        "https://zikamansle-app-staging.zikamansle.workers.dev/zikateam";
     private LinearLayout root;
     private TextView status;
     private boolean loadError;
@@ -48,6 +51,7 @@ public final class ZikaWebActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         officialUrl = Uri.parse(getString(R.string.zika_launch_url));
+        teamUrl = Uri.parse(ZIKATEAM_URL);
         if (!"https".equals(officialUrl.getScheme()) || officialUrl.getHost() == null) {
             showProblem("Adresse de l’application incorrecte.");
             return;
@@ -167,7 +171,7 @@ public final class ZikaWebActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri target = request.getUrl();
-                if (sameOrigin(target)) return false;
+                if (sameOrigin(target) || isTeamOrigin(target)) return false;
                 if ("https".equals(target.getScheme()) || "http".equals(target.getScheme()) ||
                     "mailto".equals(target.getScheme()) || "tel".equals(target.getScheme())) {
                     try {
@@ -183,6 +187,13 @@ public final class ZikaWebActivity extends Activity {
                 if (!loadError) {
                     status.setVisibility(View.GONE);
                     android.util.Log.i("ZikaMansle", "ZIKA_WEBVIEW_PAGE_FINISHED host=" + Uri.parse(url).getHost());
+                    if (sameOrigin(Uri.parse(url))) installZikaTeamMenu(view);
+                    if (isTeamOrigin(Uri.parse(url))) {
+                        view.evaluateJavascript("Boolean(document.getElementById('teamRoot'))",
+                            result -> android.util.Log.i("ZikaMansle",
+                                "true".equals(result) ? "ZIKA_TEAM_CONTENT_READY" :
+                                    "ZIKA_TEAM_CONTENT_NOT_FOUND"));
+                    }
 
                 }
             }
@@ -197,6 +208,40 @@ public final class ZikaWebActivity extends Activity {
         });
         Uri target = sameOrigin(incoming) ? incoming : officialUrl;
         web.loadUrl(target.toString());
+    }
+
+    private boolean isTeamOrigin(Uri url) {
+        return url != null && "https".equals(url.getScheme())
+            && teamUrl.getHost().equalsIgnoreCase(url.getHost())
+            && teamUrl.getPort() == url.getPort();
+    }
+
+    /**
+     * ZikaTeam is an entry within "Plus", NOT an extra native navigation tab.
+     * The original menu items and routing remain untouched.
+     */
+    private void installZikaTeamMenu(WebView view) {
+        String js =
+            "(function(){if(window.__zikaTeamMenuInstalled)return;"
+          + "window.__zikaTeamMenuInstalled=true;"
+          + "var teamUrl='https://zikamansle-app-staging.zikamansle.workers.dev/zikateam';"
+          + "function install(){"
+          + "if(document.querySelector('[data-zikateam-native-menu]'))return;"
+          + "var anchors=Array.from(document.querySelectorAll('a[href]'));"
+          + "var source=anchors.find(function(a){return /Devenir partenaire/i.test(a.textContent||'');});"
+          + "if(!source)return;"
+          + "var item=source.cloneNode(true);"
+          + "item.removeAttribute('id');item.setAttribute('href',teamUrl);"
+          + "item.removeAttribute('target');"
+          + "item.setAttribute('data-zikateam-native-menu','true');"
+          + "item.removeAttribute('onclick');"
+          + "item.replaceChildren(document.createTextNode('ZikaTeam — Bénévoles, responsables et secrétariat'));"
+          + "source.insertAdjacentElement('afterend',item);"
+          + "}"
+          + "install();new MutationObserver(install).observe(document.documentElement,{subtree:true,childList:true});"
+          + "})();";
+        view.evaluateJavascript(js, result ->
+            android.util.Log.i("ZikaMansle", "ZIKA_TEAM_MENU_SCRIPT_INSTALLED"));
     }
 
     private boolean sameOrigin(Uri url) {
