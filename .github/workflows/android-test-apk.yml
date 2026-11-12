@@ -60,7 +60,7 @@ jobs:
           target: google_apis
           arch: x86_64
           script: |
-            set -euo pipefail
+            set -eu
             APK=android-native/app/build/outputs/apk/debug/app-debug.apk
             test -s "$APK"
             adb install -r "$APK"
