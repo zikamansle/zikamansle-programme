@@ -63,7 +63,7 @@ jobs:
       - name: Tester le démarrage réel de l'APK sur Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: 35
           target: google_apis
           arch: x86_64
           profile: pixel_3a
@@ -97,7 +97,7 @@ jobs:
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
         with:
-          name: ZikaMansle-1.0.14-Android-Firebase-test
+          name: ZikaMansle-1.0.15-Android-Firebase-test
           path: android-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
