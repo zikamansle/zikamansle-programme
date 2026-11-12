@@ -32,11 +32,17 @@ final class ZikaPushRegistration {
     static void setApproved(Context context, boolean approved) {
         SharedPreferences prefs=context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         prefs.edit().putBoolean(APPROVED, approved).apply();
-        if (FirebaseApp.getApps(context).isEmpty()) return;
-        FirebaseMessaging messaging=FirebaseMessaging.getInstance();
-        messaging.setAutoInitEnabled(approved);
-        if (approved) refresh(context);
-        else messaging.deleteToken();
+        // Native push must never block the app opening after the Android permission
+        // dialog (including on phones with an unavailable Play Services instance).
+        try {
+            if (FirebaseApp.getApps(context).isEmpty()) return;
+            FirebaseMessaging messaging=FirebaseMessaging.getInstance();
+            messaging.setAutoInitEnabled(approved);
+            if (approved) refresh(context);
+            else messaging.deleteToken();
+        } catch (RuntimeException unavailable) {
+            Log.w("ZikaMansle", "Native push unavailable; continue normal app launch");
+        }
     }
     private static boolean permissionGranted(Context context) {
         return Build.VERSION.SDK_INT < 33 ||
@@ -46,10 +52,14 @@ final class ZikaPushRegistration {
     static void refresh(Context context) {
         if (!approved(context) || !permissionGranted(context) ||
             FirebaseApp.getApps(context).isEmpty()) return;
-        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
-            if (token != null && !token.isEmpty()) register(context,token);
-        }).addOnFailureListener(error ->
-            Log.w("ZikaMansle", "Native push token unavailable (no token logged)"));
+        try {
+            FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+                if (token != null && !token.isEmpty()) register(context,token);
+            }).addOnFailureListener(error ->
+                Log.w("ZikaMansle", "Native push token unavailable (no token logged)"));
+        } catch (RuntimeException unavailable) {
+            Log.w("ZikaMansle", "Native push token setup unavailable; app stays usable");
+        }
     }
     static void register(Context context, String token) {
         if (!approved(context) || !permissionGranted(context) || token == null || token.isEmpty()) return;
