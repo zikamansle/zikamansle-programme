@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   production-apk:
-    runs-on: ubuntu-latest
+    runs-on: macos-15-intel
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -58,12 +58,8 @@ jobs:
           grep -F 'app.zikamansle.fr/api/native/subscribe' android-native/app/build/generated/res/resValues/debug/values/gradleResValues.xml
           grep -F 'R.drawable.zika_notification_small' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
           grep -F 'builder.setLargeIcon(largeIcon)' android-native/app/src/main/java/fr/zikamansle/app/ZikaMessagingService.java
-      - name: Autoriser l'émulateur accéléré
-        shell: bash
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+      - name: Vérifier l'accès HTTPS officiel depuis le runner
+        run: curl --fail --location --max-time 18 https://app.zikamansle.fr/healthz
       - name: Tester le démarrage réel de l'APK sur Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -75,15 +71,28 @@ jobs:
           disable-animations: true
           script: |
             set -e
+            adb wait-for-device
+            adb shell settings put global airplane_mode_on 0 || true
+            adb shell svc wifi enable || true
+            adb shell svc data enable || true
             adb install android-native/app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am start -W -n fr.zikamansle.app.debug/fr.zikamansle.app.ZikaLauncherActivity
-            sleep 12
-            adb logcat -d -v brief > android-startup-log.txt
+            # Un émulateur fraichement démarré peut perdre le réseau plusieurs secondes.
+            for i in 1 2 3 4 5 6 7 8; do
+              sleep 10
+              adb logcat -d -v brief > android-startup-log.txt
+              if grep -Fq 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt; then break; fi
+              adb shell svc wifi enable || true
+            done
             adb shell dumpsys activity activities > android-startup-activity.txt
             adb exec-out screencap -p > android-production-screen.png
             python3 android-native/scripts/check_startup.py
-            grep -F 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt
+            if ! grep -Fq 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt; then
+              echo 'FAIL: le WebView n a pas confirme le chargement du site officiel.'
+              adb logcat -d -v brief | grep -E 'ZIKA_|ERR_INTERNET|FATAL EXCEPTION' | tail -n 30 || true
+              exit 1
+            fi
             echo 'PASS: official ZikaMansle mobile website loaded in the Android app'
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
