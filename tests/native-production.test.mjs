@@ -60,6 +60,17 @@ test('Firebase Android: inscription séparée du Web Push et état de livraison 
  assert.equal((await handleNativeProduction(new Request('https://app.zikamansle.fr/administration/api/native-status'),env,async()=>false)).status,403);
 });
 
+test('Test depuis l APK Android: Firebase ciblé, sans réunion ni Web Push',async()=>{
+ const {sql,DB}=fakeDB(),env=readyEnv(DB);
+ assert.equal((await handleNativeProduction(post('/api/native/selftest',{token}),env)).status,403);
+ await handleNativeProduction(post('/api/native/subscribe',{token,platform:'android'}),env);
+ const first=await handleNativeProduction(post('/api/native/selftest',{token}),env);
+ assert.equal(first.status,200);
+ assert.deepEqual(await first.json(),{accepted:true,code:200});
+ assert.equal((await handleNativeProduction(post('/api/native/selftest',{token}),env)).status,429);
+ assert.equal(sql.prepare("SELECT COUNT(*) n FROM native_delivery_jobs WHERE source_type='selftest' AND status='sent'").get().n,1);
+});
+
 test('Actualités: livraison FCM native ciblée, unique même en renvoyant une annonce',async()=>{
  const {sql,DB}=fakeDB(),env=readyEnv(DB);
  await handleNativeProduction(post('/api/native/subscribe',{token,platform:'android'}),env);
