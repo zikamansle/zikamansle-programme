@@ -170,6 +170,27 @@ export async function handleNativeProduction(request,env,isAdmin){
    .bind(id,data.token,time,time,ip).run();
   return json({ok:true,deliveryReady:await nativeDeliveryReady(env)});
  }
+ if(path==='/api/native/selftest'&&request.method==='POST'){
+  if(!request.headers.get('content-type')?.startsWith('application/json')||Number(request.headers.get('content-length')||0)>4600)
+   return json({error:'Requête invalide'},400);
+  const raw=await request.text();if(raw.length>4600)return json({error:'Requête invalide'},400);
+  let data;try{data=JSON.parse(raw)}catch{return json({error:'Requête invalide'},400)}
+  if(!validToken(data?.token))return json({error:'Jeton Firebase invalide'},400);
+  const id=await hash(data.token),registered=await one(db,'SELECT id FROM native_push_devices WHERE id=? AND token=?',id,data.token);
+  if(!registered)return json({error:'Réinscrivez cet appareil Android.'},403);
+  if(!await nativeDeliveryReady(env))return json({error:'Connexion Firebase indisponible.'},503);
+  const minute=String(Math.floor(Date.now()/60000));
+  const job=crypto.randomUUID(),stamp=Date.now();
+  const sql="INSERT OR IGNORE INTO native_delivery_jobs(id,source_type,source_id,device_id,member_id,reason,title,body,url,created_at) VALUES(?,'selftest',?,?,NULL,'manual',?,?,?,?)";
+  const title='Test ZikaMansle',body='Notification envoyée directement à l’application Android.';
+  const gate=await db.prepare(sql).bind(job,minute,id,title,body,'/index.html#actualites',stamp).run();
+  if(!gate.meta?.changes)return json({error:'Attendez une minute avant un nouveau test.'},429);
+  let code=0;try{const result=await sendNativeFCM(data.token,{title,body,url:'/index.html#actualites'},env);code=result.code||0}catch{code=0}
+  const accepted=code>=200&&code<300;
+  await db.prepare('UPDATE native_delivery_jobs SET status=?,code=?,sent_at=? WHERE id=?')
+   .bind(accepted?'sent':'failed',code,Date.now(),job).run();
+  return json({accepted,code},accepted?200:502);
+ }
  if(path==='/api/native/unsubscribe'&&request.method==='POST'){
   const data=await request.json().catch(()=>null);
   if(!validToken(data?.token))return json({error:'Jeton invalide'},400);
