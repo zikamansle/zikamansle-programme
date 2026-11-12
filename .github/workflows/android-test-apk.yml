@@ -68,6 +68,9 @@ jobs:
           path: |
             /tmp/zika-launch.txt
             /tmp/zika-android-logcat.txt
+            /tmp/zika-ui.xml
+            /tmp/zika-screen.png
+            /tmp/zika-activity.txt
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
