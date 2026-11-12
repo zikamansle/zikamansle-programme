@@ -23,6 +23,12 @@
             </intent-filter>
         </activity>
 
+        <!-- The application stays in the ZikaMansle process after notification consent. -->
+        <activity
+            android:name=".ZikaWebActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ZikaMansle" />
+
         <activity
             android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
             android:exported="true"
