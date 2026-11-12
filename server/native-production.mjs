@@ -1,4 +1,4 @@
-import {classifyFirebaseCredentials,fcmAssertion} from './native-push.mjs';
+import {classifyFirebaseCredentials,fcmAssertion,firebasePreflight} from './native-push.mjs';
 
 const json=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
 const TOKEN_URL='https://oauth2.googleapis.com/token';
@@ -7,7 +7,9 @@ const HOST='app.zikamansle.fr';
 const validToken=t=>typeof t==='string'&&t.length>=40&&t.length<=4096&&/^[A-Za-z0-9_:.-]+$/.test(t);
 const hash=async str=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 const enabled=env=>env.APP_ENV==='production'&&env.NATIVE_PUSH_ENABLED==='true'&&!!env.DB;
-const configured=env=>classifyFirebaseCredentials(env.FCM_SERVICE_ACCOUNT_JSON).stage==='CONFIG_PARSED';
+const ownCredential=env=>classifyFirebaseCredentials(env.FCM_SERVICE_ACCOUNT_JSON).stage==='CONFIG_PARSED';
+const relayConfigured=env=>Boolean(env.FIREBASE_RELAY?.fetch&&typeof env.FCM_RELAY_TOKEN==='string'&&env.FCM_RELAY_TOKEN.length>=64);
+const configured=env=>ownCredential(env)||relayConfigured(env);
 const all=async(db,sql,...params)=>(await db.prepare(sql).bind(...params).all()).results;
 const one=async(db,sql,...params)=>db.prepare(sql).bind(...params).first();
 
@@ -29,6 +31,16 @@ async function fcmAccess(env,fetcher=fetch){
 export async function sendNativeFCM(token,data,env,fetcher=fetch){
  if(!enabled(env)||!configured(env))return {accepted:false,code:503};
  if(!validToken(token))return {accepted:false,code:400};
+ if(!ownCredential(env)&&relayConfigured(env)){
+  // The staging Worker holds the existing service account key. Service binding
+  // traffic stays inside Cloudflare, and a separate shared secret authorizes it.
+  const response=await env.FIREBASE_RELAY.fetch('https://zikamansle-app-staging.zikamansle.workers.dev/internal/native/send',{
+   method:'POST',headers:{'Content-Type':'application/json','X-Zika-Relay-Authorization':env.FCM_RELAY_TOKEN},
+   body:JSON.stringify({token,data}),signal:AbortSignal.timeout(18000)
+  });
+  const result=await response.json().catch(()=>({accepted:false,code:response.status}));
+  return {accepted:response.ok&&result.accepted===true,code:result.code||response.status};
+ }
  const access=await fcmAccess(env,fetcher);
  const url=typeof data.url==='string'&&data.url.startsWith('/zikateam')?data.url:
   typeof data.url==='string'&&data.url.startsWith('/index.html')?data.url:'/index.html#actualites';
@@ -137,4 +149,38 @@ export async function handleNativeProduction(request,env,isAdmin){
   return json({devices:counts?.n||0,queued:queued?.n||0,deliveryReady:configured(env)});
  }
  return json({error:'Route introuvable'},404);
+}
+
+/**
+ * Private Firebase relay. The staging secret never leaves its Worker.
+ * Both a Cloudflare Worker service binding and a 256-bit shared secret are
+ * required by the production sender. Public requests cannot send FCM messages.
+ */
+export async function handleNativeRelay(request,env){
+ if(env.APP_ENV!=='staging'||env.PUSH_SEND_ENABLED!=='false'||
+    typeof env.FCM_RELAY_TOKEN!=='string'||env.FCM_RELAY_TOKEN.length<64||
+    request.headers.get('X-Zika-Relay-Authorization')!==env.FCM_RELAY_TOKEN)
+  return json({error:'Route introuvable'},404);
+ if(request.method==='GET'&&new URL(request.url).pathname==='/internal/native/preflight'){
+  return json(await firebasePreflight(env));
+ }
+ if(request.method!=='POST'||new URL(request.url).pathname!=='/internal/native/send')
+  return json({error:'Route introuvable'},404);
+ if(!request.headers.get('Content-Type')?.startsWith('application/json')||
+    Number(request.headers.get('Content-Length')||0)>5500)return json({error:'Requête invalide'},400);
+ const raw=await request.text();if(raw.length>5500)return json({error:'Requête invalide'},400);
+ let body;try{body=JSON.parse(raw)}catch{return json({error:'Requête invalide'},400)}
+ if(!validToken(body?.token)||typeof body?.data?.title!=='string'||
+    typeof body?.data?.body!=='string'||typeof body?.data?.url!=='string'||
+    body.data.title.length>80||body.data.body.length>300||
+    !(/^\\/zikateam(?:[/?#]|$)/.test(body.data.url)||/^\\/index\\.html(?:[?#]|$)/.test(body.data.url)))
+  return json({error:'Message invalide'},400);
+ // Only uses the credential already installed in the staging Worker.
+ const sendEnv={...env,APP_ENV:'production',NATIVE_PUSH_ENABLED:'true',FIREBASE_RELAY:null,FCM_RELAY_TOKEN:null};
+ try{
+  const result=await sendNativeFCM(body.token,body.data,sendEnv);
+  return json(result,result.accepted?200:502);
+ }catch{
+  return json({accepted:false,code:502},502);
+ }
 }
