@@ -2,6 +2,11 @@ package fr.zikamansle.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.Context;
+import android.os.Environment;
+import android.webkit.URLUtil;
+import android.widget.Toast;
 import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -139,6 +144,31 @@ public final class ZikaWebActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
+        // Allow ZikaTeam PDF exports and downloadable files to use the same
+        // authenticated session as the in-app site.
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            Uri download = Uri.parse(url);
+            if (!"https".equals(download.getScheme()) || !isInternalAppUrl(download)) {
+                Toast.makeText(this, "Téléchargement refusé : lien non sécurisé.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            try {
+                DownloadManager.Request request = new DownloadManager.Request(download);
+                request.setMimeType(mimeType);
+                request.addRequestHeader("User-Agent", userAgent != null ? userAgent : "");
+                String cookies = CookieManager.getInstance().getCookie(url);
+                if (cookies != null && !cookies.isEmpty()) request.addRequestHeader("Cookie", cookies);
+                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+                request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                    URLUtil.guessFileName(url, contentDisposition, mimeType));
+                ((DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(request);
+                Toast.makeText(this, "Téléchargement lancé", Toast.LENGTH_SHORT).show();
+            } catch (RuntimeException error) {
+                Toast.makeText(this, "Téléchargement indisponible.", Toast.LENGTH_LONG).show();
+            }
+        });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view,
                 ValueCallback<Uri[]> callback, FileChooserParams params) {
