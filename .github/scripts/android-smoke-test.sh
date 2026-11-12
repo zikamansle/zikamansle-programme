@@ -176,3 +176,67 @@ if ! grep -q 'ZIKA_TEAM_CONTENT_READY' /tmp/zika-team-logcat.txt; then
 fi
 echo 'PASS: Festival and private ZikaTeam section load in one ZikaMansle app'
 
+
+# Exercise the actual on/off buttons on the Actualités & notifications page,
+# not merely the first-launch Android notification permission dialog.
+adb shell input keyevent 4
+sleep 4
+python3 - <<'PY'
+import re,subprocess,time
+from xml.etree import ElementTree as ET
+
+def dump():
+    subprocess.run(['adb','shell','uiautomator','dump','/sdcard/zika-current.xml'],
+        stdout=subprocess.DEVNULL,check=False)
+    raw=subprocess.check_output(['adb','shell','cat','/sdcard/zika-current.xml'],text=True)
+    return ET.fromstring(raw)
+
+def find(root,needle):
+    return [n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
+        and n.attrib.get('bounds')!='[0,0][0,0]']
+
+def tap(node):
+    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
+    if not m: raise SystemExit('FAIL: cannot tap element '+repr(node.attrib.get('text')))
+    x1,y1,x2,y2=map(int,m.groups())
+    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+
+root=dump()
+news=find(root,'Actualités & notifications')
+if not news:
+    subprocess.run(['adb','shell','input','tap','280','606'],check=True)
+    time.sleep(3);root=dump();news=find(root,'Actualités & notifications')
+if not news: raise SystemExit('FAIL: Actualités & notifications entry missing after ZikaTeam')
+tap(news[0]);time.sleep(5)
+for attempt in range(7):
+    root=dump()
+    enable=find(root,'Activer les notifications')
+    disable=find(root,'Désactiver les notifications')
+    if enable and disable:break
+    subprocess.run(['adb','shell','input','swipe','160','520','160','205','400'],check=True)
+    time.sleep(2)
+else:
+    raise SystemExit('FAIL: Native Activer/Désactiver controls not present in Actualités')
+print('PASS: Both Activer and Désactiver buttons are available in Actualités')
+
+tap(disable[0]);time.sleep(2)
+root=dump()
+confirm=find(root,'Désactiver')
+if not confirm:raise SystemExit('FAIL: Disable confirmation dialog absent')
+# Prefer native positive button resource id (not the underlying WebView button).
+positive=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
+if not positive:raise SystemExit('FAIL: Native disable confirmation missing')
+tap(positive[0]);time.sleep(3)
+root=dump()
+if not find(root,'Notifications désactivées'):
+    raise SystemExit('FAIL: Notification-off state not displayed')
+print('PASS: Désactiver really updates Android native push state')
+
+enable=find(root,'Activer les notifications')
+if not enable: raise SystemExit('FAIL: Enable button missing after disabling')
+tap(enable[0]);time.sleep(5)
+root=dump()
+if not find(root,'Notifications activées'):
+    raise SystemExit('FAIL: Notification-on state not displayed')
+print('PASS: Activer restores the Android native notification opt-in')
+PY
