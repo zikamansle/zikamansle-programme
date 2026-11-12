@@ -73,3 +73,60 @@ if grep -E 'FATAL EXCEPTION|Unable to start activity|ClassNotFoundException' /tm
     exit 1
 fi
 echo 'PASS: ZikaMansle launcher returned success without detected Android crash'
+
+# The protected ZikaTeam section must be reached through the existing Plus
+# menu of the SAME ZikaMansle app. Do not accept a second Android tab.
+adb shell uiautomator dump /sdcard/zika-home-ui.xml >/dev/null || true
+adb shell cat /sdcard/zika-home-ui.xml > /tmp/zika-home-ui.xml || true
+python3 - <<'PY'
+from pathlib import Path
+from xml.etree import ElementTree as ET
+import re
+import subprocess
+p=Path('/tmp/zika-home-ui.xml')
+root=ET.fromstring(p.read_text(errors='replace'))
+nodes=[n for n in root.iter('node') if n.attrib.get('text','').strip().casefold()=='plus']
+if not nodes:
+    raise SystemExit('FAIL: Existing Plus menu is not visible in ZikaMansle')
+bounds=nodes[-1].attrib.get('bounds','')
+m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+if not m:
+    raise SystemExit('FAIL: Plus menu is not clickable')
+x1,y1,x2,y2=map(int,m.groups())
+subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+print('PASS: Opened the existing Plus menu')
+PY
+sleep 4
+adb shell uiautomator dump /sdcard/zika-plus-ui.xml >/dev/null || true
+adb shell cat /sdcard/zika-plus-ui.xml > /tmp/zika-plus-ui.xml || true
+python3 - <<'PY'
+from pathlib import Path
+from xml.etree import ElementTree as ET
+import re
+import subprocess
+root=ET.fromstring(Path('/tmp/zika-plus-ui.xml').read_text(errors='replace'))
+nodes=[n for n in root.iter('node') if 'zikateam' in n.attrib.get('text','').casefold()]
+if not nodes:
+    visible=[n.attrib.get('text','') for n in root.iter('node') if n.attrib.get('text','').strip()]
+    raise SystemExit('FAIL: ZikaTeam missing from Plus menu. Visible text: '+repr(visible[-30:]))
+bounds=nodes[0].attrib.get('bounds','')
+m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+if not m: raise SystemExit('FAIL: ZikaTeam menu entry cannot be clicked')
+x1,y1,x2,y2=map(int,m.groups())
+subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+print('PASS: Opened ZikaTeam as an existing app menu section')
+PY
+sleep 18
+adb shell dumpsys activity activities > /tmp/zika-team-activity.txt
+adb logcat -d -v threadtime > /tmp/zika-team-logcat.txt
+if ! grep -E '(topResumedActivity|mResumedActivity|ResumedActivity)' /tmp/zika-team-activity.txt | grep -q 'ZikaWebActivity'; then
+    echo 'FAIL: ZikaTeam left the installed ZikaMansle app'
+    exit 1
+fi
+if ! grep -q 'ZIKA_TEAM_CONTENT_READY' /tmp/zika-team-logcat.txt; then
+    echo 'FAIL: ZikaTeam private interface not loaded inside ZikaMansle'
+    grep -E 'ZIKA_TEAM_CONTENT|ZIKA_WEBVIEW_PAGE_FINISHED' /tmp/zika-team-logcat.txt | tail -15 || true
+    exit 1
+fi
+echo 'PASS: Festival and private ZikaTeam section load in one ZikaMansle app'
+
