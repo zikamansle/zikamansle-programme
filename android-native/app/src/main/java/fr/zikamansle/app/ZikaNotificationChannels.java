@@ -18,7 +18,7 @@ final class ZikaNotificationChannels {
     private ZikaNotificationChannels() { }
 
     static Uri customSound(Context context) {
-        return Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.zika_notification);
+        return Uri.parse("android.resource://" + context.getPackageName() + "/raw/zika_notification");
     }
 
     static void ensure(Context context) {
