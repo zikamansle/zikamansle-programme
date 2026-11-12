@@ -42,8 +42,7 @@ public final class ZikaWebActivity extends Activity {
     private ValueCallback<Uri[]> pendingFiles;
     private Uri officialUrl;
     private Uri teamUrl;
-    private static final String ZIKATEAM_URL =
-        "https://zikamansle-app-staging.zikamansle.workers.dev/zikateam";
+    // ZikaTeam is a section of the SAME origin as the rest of ZikaMansle.
     private LinearLayout root;
     private TextView status;
     private boolean loadError;
@@ -51,7 +50,7 @@ public final class ZikaWebActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         officialUrl = Uri.parse(getString(R.string.zika_launch_url));
-        teamUrl = Uri.parse(ZIKATEAM_URL);
+        teamUrl = officialUrl.buildUpon().encodedPath("/zikateam").clearQuery().build();
         if (!"https".equals(officialUrl.getScheme()) || officialUrl.getHost() == null) {
             showProblem("Adresse de l’application incorrecte.");
             return;
@@ -225,7 +224,7 @@ public final class ZikaWebActivity extends Activity {
         String js =
             "(function(){if(window.__zikaTeamMenuInstalled)return;"
           + "window.__zikaTeamMenuInstalled=true;"
-          + "var teamUrl='https://zikamansle-app-staging.zikamansle.workers.dev/zikateam';"
+          + "var teamUrl=window.location.origin+'/zikateam';"
           + "function install(){"
           + "if(document.querySelector('[data-zikateam-native-menu]'))return;"
           + "var anchors=Array.from(document.querySelectorAll('a[href]'));"
