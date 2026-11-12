@@ -1,6 +1,9 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
 const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,chatRooms:[],chatUnread:0,messages:[],chatMobileOpen:false,busy:false,freeLogin:false,loginEmail:'',loginName:'',inviteCode:'',invitationDraft:null,codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',directoryImage:'all',directoryPhone:'all',directoryEmail:'all',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listImage:'all',listPhone:'all',listEmail:'all',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
+const nativePush=()=>typeof window.ZikaAndroid?.getNotificationStatus==='function';
+const nativePushStatus=()=>{try{return window.ZikaAndroid.getNotificationStatus()}catch{return 'unconfigured'}};
+const nativePushAction=(action)=>{if(!nativePush())throw Error('Notifications Android indisponibles dans cette version.');window.ZikaAndroid[action]();};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
 const dt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Paris'}):'Date à définir';
 const shortdt=s=>s?new Date(s).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Paris'}):'—';
@@ -76,16 +79,18 @@ function teamNotificationSettings(){
  const muted=state.me?.mutedChats||[],rooms=state.chatRooms||[];
  const checked=v=>v?' checked':'';
  const select=(key,val,items)=>'<select name="'+key+'">'+items.map(([v,t])=>'<option value="'+v+'"'+(val===v?' selected':'')+'>'+t+'</option>').join('')+'</select>';
+ const native=nativePush();
+ const controls=native?'<div class="team-row"><button type="button" class="team-button orange" data-link-push>Activer les notifications Android</button><button type="button" class="team-button light" data-disable-native-push>Désactiver les notifications</button><button type="button" class="team-button light" data-test-server-push>Tester une notification Android</button></div><p id="teamPushStatus" role="status" aria-live="polite">État Android : '+esc(nativePushStatus())+'</p>':'<div class="team-row"><button type="button" class="team-button orange" data-link-push>Autoriser les notifications sur cet appareil</button><button type="button" class="team-button light" data-test-local-push>Tester l’affichage sur cet appareil</button><button type="button" class="team-button orange" data-test-server-push>Envoyer une notification TEST depuis le serveur</button><button type="button" class="team-button light" data-test-receipt-push>Vérifier la réception réelle (30 s)</button></div><p id="teamPushStatus" role="status" aria-live="polite">Pour recevoir une convocation, autorise les notifications sur ce téléphone.</p>';
  return '<section class="team-card team-accent-purple team-notifications-settings"><h2>🔔 Mes notifications</h2><p>Règle les alertes pour tes propres équipes et activités.</p>'+
  '<p class="team-small"><strong>Par défaut : notifications et son activés pour tes réunions, missions et messages, avec vibration. Aucune plage silencieuse.</strong> Tu peux modifier tes préférences ici. Le son réellement joué et le petit pictogramme dépendent aussi d’Android et du navigateur.</p><form id="teamNotificationsForm" class="team-form"><div class="team-split"><label>Messages des groupes'+select('chat_mode',p.chat_mode,[['grouped','Groupées'],['all','Tous les messages'],['silent','Silencieuses']])+'</label><label>Son'+select('sound_mode',p.sound_mode,[['important','Seulement les alertes importantes'],['none','Aucun son'],['all','Toutes les notifications autorisées']])+'</label></div>'+
  '<label class="team-check"><input type="checkbox" name="vibrate"'+checked(p.vibrate)+'> Autoriser la vibration</label><label class="team-check"><input type="checkbox" name="activity_enabled"'+checked(p.activity_enabled)+'> Réunions et missions</label><label class="team-check"><input type="checkbox" name="urgent_enabled"'+checked(p.urgent_enabled)+'> Alertes urgentes et annulations</label><label class="team-check"><input type="checkbox" name="quiet_enabled"'+checked(p.quiet_enabled)+'> Ne pas déranger</label>'+
  '<div class="team-split"><label>Silencieux à partir de<input type="time" name="quiet_start" value="'+esc(p.quiet_start)+'" required></label><label>Jusqu’à<input type="time" name="quiet_end" value="'+esc(p.quiet_end)+'" required></label></div>'+
  '<button class="team-button orange" type="submit">Enregistrer mes notifications</button></form>'+
  '<h3>Mettre un groupe en sourdine</h3>'+(rooms.length?rooms.map(room=>'<label class="team-check team-notification-group"><input type="checkbox" data-chat-mute="'+esc(room.channel+':'+(room.id||''))+'"'+checked(muted.some(x=>x.channel===room.channel&&(x.channel_id||'')===(room.id||'')))+'> '+esc(room.title)+'</label>').join(''):'<p class="team-small">Les groupes apparaissent une fois chargés.</p>')+
- '<p class="team-small team-muted">Le son et la vibration dépendent des réglages du téléphone. La réception des réunions nécessite une autorisation et un abonnement propre à chaque compte.</p><div class="team-row"><button type="button" class="team-button orange" data-link-push>Autoriser les notifications sur cet appareil</button><button type="button" class="team-button light" data-test-local-push>Tester l’affichage sur cet appareil</button><button type="button" class="team-button orange" data-test-server-push>Envoyer une notification TEST depuis le serveur</button><button type="button" class="team-button light" data-test-receipt-push>Vérifier la réception réelle (30 s)</button></div><p id="teamPushStatus" role="status" aria-live="polite">Pour recevoir une convocation, autorise les notifications sur ce téléphone.</p><p class="team-small">Le test d’affichage est local. Le test serveur vérifie l’acceptation du push ZikaTeam. « Vérifier la réception réelle » contrôle aussi l’arrivée dans le navigateur et l’affichage demandé à Android ; le son et la petite icône restent déterminés par les réglages Android.</p></section>';
+ '<p class="team-small team-muted">Le son et la vibration dépendent des réglages du téléphone. La réception des réunions nécessite une autorisation et un abonnement propre à chaque compte.</p>' +controls+'<p class="team-small">Les notifications sont liées au compte connecté et aux réglages du téléphone.</p></section>';
 }
 function notificationWelcome(){
- if(typeof Notification==='undefined'||!('serviceWorker' in navigator))return '';
+ if(nativePush()||typeof Notification==='undefined'||!('serviceWorker' in navigator))return '';
  if(Notification.permission==='granted')return '';
  const refused=Notification.permission==='denied';
  return '<section class="team-card team-accent-orange" aria-label="Notifications ZikaTeam"><h2>🔔 Notifications activées dans ZikaTeam</h2><p>Tu recevras par défaut les informations concernant tes réunions, missions et groupes. Pour les voir sur ton téléphone, Android demande une seule autorisation.</p>'+
@@ -989,9 +994,11 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
   finally{b.disabled=false;}
   return;
  }
- if(b.hasAttribute('data-test-server-push')){
+ if(b.hasAttribute('data-disable-native-push')){try{nativePushAction('disableNotifications');toast('Désactivation Android demandée.')}catch(e){toast(e.message)}return;}
+  if(b.hasAttribute('data-test-server-push')){
   const status=document.getElementById('teamPushStatus');b.disabled=true;
   if(status)status.textContent='Envoi d’une notification TEST depuis le serveur…';
+   if(nativePush()){try{nativePushAction('testNotifications');if(status)status.textContent='Test Android demandé : consulte le message du téléphone.';}catch(e){if(status)status.textContent='❌ '+e.message;}finally{b.disabled=false;}return;}
   try{
    const result=await command('push.test',{});
    if(status)status.textContent='✅ '+result.message+' ('+result.accepted+' appareil(s) accepté(s)).';
@@ -1013,7 +1020,8 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
  if(b.hasAttribute('data-link-push')){
   const status=document.getElementById('teamPushStatus');b.disabled=true;
   try{
-   if(!window.ZikaPush)throw Error('Notifications indisponibles.');
+   if(nativePush()){nativePushAction('enableNotifications');nativePushAction('linkZikaTeam');if(status)status.textContent='Activation Android et liaison ZikaTeam demandées. Vérifie l’état après quelques secondes.';return;}
+    if(!window.ZikaPush)throw Error('Notifications indisponibles.');
    const sub=await window.ZikaPush.enable();
    await command('push.link',{subscription:sub.toJSON()});linkedPushMember=state.me?.member?.id||null;
    if(status)status.textContent='✅ Appareil associé à ton compte ZikaTeam. Les alertes de tes réunions et missions pourront être reçues après activation du service d’envoi.';
