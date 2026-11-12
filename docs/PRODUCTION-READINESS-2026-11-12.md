@@ -2,7 +2,7 @@
 
 ## État vérifié via les comptes connectés
 
-- Site public demandé : `https://app.zikamansle.fr/` (hébergement/routage IONOS déclaré par le propriétaire).
+- Site public : `https://app.zikamansle.fr/`. Capture DNS IONOS reçue le 12 novembre 2026 : `app` est un CNAME vers `custom-domains.chatgpt.site`, avec vérifications `_cf-custom-hostname.app` et `_openai-site-verification...`. Le fournisseur DNS est IONOS ; l'hébergement actif est un ChatGPT Site. Les lignes `@` et `www` restent liées à Wix et ne doivent pas être modifiées.
 - Version test validée manuellement sur Redmi par le propriétaire : `https://zikamansle-app-staging.zikamansle.workers.dev/` ; test d'une notification reçue.
 - Worker connecté : `zikamansle-app-staging`. **Aucun Worker de production**.
 - Zones DNS Cloudflare visibles : **aucune** ; domaines Workers personnalisés visibles : **aucun**.
@@ -36,4 +36,17 @@
 - Ajout du test de réception individuelle dans la rubrique Actualités ; confirmation utilisateur de réception.
 - Suites automatisées GitHub réussies, déploiement Workers de test confirmé.
 
-**Prochain blocage technique** : le compte connecté ne contient ni la configuration IONOS actuelle ni une zone Cloudflare rattachée à `zikamansle.fr`. Aucun outil d'administration IONOS n'est connecté. Tant que cet accès technique manque, la bascule du sous-domaine ne peut pas être réalisée de façon fiable depuis cette conversation.
+**Prochain blocage technique** : le compte connecté ne permet pas d'administrer le ChatGPT Site existant ni les DNS IONOS ; aucune zone Cloudflare `zikamansle.fr` n'est connectée. Tant que l'accès à la configuration du Site et au changement DNS n'est pas disponible, la bascule du sous-domaine ne peut pas être réalisée depuis cette conversation.
+
+## Découverte de la cible actuelle (12 novembre 2026)
+
+La capture du gestionnaire DNS IONOS montre explicitement :
+
+- `CNAME app → custom-domains.chatgpt.site` : **hébergement ChatGPT Sites**.
+- `TXT _cf-custom-hostname.app` et `TXT _openai-site-verification…` : preuves de configuration du domaine personnalisé de ChatGPT Sites.
+- `A @ → 185.230.63.107` et `CNAME www → pointing.wixdns.net` : site racine et WWW Wix, hors périmètre de migration.
+- Enregistrements `MX`, `SPF`, `DKIM`, `DMARC` : messagerie IONOS, hors périmètre de migration.
+
+Le projet ChatGPT Site doit être identifié avant d'envisager un export ou une reprise du service existant ; une capture DNS n'autorise pas à modifier un déploiement ChatGPT Sites. Les abonnements push du domaine existant sont spécifiques à leur origine et au couple de clés VAPID ; la nouvelle paire de test n'est pas interchangeable.
+
+Documentation officielle : https://help.openai.com/fr-fr/articles/20001339-creating-and-using-chatgpt-sites
