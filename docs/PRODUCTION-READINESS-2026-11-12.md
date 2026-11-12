@@ -84,3 +84,17 @@ Ne jamais confondre cette sauvegarde temporaire de staging avec la sauvegarde du
 - Vérification Cloudflare : D1 production et R2 production existants ; le seul Worker déployé reste `zikamansle-app-staging`. Aucun routage vers `app.zikamansle.fr` n'a été modifié. La D1 production est **vide** tant que les migrations ne sont pas appliquées.
 
 **Bloqueurs restants :** déploiement du Worker avec ses secrets réels de production, préparation/validation des accès ZikaTeam, test push réel depuis l'origine définitive, puis changement contrôlé du CNAME IONOS `app` (uniquement). Les comptes tests ne nécessitent pas de migration, mais les abonnés push du Site public devront probablement se réinscrire. Le site public ChatGPT Sites reste disponible en attendant.
+
+## Worker de production effectivement déployé (12 novembre 2026)
+
+- Worker Cloudflare **zikamansle-app-production** déployé le 12/11/2026, `https://zikamansle-app-production.zikamansle.workers.dev/`. Aucun changement de `app.zikamansle.fr`, qui reste chez ChatGPT Sites.
+- Vérification HTTP du Worker via Cloudflare Browser Rendering : `/healthz` renvoie `{"app":"ZikaMansle","environment":"production"}`.
+- Migrations D1 appliquées : **46 tables ZikaTeam** présentes. La base de production part de zéro : `team_members=0` et `push_subscriptions=0`.
+- Deux secrets créés sur ce Worker, et lui seul : `VAPID_PRIVATE_JWK` et `VAPID_PUBLIC_KEY`, avec une nouvelle paire P-256 distincte de staging. La clé privée n'a pas été écrite dans GitHub ni montrée dans l'échange.
+- Notifications générales verrouillées : `PUSH_SEND_ENABLED=false`, `TEAM_PUSH_ENABLED=false`. `PUSH_TEST_ENABLED=true` permet uniquement le test individuel ciblé par abonnement.
+- Workflow approuvé exécuté depuis le workflow GitHub connu et opérationnel ; vérifications générales GitHub réussies. Dernier déploiement Cloudflare vérifié.
+- `ADMIN_EMAIL` et les paramètres FCM éventuels de production ne sont **pas encore configurés**, puisque l'identité du compte administrateur exact et les secrets Play Store n'ont pas été vérifiés. Il faut configurer ces éléments avant l'ouverture au public et l'activation des envois.
+- Recette Android sur **cette nouvelle origine** non effectuée : le test push déjà réussi était sur `zikamansle-app-staging.zikamansle.workers.dev`, et ne valide pas automatiquement la nouvelle paire VAPID.
+- Route/custom domain Cloudflare : aucune zone DNS `zikamansle.fr` n'est connectée au compte Cloudflare ; **NE PAS** simplement transformer le CNAME IONOS `app` en cible `*.workers.dev` sans configuration Cloudflare de domaine personnalisé, TLS et sauvegarde du routage existant.
+
+**Prochaines vérifications impératives :** tester le nouveau Worker sur Redmi, confirmer l'e-mail exact de l'administrateur ZikaTeam, obtenir un raccordement HTTPS contrôlé du sous-domaine côté hébergement/DNS (sans perturber le Wix et les e-mails du domaine), activer les notifications générales seulement après recette. Si l'ancien site utilise une VAPID différente, les navigateurs devront se réabonner sur l'origine publique.
