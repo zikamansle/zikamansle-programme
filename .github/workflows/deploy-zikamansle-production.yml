@@ -4,6 +4,7 @@ on:
     branches: [feat/zikateam-fiches-notifications]
     paths:
       - 'wrangler.production.jsonc'
+      - 'public/zikateam.js'
       - 'scripts/zikamansle-production-guard.mjs'
       - '.github/workflows/deploy-zikamansle-production.yml'
   workflow_dispatch:
