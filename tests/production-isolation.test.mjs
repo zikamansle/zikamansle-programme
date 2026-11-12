@@ -49,7 +49,7 @@ test('Migration DNS : le navigateur remplace une ancienne clé VAPID et réessai
  assert.match(client,/sub\?\.options\?\.applicationServerKey/);
  assert.match(client,/if\(!keyMatches\(sub,publicKey\)\)return repair\?renewSubscription\(sub\):null/);
  assert.match(client,/\[403,404,410\]\.includes\(result\.code\)/);
- assert.match(client,/async function prepareTest\(\)\{return currentSubscription\(\)\}/);
+ assert.match(client,/async function prepareTest\(\)\{return currentSubscription\(\{repair:true\}\)\}/);
 });
 
 test('ne pas tenter de re-souscrire aux push sans geste utilisateur',()=>{
