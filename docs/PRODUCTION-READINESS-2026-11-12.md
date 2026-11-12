@@ -111,3 +111,12 @@ Ne jamais confondre cette sauvegarde temporaire de staging avec la sauvegarde du
 - Les Workers Custom Domains requièrent une **zone Cloudflare active** ; sans cela, `app.zikamansle.fr` ne peut pas encore être associé en HTTPS à `zikamansle-app-production`. Voir https://developers.cloudflare.com/workers/configuration/routing/custom-domains/ .
 - Une zone `full` nécessite un changement des serveurs de noms autoritaires chez IONOS. Ce changement affecterait **toutes** les entrées du domaine, y compris Wix et la messagerie. À ne faire qu'après une vérification exhaustive des enregistrements et du statut DNSSEC, puis en maintenant un plan de retour arrière.
 - L'ancienne application reste en ligne via `app.zikamansle.fr`. Le serveur Cloudflare production est disponible sur son adresse `workers.dev`, avec les notifications individuelles validées sur Redmi par l'utilisateur.
+
+## Administration indépendante des notifications d'actualités — production
+
+- Cloudflare Access dédié à `app.zikamansle.fr/administration/*`, réservé exclusivement à `zikamansle@gmail.com`. Il est **distinct** du système de connexion ZikaTeam/Supabase.
+- Le Worker de production contrôle le JWT signé Cloudflare Access avant de servir `/administration/notifications`, et l'API d'envoi requiert également ce JWT pour créer, envoyer et gérer les annonces.
+- Mise à jour du `wrangler.production.jsonc` : `PUSH_SEND_ENABLED=true` ; `TEAM_PUSH_ENABLED=false`. Envoi des actualités désormais possible uniquement après action de l'administrateur ; notifications automatiques ZikaTeam toujours désactivées.
+- Garde de déploiement mise à jour pour vérifier les contrôles serveur de sécurité ; tests automatisés GitHub réussis, et redéploiement de production confirmé sur Cloudflare.
+- Vérification finale du 12/11/2026 : Worker raccordé à `app.zikamansle.fr` ; le compte Access ne permet que `zikamansle@gmail.com` ; 1 abonnement push, 0 actualité publique, 0 profil ZikaTeam en base production. **Aucun message général n'a été envoyé pendant cette configuration.**
+- Reste à confirmer manuellement l'authentification Access sur `https://app.zikamansle.fr/administration/notifications`, l'envoi d'un message de test ciblé par l'administrateur, et l'accès administrateur ZikaTeam après création initiale du profil ; l'automatisation ZikaTeam sera activée seulement après cette recette.
