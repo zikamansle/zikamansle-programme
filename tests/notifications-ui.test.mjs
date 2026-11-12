@@ -12,6 +12,10 @@ test('Actualités et notifications : JavaScript complet et syntaxiquement valide
  assert.ok(js.includes('id="newsList"'));
  assert.ok(js.includes('id="pushEnable"'));
  assert.ok(js.includes('id="pushDisable"'));
+ assert.ok(js.includes('id="pushRemoteTest"'));
+ assert.ok(js.includes("testButton.onclick=async()=>"));
+ assert.ok(js.includes('await remoteTest(message=>'));
+ assert.ok(js.includes("action==='selftest'" ) === false);
  assert.ok(js.includes("yes.onclick=()=>change('enable')"));
  assert.ok(js.includes("no.onclick=()=>change('disable')"));
 });
