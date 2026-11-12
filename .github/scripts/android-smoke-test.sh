@@ -179,8 +179,11 @@ echo 'PASS: Festival and private ZikaTeam section load in one ZikaMansle app'
 
 # Exercise the actual on/off buttons on the Actualités & notifications page,
 # not merely the first-launch Android notification permission dialog.
-adb shell input keyevent 4
-sleep 4
+# Reopen the festival home, so we do not depend on ZikaTeam's private
+# browser history or where the WebView back button returns.
+adb shell am force-stop fr.zikamansle.app.debug
+adb shell am start -W -n fr.zikamansle.app.debug/fr.zikamansle.app.ZikaLauncherActivity >/dev/null
+sleep 18
 python3 - <<'PY'
 import re,subprocess,time
 from xml.etree import ElementTree as ET
@@ -201,12 +204,15 @@ def tap(node):
     x1,y1,x2,y2=map(int,m.groups())
     subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
 
+out=subprocess.check_output(['adb','shell','wm','size'],text=True)
+dims=re.search(r'(\d+)x(\d+)',out)
+if not dims: raise SystemExit('FAIL: Cannot get emulator dimensions')
+width,height=map(int,dims.groups())
+subprocess.run(['adb','shell','input','tap',str(round(width*0.875)),str(round(height*0.945))],check=True)
+time.sleep(4)
 root=dump()
 news=find(root,'Actualités & notifications')
-if not news:
-    subprocess.run(['adb','shell','input','tap','280','606'],check=True)
-    time.sleep(3);root=dump();news=find(root,'Actualités & notifications')
-if not news: raise SystemExit('FAIL: Actualités & notifications entry missing after ZikaTeam')
+if not news: raise SystemExit('FAIL: Actualités & notifications entry missing from Plus after reopening app')
 tap(news[0]);time.sleep(5)
 for attempt in range(7):
     root=dump()
