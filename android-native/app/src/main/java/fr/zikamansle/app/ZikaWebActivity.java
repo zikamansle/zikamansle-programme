@@ -79,17 +79,28 @@ public final class ZikaWebActivity extends Activity {
             .show();
     }
 
-    /** Native opt-in for buttons on our Android-embedded ZikaMansle site. */
+    /** Android-only notification controls. No browser PushManager is used. */
     public final class NativeNotificationBridge {
+        @JavascriptInterface public String getNotificationStatus() {
+            if (FirebaseApp.getApps(ZikaWebActivity.this).isEmpty()) return "unconfigured";
+            if (!ZikaPushRegistration.approved(ZikaWebActivity.this)) return "disabled";
+            if (Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) return "blocked";
+            return "enabled";
+        }
+
         @JavascriptInterface public void enableNotifications() {
             runOnUiThread(() -> {
-                if (isFinishing() || isDestroyed()) return;
+                if (isFinishing() || isDestroyed() || !sameOrigin(Uri.parse(web.getUrl()))) return;
                 if (FirebaseApp.getApps(ZikaWebActivity.this).isEmpty()) {
                     Toast.makeText(ZikaWebActivity.this,
                         "Notifications non configurées dans cette version.",
                         Toast.LENGTH_LONG).show();
+                    updateNativeNotificationControls();
                     return;
                 }
+                recordNotificationPrompt();
                 if (Build.VERSION.SDK_INT >= 33 &&
                     checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -97,12 +108,39 @@ public final class ZikaWebActivity extends Activity {
                         NOTIFICATION_REQUEST);
                 } else {
                     ZikaPushRegistration.setApproved(ZikaWebActivity.this, true);
+                    updateNativeNotificationControls();
                     Toast.makeText(ZikaWebActivity.this,
-                        "Notifications Android autorisées. Enregistrement du téléphone demandé.",
+                        "Notifications activées sur ce téléphone. Vérification de l’enregistrement nécessaire.",
                         Toast.LENGTH_LONG).show();
                 }
             });
         }
+
+        @JavascriptInterface public void disableNotifications() {
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed() || !sameOrigin(Uri.parse(web.getUrl()))) return;
+                new AlertDialog.Builder(ZikaWebActivity.this)
+                    .setTitle("Désactiver les notifications ?")
+                    .setMessage("Tu ne recevras plus les alertes du festival sur ce téléphone. Tu pourras les réactiver ici.")
+                    .setNegativeButton("Annuler", (dialog, which) -> {})
+                    .setPositiveButton("Désactiver", (dialog, which) -> {
+                        recordNotificationPrompt();
+                        ZikaPushRegistration.setApproved(ZikaWebActivity.this, false);
+                        updateNativeNotificationControls();
+                        Toast.makeText(ZikaWebActivity.this,
+                            "Notifications désactivées pour ce téléphone.",
+                            Toast.LENGTH_LONG).show();
+                    })
+                    .show();
+            });
+        }
+    }
+
+    private void updateNativeNotificationControls() {
+        if (web != null && !isFinishing() && !isDestroyed())
+            web.evaluateJavascript(
+                "if(window.__zikaRefreshNativeNotifications)window.__zikaRefreshNativeNotifications();",
+                null);
     }
 
     private void recordNotificationPrompt() {
@@ -127,6 +165,7 @@ public final class ZikaWebActivity extends Activity {
         if (code == NOTIFICATION_REQUEST) {
             boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
             ZikaPushRegistration.setApproved(this, granted);
+            updateNativeNotificationControls();
             Toast.makeText(this, granted
                 ? "Notifications Android autorisées. Enregistrement du téléphone demandé."
                 : "Notifications désactivées. Tu peux les autoriser dans les réglages Android.",
@@ -253,6 +292,7 @@ public final class ZikaWebActivity extends Activity {
      * The original menu items and routing remain untouched.
      */
     /** Hide PWA installation buttons inside Android; ZikaTeam stays a single menu section. */
+    /** Android UI: one ZikaTeam entry, no PWA install call, native push on/off. */
     private void installZikaTeamMenu(WebView view) {
         String js = ""
           + "(function(){"
@@ -260,51 +300,102 @@ public final class ZikaWebActivity extends Activity {
           + " window.__zikaNativeUiCleanup=true;"
           + " function text(el){return (el.textContent||'').replace(/\\s+/g,' ').trim();}"
           + " function isTeam(a){return a.matches('a[href]')&&(/(?:^|\\/)zikateam(?:\\/|$|[?#])/i.test(a.getAttribute('href')||'')||/^ZikaTeam(?:\\s|$)/i.test(text(a)));}"
+          + " function isNews(){"
+          + "   return Array.from(document.querySelectorAll('h1,h2,h3')).some(function(h){"
+          + "     return /actualit.s\\s*(?:&|et)\\s*notifications/i.test(text(h));"
+          + "   });"
+          + " }"
+          + " function nativeState(){"
+          + "   try{return window.ZikaAndroid.getNotificationStatus();}"
+          + "   catch(e){return 'unconfigured';}"
+          + " }"
+          + " function refresh(){"
+          + "   var box=document.getElementById('zika-native-notification-controls');"
+          + "   if(!box)return;"
+          + "   var status=box.querySelector('[data-zika-notification-status]');"
+          + "   var enabled=nativeState();"
+          + "   if(status){"
+          + "     status.textContent=enabled==='enabled'?'Notifications activées sur ce téléphone. La réception d’une alerte reste à vérifier.':"
+          + "       enabled==='blocked'?'Notifications bloquées par Android. Autorise-les dans les paramètres du téléphone.':"
+          + "       enabled==='unconfigured'?'Notifications non configurées dans cette version.':"
+          + "       'Notifications désactivées sur ce téléphone.';"
+          + "   }"
+          + "   var on=box.querySelector('[data-zika-notifications-enable]');"
+          + "   var off=box.querySelector('[data-zika-notifications-disable]');"
+          + "   if(on)on.disabled=enabled==='enabled'||enabled==='unconfigured';"
+          + "   if(off)off.disabled=enabled==='disabled'||enabled==='unconfigured';"
+          + " }"
+          + " window.__zikaRefreshNativeNotifications=refresh;"
           + " function run(){"
           + "   var anchors=Array.from(document.querySelectorAll('a[href]'));"
           + "   var teamLinks=anchors.filter(isTeam);"
           + "   var official=teamLinks.find(function(a){return !a.hasAttribute('data-zikateam-native-menu');});"
-          + "   // Prefer the website's original entry, only create a fallback when missing."
-          + "   if(official){"
-          + "     teamLinks.forEach(function(a){if(a!==official&&a.hasAttribute('data-zikateam-native-menu'))a.remove();});"
-          + "   }else if(!teamLinks.length){"
+          + "   if(official){teamLinks.forEach(function(a){if(a!==official&&a.hasAttribute('data-zikateam-native-menu'))a.remove();});}"
+          + "   else if(!teamLinks.length){"
           + "     var source=anchors.find(function(a){return /Devenir partenaire/i.test(text(a));});"
           + "     if(source){"
           + "       var item=source.cloneNode(true);"
-          + "       item.removeAttribute('id');"
-          + "       item.removeAttribute('onclick');"
-          + "       item.removeAttribute('target');"
+          + "       item.removeAttribute('id');item.removeAttribute('onclick');item.removeAttribute('target');"
           + "       item.setAttribute('data-zikateam-native-menu','true');"
           + "       item.href=location.origin+'/zikateam';"
           + "       item.replaceChildren(document.createTextNode('ZikaTeam — Bénévoles, responsables et secrétariat'));"
           + "       source.insertAdjacentElement('afterend',item);"
           + "     }"
           + "   }"
-          + "   // In the installed Android app the Play Store supplies the install action."
-          + "   document.querySelectorAll('a,button,[role=\"button\"]').forEach(function(el){"
+          + "   document.querySelectorAll('a,button,[role=button]').forEach(function(el){"
           + "     var label=text(el);"
           + "     if(/^(?:installer(?:\\s+(?:l['’]application|l['’]appli|zika(?:mansle)?|sur (?:le )?téléphone))?|installer maintenant|ajouter (?:à|sur) l['’]écran d['’]accueil)(?:\\s*[›→↗])?$/i.test(label)){"
-          + "       el.style.setProperty('display','none','important');"
-          + "       el.setAttribute('aria-hidden','true');"
-          + "       el.setAttribute('data-zika-native-hide-install','true');"
+          + "       if(el.style.display!=='none')el.style.setProperty('display','none','important');"
+          + "       if(el.getAttribute('aria-hidden')!=='true')el.setAttribute('aria-hidden','true');"
           + "     }"
           + "   });"
+          + "   if(!isNews())return;"
+          + "   var heading=Array.from(document.querySelectorAll('h2,h3')).find(function(h){return /gardons le contact/i.test(text(h));});"
+          + "   if(!heading)return;"
+          + "   var card=heading.closest('section,article,.card')||heading.parentElement.parentElement;"
+          + "   if(!card)return;"
+          + "   var buttons=Array.from(card.querySelectorAll('button,a,[role=button]')).filter(function(el){"
+          + "     return /^(?:activer|autoriser|recevoir).{0,35}notifications?/i.test(text(el));"
+          + "   });"
+          + "   buttons.forEach(function(b){if(b.style.display!=='none')b.style.setProperty('display','none','important');});"
+          + "   Array.from(card.querySelectorAll('p,div')).filter(function(p){"
+          + "     return p.children.length===0&&/notifications non prises en charge sur ce navigateur/i.test(text(p));"
+          + "   }).forEach(function(p){if(p.style.display!=='none')p.style.setProperty('display','none','important');});"
+          + "   if(card.querySelector('#zika-native-notification-controls'))return;"
+          + "   var box=document.createElement('div');"
+          + "   box.id='zika-native-notification-controls';"
+          + "   box.style.cssText='margin:18px 0;display:flex;gap:12px;flex-wrap:wrap;';"
+          + "   var on=document.createElement('button');"
+          + "   on.type='button';on.textContent='Activer les notifications';on.setAttribute('data-zika-notifications-enable','');"
+          + "   on.style.cssText='background:#ff912e;color:#071b2d;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:16px;';"
+          + "   var off=document.createElement('button');"
+          + "   off.type='button';off.textContent='Désactiver les notifications';off.setAttribute('data-zika-notifications-disable','');"
+          + "   off.style.cssText='background:#10263a;color:white;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:16px;';"
+          + "   var status=document.createElement('p');"
+          + "   status.setAttribute('data-zika-notification-status','');"
+          + "   status.setAttribute('role','status');status.setAttribute('aria-live','polite');"
+          + "   status.style.cssText='width:100%;margin:4px 0 0;color:#526270;font-size:14px;';"
+          + "   box.append(on,off,status);"
+          + "   if(buttons[0])buttons[0].insertAdjacentElement('afterend',box);"
+          + "   else card.appendChild(box);"
+          + "   refresh();"
           + " }"
-          + " // One delegated listener for dynamic Actualités / ZikaTeam views."
           + " document.addEventListener('click',function(e){"
-          + "   var el=e.target&&e.target.closest?e.target.closest('button,a,[role=button]'):null;"
-          + "   if(!el||!window.ZikaAndroid||!window.ZikaAndroid.enableNotifications)return;"
-          + "   var label=text(el);"
-          + "   var team=el.hasAttribute('data-link-push');"
-          + "   var optin=/(?:activer|autoriser|recevoir|s.abonner).{0,45}(?:notifications?|alertes?)/i.test(label);"
-          + "   var news=/(?:actualit|notification)/i.test(location.hash+location.pathname)"
-          + "      ||Array.from(document.querySelectorAll('h1,h2,h3')).some(function(h){return /actualit.s et notifications/i.test(text(h));});"
-          + "   var short=news&&/^(?:activer|autoriser|m.abonner)$/i.test(label);"
-          + "   if(!team&&!optin&&!short)return;"
-          + "   e.preventDefault();e.stopImmediatePropagation();"
-          + "   window.ZikaAndroid.enableNotifications();"
-          + "   var msg=document.getElementById('teamPushStatus');"
-          + "   if(msg)msg.textContent='Autorisation Android demandée. La réception réelle reste à vérifier.';"
+          + "   var button=e.target&&e.target.closest?e.target.closest('button,a,[role=button]'):null;"
+          + "   if(!button||!window.ZikaAndroid)return;"
+          + "   if(button.hasAttribute('data-zika-notifications-enable')){"
+          + "     e.preventDefault();e.stopImmediatePropagation();"
+          + "     window.ZikaAndroid.enableNotifications();return;"
+          + "   }"
+          + "   if(button.hasAttribute('data-zika-notifications-disable')){"
+          + "     e.preventDefault();e.stopImmediatePropagation();"
+          + "     window.ZikaAndroid.disableNotifications();return;"
+          + "   }"
+          + "   if(button.hasAttribute('data-link-push')||"
+          + "      /^(?:activer|autoriser|recevoir).{0,45}notifications?/i.test(text(button))){"
+          + "     e.preventDefault();e.stopImmediatePropagation();"
+          + "     window.ZikaAndroid.enableNotifications();"
+          + "   }"
           + " },true);"
           + " run();"
           + " new MutationObserver(run).observe(document.documentElement,{subtree:true,childList:true});"
