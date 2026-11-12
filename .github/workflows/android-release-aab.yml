@@ -5,6 +5,7 @@ on:
     branches:
       - prepare/google-play-android-2026
       - fix/android-play-v1015-quality-20261112
+      - fix/android-notification-sound-v1016-20261112
 
 permissions:
   contents: read
@@ -98,14 +99,14 @@ jobs:
         if: steps.signing.outputs.signed != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ZikaMansle-1.0.15-UNSIGNED-NOT-FOR-PLAY
+          name: ZikaMansle-1.0.16-UNSIGNED-NOT-FOR-PLAY
           path: android-native/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 7
       - name: Enregistrer la table R8 pour les diagnostics Android
         uses: actions/upload-artifact@v4
         with:
-          name: zikamansle-google-play-r8-mapping-v1015
+          name: zikamansle-google-play-r8-mapping-v1016
           path: android-native/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn
           retention-days: 30
