@@ -80,7 +80,7 @@
             android:resource="@drawable/zika_notification_small" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="festival-zikamansle-alerts-v4" />
+            android:value="festival-zikamansle-alerts-v5" />
 
         <service
             android:name=".ZikaMessagingService"
