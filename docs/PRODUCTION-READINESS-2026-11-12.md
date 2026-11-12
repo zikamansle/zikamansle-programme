@@ -72,3 +72,15 @@ Le fait que le compte utilisateur donne accès au code GitHub, à Cloudflare et 
 Accès Cloudflare connecté : l'API D1 Time Travel a renvoyé le bookmark `00000098-00000000-00005121-9392b4f31310a80ea881ca739099eea8` pour la base **de test** `32687c2b-b845-4d29-aa1e-34dea804ea34`. L'API d'export D1 a renvoyé `status=complete` et indiqué l'envoi d'un fichier SQL en une partie. L'existence d'une copie durable hors de l'API, téléchargée et contrôlée, **n'est pas attestée** ; le bookmark reste soumis aux durées de rétention Cloudflare.
 
 Ne jamais confondre cette sauvegarde temporaire de staging avec la sauvegarde du **ChatGPT Site public**, toujours inaccessible via les connecteurs. Aucun fichier de données de production n'a été lu, aucun domaine n'a été modifié, aucun push général n'a été envoyé.
+
+## Ressources de production créées (12 novembre 2026, après validation des essais bénévoles)
+
+- D1 Cloudflare **production** : `zikamansle-app-production`, UUID `fe7c5010-d6e9-48ed-88aa-ff1402820e02`, juridiction UE ; distincte de D1 staging.
+- Bucket R2 **production** : `zikamansle-app-production` (région WEUR) ; distinct du bucket staging.
+- Config indépendante `wrangler.production.jsonc` : `APP_ENV=production`, `PUSH_SEND_ENABLED=false`, `TEAM_PUSH_ENABLED=false`, aucune route ou zone personnalisée ; service worker, D1 et R2 prévus.
+- Garde `scripts/zikamansle-production-guard.mjs` et test `tests/production-isolation.test.mjs` ajoutés.
+- Workflow GitHub `.github/workflows/deploy-zikamansle-production.yml` créé sous `workflow_dispatch` et environnement protégé `zikamansle-production` : **ne s'exécute pas automatiquement** ; il nécessite un jeton Cloudflare et l'identifiant du compte autorisés dans les secrets de cet environnement, puis applique les migrations et déploie sur workers.dev uniquement. Son accessibilité depuis GitHub Actions doit être vérifiée, car un workflow ajouté sur une branche non par défaut peut ne pas être déclenchable tant qu'il n'est pas présent dans la branche par défaut.
+- CI GitHub : les suites `Vérifier l’application` et `Vérifier ZikaTeam (sans publication)` sont réussies pour le commit `2076014cc9b4ea7ef2eadcb487785c3cccd2d11e`.
+- Vérification Cloudflare : D1 production et R2 production existants ; le seul Worker déployé reste `zikamansle-app-staging`. Aucun routage vers `app.zikamansle.fr` n'a été modifié. La D1 production est **vide** tant que les migrations ne sont pas appliquées.
+
+**Bloqueurs restants :** déploiement du Worker avec ses secrets réels de production, préparation/validation des accès ZikaTeam, test push réel depuis l'origine définitive, puis changement contrôlé du CNAME IONOS `app` (uniquement). Les comptes tests ne nécessitent pas de migration, mais les abonnés push du Site public devront probablement se réinscrire. Le site public ChatGPT Sites reste disponible en attendant.
