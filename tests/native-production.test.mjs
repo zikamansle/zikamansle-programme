@@ -13,7 +13,7 @@ function fakeDB(){
  }
  sql.exec(`CREATE TABLE team_members(id TEXT PRIMARY KEY,active INTEGER);
  CREATE TABLE team_activities(id TEXT PRIMARY KEY,status TEXT,audience TEXT,starts_at TEXT);
- CREATE TABLE team_notification_preferences(member_id TEXT PRIMARY KEY,activity_enabled INTEGER,urgent_enabled INTEGER,quiet_enabled INTEGER);
+ CREATE TABLE team_notification_preferences(member_id TEXT PRIMARY KEY,activity_enabled INTEGER,urgent_enabled INTEGER,quiet_enabled INTEGER,quiet_start TEXT,quiet_end TEXT);
  CREATE TABLE team_member_roles(member_id TEXT,role TEXT);
  CREATE TABLE team_memberships(member_id TEXT,pole_id TEXT,role TEXT);
  CREATE TABLE team_poles(id TEXT,archived INTEGER);
