@@ -16,4 +16,4 @@ if(!auth.includes("verifyAdminToken(request.headers.get('Cf-Access-Jwt-Assertion
 
 if(config.vars.TEAM_AUTH_PROVIDER!=='supabase')fail('Fournisseur authentification incorrect');
 if(!process.env.CLOUDFLARE_API_TOKEN||!process.env.CLOUDFLARE_ACCOUNT_ID)fail('Identifiants CI absents');
-console.log('Garde production : stockage isolé, actualités autorisées uniquement sous JWT administrateur, notifications ZikaTeam désactivées, aucun changement DNS.');
+console.log('Garde production : diffusion des actualités réservée au JWT administrateur; notifications ZikaTeam désactivées; aucun changement DNS.');
