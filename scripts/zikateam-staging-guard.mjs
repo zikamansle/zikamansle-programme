@@ -27,4 +27,4 @@ c.d1_databases[0].database_id=DB_ID;
 c.keep_vars=true;
 for(const name of ['ACCESS_TEAM_DOMAIN','ACCESS_AUD','TEAM_ACCESS_AUD'])delete c.vars[name];
 writeFileSync(configPath,JSON.stringify(c,null,2)+'\n');
-console.log('Validation de sécurité OK : staging uniquement, variables distantes préservées, DNS et application publique inchangés.');
+console.log('Validation de sécurité OK : staging Firebase relay protégé, variables distantes préservées, DNS et application publique inchangés.');
