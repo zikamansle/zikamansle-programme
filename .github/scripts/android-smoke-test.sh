@@ -155,15 +155,31 @@ def dump():
     subprocess.run(['adb','pull','/sdcard/zika-news-screen.png','/tmp/zika-news-screen.png'],stdout=subprocess.DEVNULL,check=False)
     return ET.fromstring(raw)
 
-def find(root,needle):
-    return [n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
+screen=subprocess.check_output(['adb','shell','wm','size'],text=True)
+size=re.search(r'(\d+)x(\d+)',screen)
+if not size: raise SystemExit('FAIL: emulator dimensions not available')
+screen_width,screen_height=map(int,size.groups())
+
+def bounds(node):
+    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
+    if not m:return None
+    x1,y1,x2,y2=map(int,m.groups())
+    return (x1+x2)//2,(y1+y2)//2
+
+def safely_visible(node):
+    pos=bounds(node)
+    return pos is not None and 0<pos[0]<screen_width and 85<pos[1]<screen_height-100
+
+def find(root,needle,visible_only=False):
+    matches=[n for n in root.iter('node') if needle.lower() in n.attrib.get('text','').lower()
         and n.attrib.get('bounds')!='[0,0][0,0]']
+    return [n for n in matches if safely_visible(n)] if visible_only else matches
 
 def tap(node):
-    m=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
-    if not m: raise SystemExit('FAIL: cannot tap element '+repr(node.attrib.get('text')))
-    x1,y1,x2,y2=map(int,m.groups())
-    subprocess.run(['adb','shell','input','tap',str((x1+x2)//2),str((y1+y2)//2)],check=True)
+    pos=bounds(node)
+    if not safely_visible(node):
+        raise SystemExit('FAIL: Refusing tap outside usable page (covered by navigation): '+repr(node.attrib.get('text')))
+    subprocess.run(['adb','shell','input','tap',str(pos[0]),str(pos[1])],check=True)
 
 root=dump()
 news=find(root,'Actualités & notifications')
@@ -171,8 +187,8 @@ if not news: raise SystemExit('FAIL: Actualités & notifications entry missing f
 tap(news[0]);time.sleep(5)
 for attempt in range(7):
     root=dump()
-    enable=find(root,'Activer les notifications')
-    disable=find(root,'Désactiver les notifications')
+    enable=find(root,'Activer les notifications',visible_only=True)
+    disable=find(root,'Désactiver les notifications',visible_only=True)
     if enable and disable:break
     subprocess.run(['adb','shell','input','swipe','160','520','160','205','400'],check=True)
     time.sleep(2)
