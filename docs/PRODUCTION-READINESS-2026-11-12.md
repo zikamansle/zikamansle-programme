@@ -66,3 +66,9 @@ Documentation officielle : https://help.openai.com/fr-fr/articles/20001339-creat
 **Décision de sécurité :** ne pas considérer la base D1 de test comme une copie exhaustive de la base publique ; ne jamais effectuer de bascule du CNAME ou de suppression du Site public tant qu'un export sauvegardé et une procédure de reprise des abonnements push / des données existantes n'ont pas été effectivement vérifiés. Les 2 abonnements de staging sont propres au domaine de test et ne remplacent pas les abonnements du domaine public.
 
 Le fait que le compte utilisateur donne accès au code GitHub, à Cloudflare et à Supabase ne confère pas automatiquement la permission de lire les tables privées d'un ChatGPT Site : accès séparé nécessaire.
+
+## Point de restauration de la base de test (12 novembre 2026)
+
+Accès Cloudflare connecté : l'API D1 Time Travel a renvoyé le bookmark `00000098-00000000-00005121-9392b4f31310a80ea881ca739099eea8` pour la base **de test** `32687c2b-b845-4d29-aa1e-34dea804ea34`. L'API d'export D1 a renvoyé `status=complete` et indiqué l'envoi d'un fichier SQL en une partie. L'existence d'une copie durable hors de l'API, téléchargée et contrôlée, **n'est pas attestée** ; le bookmark reste soumis aux durées de rétention Cloudflare.
+
+Ne jamais confondre cette sauvegarde temporaire de staging avec la sauvegarde du **ChatGPT Site public**, toujours inaccessible via les connecteurs. Aucun fichier de données de production n'a été lu, aucun domaine n'a été modifié, aucun push général n'a été envoyé.
