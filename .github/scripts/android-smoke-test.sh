@@ -26,8 +26,22 @@ if match:
     print('Notification consent declined for emulator startup test')
 PY
 
-sleep 10
+# The consent dialog must not be the end of the test: the in-app WebView
+# must become the foreground Android activity after the user answers.
+sleep 15
+adb shell dumpsys activity activities > /tmp/zika-activity.txt
 adb logcat -d -v threadtime > /tmp/zika-android-logcat.txt
+if ! grep -E '(topResumedActivity|mResumedActivity|ResumedActivity)' /tmp/zika-activity.txt | grep -q 'ZikaWebActivity'; then
+    echo 'FAIL: ZikaMansle integrated app is not in the foreground after notification consent'
+    grep -E 'ZikaWebActivity|topResumedActivity|mResumedActivity' /tmp/zika-activity.txt | tail -15 || true
+    exit 1
+fi
+if ! grep -q 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' /tmp/zika-android-logcat.txt; then
+    echo 'FAIL: The integrated ZikaMansle app did not finish loading its official URL'
+    grep -F 'ZikaMansle' /tmp/zika-android-logcat.txt | tail -20 || true
+    exit 1
+fi
+echo 'PASS: The official ZikaMansle app is visible after the notification prompt'
 if grep -A 25 'FATAL EXCEPTION' /tmp/zika-android-logcat.txt | grep -Eq 'fr[.]zikamansle[.]app|ManageDataLauncherActivity'; then
     echo 'FAIL: ZikaMansle Android crashed during startup'
     exit 1
