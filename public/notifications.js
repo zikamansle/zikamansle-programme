@@ -19,13 +19,30 @@ async function localTest(){
  await reg.showNotification('Test ZikaMansle',{body:'Les notifications peuvent être affichées par ce navigateur.',icon:'/assets/icon-192.png',badge:'/assets/push-badge-z.png',tag:'zika-local-test',renotify:true,silent:false,vibrate:[120,70,120],data:{url:location.origin+'/#actualites'}});
  return 'Test demandé au téléphone. Vérifiez aussi le volet de notifications en haut de l’écran. Si rien ne s’affiche : Paramètres du téléphone → Applications → Samsung Internet (ou Chrome) → Notifications. Vérifiez également le mode Ne pas déranger.';
 }
+async function renewSubscription(previous){
+ const config=await api('config');
+ const reg=await registration(true);
+ const existing=previous||await reg.pushManager.getSubscription();
+ if(existing){try{await api('unsubscribe',{subscription:existing.toJSON()})}catch{}const cleared=await existing.unsubscribe();if(!cleared)throw Error('Impossible de réinitialiser cet abonnement. Fermez et rouvrez ZikaMansle.')}
+ const key=Uint8Array.from(atob(config.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+ const replacement=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+ await api('subscribe',{subscription:replacement.toJSON()});
+ return replacement;
+}
 async function prepareTest(){const reg=await registration(true),sub=await reg.pushManager.getSubscription();if(sub)await api('subscribe',{subscription:sub.toJSON()});return sub}
 async function remoteTest(report){
  if(!supported()||Notification.permission!=='granted')throw Error('Activez les notifications sur ce téléphone avant le test.');
  report('Mise à jour de la réception des notifications…');
  const sub=await prepareTest();if(!sub)throw Error('Activez les notifications sur ce téléphone avant le test.');
- const subscription=sub.toJSON();report('Envoi du push depuis le serveur…');
- const result=await api('selftest',{subscription});
+ let subscription=sub.toJSON();report('Envoi du push depuis le serveur…');
+ let result=await api('selftest',{subscription});
+ if(!result.accepted&&(result.code===404||result.code===410)){
+  report('Abonnement expiré (code '+result.code+'). Réinscription de ce téléphone…');
+  const replacement=await renewSubscription(sub);
+  subscription=replacement.toJSON();
+  report('Nouvel abonnement créé. Nouvel envoi du test…');
+  result=await api('selftest',{subscription});
+ }
  if(!result.accepted){
   if(result.code===0){const stages={encryption:'préparation du message',signature:'signature du message',network:'connexion au service push',endpoint:'adresse du service push'};throw Error('Échec côté serveur : '+(stages[result.failure?.stage]||'envoi du message')+'. Référence : '+(result.failure?.stage||'unknown')+'/'+(result.failure?.kind||'Error')+'.')}
   throw Error('Le service push a refusé le message (code '+result.code+').');
@@ -42,9 +59,9 @@ async function subscription(){return supported()?(await registration()).pushMana
 async function enable(){
  if(!supported())throw Error('Sur iPhone, ajoutez d’abord l’application à l’écran d’accueil depuis Safari, puis ouvrez-la. Sinon, utilisez un navigateur compatible.');
  const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Notifications non autorisées. Vous pouvez changer ce choix dans les réglages du navigateur ou du téléphone.');
- const config=await api('config'),reg=await registration(true);let sub=await reg.pushManager.getSubscription();
- if(!sub){const bytes=Uint8Array.from(atob(config.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes})}
- try{await api('subscribe',{subscription:sub.toJSON()})}catch(err){await sub.unsubscribe();throw err}return sub;
+ const reg=await registration(true);let sub=await reg.pushManager.getSubscription();
+ if(!sub)return renewSubscription();
+ try{await api('subscribe',{subscription:sub.toJSON()})}catch(err){throw Error('Impossible d’enregistrer cet appareil : '+err.message)}return sub;
 }
 async function disable(){const sub=await subscription();if(sub){await api('unsubscribe',{subscription:sub.toJSON()});await sub.unsubscribe()}}
 function mediaHTML(raw){try{const m=typeof raw==='string'?JSON.parse(raw):raw;if(!m||!/^\/api\/push\/media\?id=[a-f0-9-]{36}$/.test(m.url))return '';const url=escape(m.url);if(m.type?.startsWith('image/'))return '<img class="news-media" src="'+url+'" alt="Visuel de l’annonce" loading="lazy">';if(m.type==='video/mp4')return '<video class="news-media" src="'+url+'" controls preload="metadata"></video>';if(m.type==='application/pdf')return '<a class="small-link" href="'+url+'" target="_blank" rel="noopener">Ouvrir le document PDF →</a>';return ''}catch{return ''}}
