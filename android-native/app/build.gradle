@@ -29,6 +29,22 @@ android {
 
     }
 
+    // Play upload credentials are read from CI/local environment only.
+    // No private keystore or password is stored in Git.
+    signingConfigs {
+        if (System.getenv('ZIKA_ANDROID_KEYSTORE_PATH') &&
+            System.getenv('ZIKA_ANDROID_KEYSTORE_PASSWORD') &&
+            System.getenv('ZIKA_ANDROID_KEY_ALIAS') &&
+            System.getenv('ZIKA_ANDROID_KEY_PASSWORD')) {
+            playUpload {
+                storeFile file(System.getenv('ZIKA_ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ZIKA_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ZIKA_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ZIKA_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
@@ -44,8 +60,10 @@ android {
             resValue 'string', 'zika_launch_url', nativeLaunch((project.findProperty('zikaLaunchUrl') ?: 'https://zikamansle-app-staging.zikamansle.workers.dev/').toString())
         }
         release {
-            // Release builds are deliberately unsigned. Create a private signing
-            // configuration only after Google Play App Signing is configured.
+            // Sign only when a complete private Play upload key is provided.
+            if (signingConfigs.findByName('playUpload') != null) {
+                signingConfig signingConfigs.playUpload
+            }
             minifyEnabled false
             // Production remains deliberately disconnected until the signed release is tested.
             resValue 'string', 'zika_firebase_app_id', firebaseString('ZIKA_FIREBASE_APP_ID')
