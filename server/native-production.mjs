@@ -177,7 +177,7 @@ export async function handleNativeProduction(request,env,isAdmin){
   let data;try{data=JSON.parse(raw)}catch{return json({error:'Requête invalide'},400)}
   if(!validToken(data?.token))return json({error:'Jeton Firebase invalide'},400);
   const id=await hash(data.token),registered=await one(db,'SELECT id FROM native_push_devices WHERE id=? AND token=?',id,data.token);
-  if(!registered)return json({error:'Réinscrivez cet appareil Android.'},403);
+  if(!registered)return json({error:'Réinscrivez cet appareil Android via Firebase.'},403);
   if(!await nativeDeliveryReady(env))return json({error:'Connexion Firebase indisponible.'},503);
   const minute=String(Math.floor(Date.now()/60000));
   const job=crypto.randomUUID(),stamp=Date.now();
