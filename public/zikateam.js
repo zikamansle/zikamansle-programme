@@ -582,7 +582,14 @@ function render(){
 // automatiquement au compte connecté sans demander d'activation groupe par groupe.
 let linkedPushMember=null,linkingPush=false;
 async function autoLinkTeamPush(me){
- if(!me?.member?.id||me.pending||me.passwordRequired||!me.charterAccepted||typeof Notification==='undefined'||Notification.permission!=='granted'||linkedPushMember===me.member.id||linkingPush)return;
+ if(!me?.member?.id||me.pending||me.passwordRequired||!me.charterAccepted)return;
+ // Android s'abonne avec Firebase, et lie le jeton via l'API authentifiée.
+ // Ne jamais utiliser les abonnements Web Push de Chrome dans la vraie appli.
+ if(window.ZikaAndroid?.linkZikaTeam){
+  try{window.ZikaAndroid.linkZikaTeam()}catch{}
+  return;
+ }
+ if(typeof Notification==='undefined'||Notification.permission!=='granted'||linkedPushMember===me.member.id||linkingPush)return;
  if(!window.ZikaPush?.subscription)return;
  linkingPush=true;
  try{
