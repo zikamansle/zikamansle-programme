@@ -50,15 +50,15 @@ async function disable(){const sub=await subscription();if(sub){await api('unsub
 function mediaHTML(raw){try{const m=typeof raw==='string'?JSON.parse(raw):raw;if(!m||!/^\/api\/push\/media\?id=[a-f0-9-]{36}$/.test(m.url))return '';const url=escape(m.url);if(m.type?.startsWith('image/'))return '<img class="news-media" src="'+url+'" alt="Visuel de l’annonce" loading="lazy">';if(m.type==='video/mp4')return '<video class="news-media" src="'+url+'" controls preload="metadata"></video>';if(m.type==='application/pdf')return '<a class="small-link" href="'+url+'" target="_blank" rel="noopener">Ouvrir le document PDF →</a>';return ''}catch{return ''}}
 window.zikaMediaHTML=mediaHTML;
 window.ZikaPush={api,enable,subscription,prepareTest,localTest,remoteTest};
-window.zikaNewsHTML=()=>'<div class="page"><header class="page-head"><span class="eyebrow">Festival ZikaMansle</span><h1>Actualités & notifications</h1><p>Les nouvelles du festival, au bon moment.</p></header><section class="push-panel"><h2>Gardons le contact</h2><p>Recevez les annonces et les informations pratiques, même lorsque l’application est fermée.</p><p id="pushStatus" role="status">Vérification…</p><div class="push-actions"><button id="pushEnable" type="button" class="button orange">Activer les notifications</button> <button id="pushDisable" type="button" class="button light">Désactiver les notifications</button></div><p class="map-help">Sur iPhone : ouvrez l’application ajoutée à l’écran d’accueil. L’autorisation reste votre choix.</p><details><summary>Vos données</summary><p>Nous conservons l’abonnement technique de cet appareil pour lui envoyer les messages du festival. Aucun nom, e-mail ou numéro de téléphone n’est demandé. Désactiver les notifications ici supprime cet abonnement. Association ZikaMansle : 07 82 36 40 30.</p></details></section><section id="newsList" aria-live="polite">Chargement des actualités…</section></div>';
+window.zikaNewsHTML=()=>'<div class="page"><header class="page-head"><span class="eyebrow">Festival ZikaMansle</span><h1>Actualités & notifications</h1><p>Les nouvelles du festival, au bon moment.</p></header><section class="push-panel"><h2>Gardons le contact</h2><p>Recevez les annonces et les informations pratiques, même lorsque l’application est fermée.</p><p id="pushStatus" role="status">Vérification…</p><div class="push-actions"><button id="pushEnable" type="button" class="button orange">Activer les notifications</button> <button id="pushDisable" type="button" class="button light">Désactiver les notifications</button></div><div class="push-actions"><button id="pushRemoteTest" type="button" class="button blue">Envoyer une notification de test sur ce téléphone</button></div><p id="pushTestStatus" role="status" aria-live="polite"></p><p class="map-help">Sur iPhone : ouvrez l’application ajoutée à l’écran d’accueil. L’autorisation reste votre choix.</p><details><summary>Vos données</summary><p>Nous conservons l’abonnement technique de cet appareil pour lui envoyer les messages du festival. Aucun nom, e-mail ou numéro de téléphone n’est demandé. Désactiver les notifications ici supprime cet abonnement. Association ZikaMansle : 07 82 36 40 30.</p></details></section><section id="newsList" aria-live="polite">Chargement des actualités…</section></div>';
 window.zikaLoadNews=async()=>{
- const status=$('pushStatus'),yes=$('pushEnable'),no=$('pushDisable');
+ const status=$('pushStatus'),yes=$('pushEnable'),no=$('pushDisable'),testButton=$('pushRemoteTest'),testStatus=$('pushTestStatus');
  if(!status||!yes||!no)return;
  async function state(){
   try{
-   if(!supported()){yes.disabled=true;no.disabled=true;status.textContent='Notifications non prises en charge sur ce navigateur.';return}
+   if(!supported()){yes.disabled=true;no.disabled=true;if(testButton)testButton.disabled=true;status.textContent='Notifications non prises en charge sur ce navigateur.';return}
    const on=!!(await subscription());
-   yes.disabled=on;no.disabled=!on;
+   yes.disabled=on;no.disabled=!on;if(testButton)testButton.disabled=!on;
    status.textContent=on?'Notifications activées sur cet appareil.':'Notifications désactivées sur cet appareil.';
   }catch(e){status.textContent='Impossible de vérifier les notifications : '+(e.message||String(e));yes.disabled=false;no.disabled=true}
  }
@@ -68,6 +68,13 @@ window.zikaLoadNews=async()=>{
   catch(e){status.textContent=e.message||'Impossible de modifier les notifications.';await state();status.textContent=e.message||'Impossible de modifier les notifications.'}
  }
  yes.onclick=()=>change('enable');no.onclick=()=>change('disable');
+ if(testButton)testButton.onclick=async()=>{
+  testButton.disabled=true;
+  testStatus.textContent='Préparation du test…';
+  try{await remoteTest(message=>{if(testStatus.isConnected)testStatus.textContent=message})}
+  catch(error){if(testStatus.isConnected)testStatus.textContent='Test impossible : '+(error.message||String(error))}
+  finally{await state()}
+ };
  await state();
  try{
   const {items}=await api('news');
