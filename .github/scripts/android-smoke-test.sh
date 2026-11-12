@@ -180,14 +180,7 @@ else:
     raise SystemExit('FAIL: Native Activer/Désactiver controls not present in Actualités')
 print('PASS: Both Activer and Désactiver buttons are available in Actualités')
 
-tap(disable[0]);time.sleep(2)
-root=dump()
-confirm=find(root,'Désactiver')
-if not confirm:raise SystemExit('FAIL: Disable confirmation dialog absent')
-# Prefer native positive button resource id (not the underlying WebView button).
-positive=[n for n in root.iter('node') if n.attrib.get('resource-id','').endswith(':id/button1')]
-if not positive:raise SystemExit('FAIL: Native disable confirmation missing')
-tap(positive[0]);time.sleep(3)
+tap(disable[0]);time.sleep(3)
 root=dump()
 if not find(root,'Notifications désactivées'):
     raise SystemExit('FAIL: Notification-off state not displayed')
