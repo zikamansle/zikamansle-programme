@@ -19,3 +19,13 @@ test('Actualités et notifications : JavaScript complet et syntaxiquement valide
  assert.ok(js.includes("yes.onclick=()=>change('enable')"));
  assert.ok(js.includes("no.onclick=()=>change('disable')"));
 });
+
+test('push 410/404 : un seul réabonnement automatique avec la clé VAPID de cette origine',()=>{
+ assert.match(js,/result\.code===404\|\|result\.code===410/);
+ assert.match(js,/await renewSubscription\(sub\)/);
+ assert.match(js,/await existing\.unsubscribe\(\)/);
+ assert.match(js,/await reg\.pushManager\.subscribe\(\{userVisibleOnly:true,applicationServerKey:key\}\)/);
+ assert.match(js,/await api\('subscribe',\{subscription:replacement\.toJSON\(\)\}\)/);
+ assert.match(js,/result=await api\('selftest',\{subscription\}\)/);
+ assert.match(js,/if\(!result\.accepted\)\{/);
+});
