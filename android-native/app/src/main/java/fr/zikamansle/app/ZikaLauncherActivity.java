@@ -10,7 +10,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.net.Uri;
-import com.google.androidbrowserhelper.trusted.LauncherActivity;
 
 /** One-time, optional Android notification consent before launching the existing TWA. */
 public final class ZikaLauncherActivity extends Activity {
@@ -61,7 +60,7 @@ public final class ZikaLauncherActivity extends Activity {
     private void launchFestival() {
         if(handedOff)return;
         handedOff=true;
-        Intent intent=new Intent(this,LauncherActivity.class);
+        Intent intent=new Intent(this,ZikaWebActivity.class);
         Uri data=getIntent().getData();
         if(data!=null) {
             Uri origin=Uri.parse(getString(R.string.zika_launch_url));
@@ -69,16 +68,16 @@ public final class ZikaLauncherActivity extends Activity {
                 && origin.getHost().equals(data.getHost())
                 && data.getPort()==origin.getPort()) {
                 intent.setAction(Intent.ACTION_VIEW);
-                // Preserve deep links while hiding the redundant install prompts inside Android.
+                // Preserve in-app deep links and avoid redundant installation prompts.
                 intent.setData(data.buildUpon().appendQueryParameter("zika_native","1").build());
             }
         }
-        // Never leave the app on a blank screen if the installed TWA provider
+        // Never leave the app on a blank screen if the native app view
         // cannot resolve its launcher. Preserve access to the official website.
         try {
             startActivity(intent);
         } catch (ActivityNotFoundException | SecurityException error) {
-            Log.e("ZikaMansle", "Android browser helper unavailable; opening HTTPS fallback");
+            Log.e("ZikaMansle", "Android web view unavailable; opening HTTPS fallback");
             Uri fallback = Uri.parse(getString(R.string.zika_launch_url));
             Intent browser = new Intent(Intent.ACTION_VIEW, fallback);
             browser.addCategory(Intent.CATEGORY_BROWSABLE);
