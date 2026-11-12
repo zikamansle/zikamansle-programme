@@ -91,11 +91,7 @@ jobs:
             adb shell dumpsys activity activities > android-startup-activity.txt
             adb exec-out screencap -p > android-production-screen.png
             python3 android-native/scripts/check_startup.py
-            if ! grep -Fq 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt; then
-              echo 'FAIL: le WebView n a pas confirme le chargement du site officiel.'
-              adb logcat -d -v brief | grep -E 'ZIKA_|ERR_INTERNET|FATAL EXCEPTION' | tail -n 30 || true
-              exit 1
-            fi
+            grep -Fq 'ZIKA_WEBVIEW_PAGE_FINISHED host=app.zikamansle.fr' android-startup-log.txt
             echo 'PASS: official ZikaMansle mobile website loaded in the Android app'
       - name: Fournir uniquement l'APK ayant passé le contrôle Android
         uses: actions/upload-artifact@v4
