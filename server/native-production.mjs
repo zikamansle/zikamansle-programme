@@ -173,7 +173,9 @@ export async function handleNativeRelay(request,env){
  if(!validToken(body?.token)||typeof body?.data?.title!=='string'||
     typeof body?.data?.body!=='string'||typeof body?.data?.url!=='string'||
     body.data.title.length>80||body.data.body.length>300||
-    !(/^\\/zikateam(?:[/?#]|$)/.test(body.data.url)||/^\\/index\\.html(?:[?#]|$)/.test(body.data.url)))
+    !(body.data.url==='/zikateam'||body.data.url.startsWith('/zikateam#')||
+      body.data.url.startsWith('/zikateam?')||body.data.url==='/index.html'||
+      body.data.url.startsWith('/index.html#')||body.data.url.startsWith('/index.html?')))
   return json({error:'Message invalide'},400);
  // Only uses the credential already installed in the staging Worker.
  const sendEnv={...env,APP_ENV:'production',NATIVE_PUSH_ENABLED:'true',FIREBASE_RELAY:null,FCM_RELAY_TOKEN:null};
