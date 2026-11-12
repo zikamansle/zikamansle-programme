@@ -48,7 +48,7 @@ test('les réunions destinées aux pôles restent ciblées et la publication ave
  assert.match(serverSource,/if\(activity\.audience==='all'\)/);
  assert.match(serverSource,/activity\.audience==='leaders'/);
  assert.match(serverSource,/if\(d\.audience==='poles'\)/);
- assert.match(serverSource,/enqueue\(db,result,'created'\)/);
+ assert.match(serverSource,/enqueue\(db,result,'created',env\?\.NATIVE_PUSH_ENABLED/);
  assert.match(clientSource,/activitySaveFeedback/);
 });
 
@@ -69,4 +69,10 @@ test('son et vibration sont activés par défaut sur toutes les notifications Zi
  assert.match(clientSource,/sound_mode:'all',vibrate:true,activity_enabled:true,urgent_enabled:true,quiet_enabled:false/);
  const sw=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8');
  assert.match(sw,/icon:'\/assets\/icon-192\.png',badge:'\/assets\/push-badge-z\.png'/);
+});
+
+test('application Android : notifications Firebase sans abonnement Chrome',()=>{
+ assert.match(clientSource,/window\.ZikaAndroid\?\.linkZikaTeam/);
+ assert.match(serverSource,/linkNativeMember\(db,memberId,d\.token\)/);
+ assert.match(serverSource,/queueNativeActivity\(db,a,reason,memberIds\)/);
 });
