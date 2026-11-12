@@ -28,6 +28,7 @@ if((mobile.body.match(/menuLink\('\/zikateam','ZikaTeam'/g)||[]).length!==1)thro
 if(mobile.body.includes('Installer l’application<small>Sur Android ou iPhone'))throw new Error('Ancien bouton installer présent dans Plus.');
 const push=await check('/notifications.js',200,'pushEnable');
 if(!push.body.includes('pushDisable')||push.body.includes('pushToggle'))throw new Error('Boutons activer / désactiver manquants ou obsolètes.');
-const sw=await check('/sw.js',200,'zika-mobile-v19-team-notification-controls');
+const sw=await check('/sw.js',200,'zika-mobile-v20-push-device-selftest');
+if(!push.body.includes('pushRemoteTest')||!push.body.includes('remoteTest(message=>'))throw new Error('Test réseau de notification absent du fichier publié.');
 console.log('OK interface de notifications, ZikaTeam unique et cache mis à jour.');
 console.log('ZikaTeam en ligne, API privée protégée, application publique conservée.');
