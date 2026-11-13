@@ -137,6 +137,39 @@ async function renew(){if(!refresh)return;try{const r=await fetch(c.url+'/auth/v
 function logout(){token='';refresh='';selected=null;$('editorPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('logout').classList.add('hidden')}
 $('loginForm').onsubmit=async e=>{e.preventDefault();if(!validate())return;try{await auth();await load();$('loginPanel').classList.add('hidden');$('editorPanel').classList.remove('hidden');$('logout').classList.remove('hidden');$('loginMsg').textContent='';}catch(err){$('loginMsg').textContent='Connexion impossible : '+err.message}};
 $('logout').onclick=logout;setInterval(()=>{if(token)renew()},45*60*1000);
+
+/* ZikaTeam admin single sign-on: accepts only a session delivered by the protected parent. */
+(function(){
+ const trustedOrigins=new Set(['https://app.zikamansle.fr','https://zikamansle-app-staging.zikamansle.workers.dev']);
+ if(window.parent===window)return;
+ const parentOrigin=(()=>{try{return new URL(document.referrer).origin}catch{return ''}})();
+ if(!trustedOrigins.has(parentOrigin))return;
+ let loading=false;
+ window.addEventListener('message',async event=>{
+   if(event.source!==window.parent||event.origin!==parentOrigin||event.data?.type!=='ZIKA_PROGRAM_SESSION'||loading)return;
+   const incoming=event.data.accessToken;
+   if(typeof incoming!=='string'||incoming.length<80||incoming.length>10000)return;
+   loading=true;
+   try{
+     const response=await fetch(c.url+'/auth/v1/user',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+incoming},cache:'no-store'});
+     const user=await response.json();
+     if(!response.ok||!user?.email)throw Error('Session invalide');
+     token=incoming;refresh='';
+     await load();
+     $('loginPanel').classList.add('hidden');
+     $('editorPanel').classList.remove('hidden');
+     $('logout').classList.remove('hidden');
+     $('loginMsg').textContent='';
+   }catch(error){
+     token='';
+     $('loginMsg').textContent='Connexion depuis ZikaTeam impossible : '+(error.message||error);
+   }finally{loading=false;}
+ });
+ function notify(){window.parent.postMessage({type:'ZIKA_PROGRAM_READY'},parentOrigin);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',notify,{once:true});else notify();
+ setInterval(()=>window.parent.postMessage({type:'ZIKA_PROGRAM_REFRESH'},parentOrigin),30*60*1000);
+})();
+
 async function load(){events=await api('/rest/v1/zika_events?select=*&order=display_order.asc');const s=await api('/rest/v1/zika_settings?select=key,value');settings=Object.fromEntries(s.map(x=>[x.key,x.value]));drawList();loadSettings();applyDesignFields();loadExperience()}
 function drawList(){let x=$('list');x.replaceChildren();for(const e of [...events].sort((a,b)=>{const da=a.extra?.starts_at||(a.extra?.custom_date?a.extra.custom_date+'T'+(a.start_time||'00:00'):(a.extra?.day==='dimanche'?'2027-04-25':'2027-04-24')+'T'+(a.start_time||'00:00'));const db=b.extra?.starts_at||(b.extra?.custom_date?b.extra.custom_date+'T'+(b.start_time||'00:00'):(b.extra?.day==='dimanche'?'2027-04-25':'2027-04-24')+'T'+(b.start_time||'00:00'));return da.localeCompare(db)})){const b=document.createElement('button');b.className='eventrow'+(selected===e.id?' active':'');b.textContent=(e.published?'● ':'○ ')+e.title+' · '+(e.extra?.starts_at?new Date(e.extra.starts_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):(e.time_label||'sans horaire'));b.onclick=()=>choose(e.id);x.append(b)}}
 function syncProgrammePeriods(values){const periods=Array.isArray(values)?values.filter(p=>['before','samedi','dimanche'].includes(p)):[];$('programmePeriodMode').value=periods.length?'manual':'auto';$('programmePeriodChoices').hidden=!periods.length;document.querySelectorAll('[name="programme_period"]').forEach(box=>box.checked=periods.includes(box.value));}
