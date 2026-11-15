@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.getElementById('teamRoot'),$=id=>document.getElementById(id);
-const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,chatChannel:'general',chatId:null,chatRooms:[],chatUnread:0,messages:[],chatMobileOpen:false,busy:false,freeLogin:false,loginEmail:'',loginName:'',inviteCode:'',invitationDraft:null,codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',directoryImage:'all',directoryPhone:'all',directoryEmail:'all',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listImage:'all',listPhone:'all',listEmail:'all',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
+const state={me:null,manage:null,tab:'fiche',managementTab:'activites',editMember:null,editPole:null,editActivity:null,editShift:null,editWrittenDocument:null,chatChannel:'general',chatId:null,chatRooms:[],chatUnread:0,messages:[],chatMobileOpen:false,busy:false,freeLogin:false,loginEmail:'',loginName:'',inviteCode:'',invitationDraft:null,codeSent:false,loginMethod:'password',forcePasswordSetup:false,adhesionFilter:'pending',directorySearch:'',directoryImage:'all',directoryPhone:'all',directoryEmail:'all',signing:null,signingCurrent:null,signingMember:null,signingFilter:'all',signingPole:'',signingStrokes:[],signingSelection:[],signingExpanded:false,signingOrientationLocked:false,listStatus:'all',listRole:'all',listPole:'',listImage:'all',listPhone:'all',listEmail:'all',listSearch:'',listEditor:false,listId:null,listTitle:'',listSelected:[],listColumns:['name','quality','poles','paid','phone','email']};
 const nativePush=()=>typeof window.ZikaAndroid?.getNotificationStatus==='function';
 const nativePushStatus=()=>{try{return window.ZikaAndroid.getNotificationStatus()}catch{return 'unconfigured'}};
 const nativePushAction=(action)=>{if(!nativePush())throw Error('Notifications Android indisponibles dans cette version.');window.ZikaAndroid[action]();};
@@ -164,10 +164,41 @@ function secretaryTestGuide(){
  '</ol><p class="team-small">Si un bouton ne fonctionne pas ou si un accès manque, indique le nom de la rubrique et le message affiché pour que nous corrigions le problème.</p></section>';
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
- const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:state.me.secretariat?[['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...((state.me.admin||state.me.secretariat)?[['benevoles','Bénévoles & fonctions']]:[]),...(state.me.admin?[['charte','Charte'],['journal','Historique']]:[])];
- return secretaryTestGuide()+'<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
+ const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:state.me.secretariat?[['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['documents','Courriers & comptes rendus'],['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...((state.me.admin||state.me.secretariat)?[['benevoles','Bénévoles & fonctions']]:[]),...(state.me.admin?[['charte','Charte'],['journal','Historique']]:[])];
+ return secretaryTestGuide()+'<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,documents:manageWrittenDocuments,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
 }
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
+
+
+function writtenDocumentBody(form){
+ const type=form.querySelector('[name="kind"]')?.value||'courrier';
+ const activityId=form.querySelector('[name="activityId"]')?.value||'';
+ const activity=state.manage?.activities?.find(a=>a.id===activityId);
+ if(!activity)return '';
+ const header='Réunion : '+activity.title+'\nDate : '+new Date(activity.starts_at).toLocaleString('fr-FR')+'\nLieu : '+(activity.place||'À préciser');
+ const agenda=agendaItems(activity.agenda||'').map((p,i)=>(i+1)+'. '+p).join('\n');
+ if(type==='compte_rendu')return header+'\n\nPrésents :\nExcusés :\nAbsents :\n\nOrdre du jour\n'+agenda+'\n\n'+agendaItems(activity.agenda||'').map((p,i)=>(i+1)+'. '+p+'\nÉchanges :\nDécisions :\nResponsable :\nÉchéance :').join('\n\n')+'\n\nSignature du président :';
+ return 'Association ZikaMansle\nÀ Mansle-les-Fontaines, le '+new Date().toLocaleDateString('fr-FR')+'\n\nObjet : '+(type==='invitation'?'Convocation à la réunion':'Ordre du jour / réunion')+'\n\n'+header+'\n\nVous êtes conviés à participer à cette réunion.\n\nOrdre du jour\n'+agenda+'\n\nPour l’association ZikaMansle\nLe président';
+}
+function writtenHTML(kind,title,body){
+ const label={courrier:'Courrier',ordre_du_jour:'Ordre du jour',compte_rendu:'Compte rendu',invitation:'Convocation'}[kind]||'Document';
+ return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>@page{size:A4;margin:20mm}body{font-family:Abadi,Arial,sans-serif;color:#1a2740;font-size:12pt;line-height:1.5}header{border-bottom:2px solid #9333b5;padding-bottom:12px;margin-bottom:20px}h1{font-size:19pt;color:#9333b5}main{white-space:pre-wrap;overflow-wrap:anywhere}.controls{margin-bottom:20px}@media print{.controls{display:none}}</style></head><body><div class="controls"><button onclick="window.print()">Imprimer / enregistrer en PDF</button></div><header><strong>Association ZikaMansle</strong><p>Mansle-les-Fontaines</p></header><h1>'+esc(label)+' — '+esc(title)+'</h1><main>'+esc(body)+'</main></body></html>';
+}
+function writtenExport(doc,format){
+ const html=writtenHTML(doc.kind,doc.title,doc.body);
+ if(format==='preview'){const popup=window.open('','_blank');if(!popup){toast('Autorise les fenêtres supplémentaires.');return;}popup.opener=null;popup.document.open();popup.document.write(html);popup.document.close();return;}
+ const blob=new Blob(['\ufeff',html],{type:'application/msword;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='zikamansle-'+(doc.title||'document').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').slice(0,60)+'.doc';
+ document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function manageWrittenDocuments(){
+ const docs=state.manage?.writtenDocuments||[],active=docs.find(d=>d.id===state.editWrittenDocument)||{},canEdit=active.status!=='approved'&&(active.status!=='pending'||state.me.admin);
+ const types=[['courrier','Courrier'],['ordre_du_jour','Ordre du jour'],['invitation','Convocation'],['compte_rendu','Compte rendu']];
+ const meetings=(state.manage?.activities||[]).filter(a=>a.kind==='meeting'||a.custom_kind);
+ const statusLabels={draft:'Brouillon',pending:'En attente de validation',approved:'Validé / archivé',rejected:'Corrections demandées'};
+ const options='<option value="">Sans réunion liée</option>'+meetings.map(a=>'<option value="'+esc(a.id)+'" '+(a.id===active.activity_id?'selected':'')+'>'+esc(a.title)+' — '+esc(new Date(a.starts_at).toLocaleDateString('fr-FR'))+'</option>').join('');
+ return '<section class="team-card"><h2>Courriers, ordres du jour et comptes rendus</h2><p>Le secrétariat prépare les documents. Le président accepte ou refuse avec un commentaire. Les documents validés restent archivés.</p><button type="button" class="team-button light" data-written-new>Nouveau document</button><form id="teamWrittenForm" class="team-form"><input type="hidden" name="id" value="'+esc(active.id||'')+'"><label>Type<select name="kind" '+(!canEdit?'disabled':'')+'>'+opt(types,active.kind||'courrier')+'</select></label><label>Réunion liée<select name="activityId" '+(!canEdit?'disabled':'')+'>'+options+'</select></label><button type="button" class="team-button light" data-written-generate '+(!canEdit?'disabled':'')+'>Reprendre automatiquement les points de l’ordre du jour</button><label>Objet<input name="title" required maxlength="180" value="'+esc(active.title||'')+'" '+(!canEdit?'readonly':'')+'></label><label>Texte du document<textarea name="body" rows="15" required '+(!canEdit?'readonly':'')+'>'+esc(active.body||'')+'</textarea></label>'+(active.feedback?'<p class="team-save-feedback"><strong>Commentaire du président :</strong> '+esc(active.feedback)+'</p>':'')+'<div class="team-row"><button type="button" class="team-button light" data-written-export="preview">Aperçu / PDF / imprimer</button><button type="button" class="team-button light" data-written-export="word">Exporter Word</button>'+(canEdit?'<button type="submit" name="submitMode" value="draft" class="team-button light">Enregistrer en brouillon</button><button type="submit" name="submitMode" value="pending" class="team-button orange">Envoyer au président pour validation</button>':'')+'</div></form>'+((state.me.admin&&active.status==='pending')?'<section class="team-card"><h3>Décision du président</h3><label>Commentaire de validation ou raison du refus<textarea id="writtenReviewFeedback" rows="3"></textarea></label><div class="team-row"><button type="button" class="team-button" data-written-review="approved">Approuver et archiver</button><button type="button" class="team-button danger" data-written-review="rejected">Refuser et demander une correction</button></div></section>':'')+'</section><section class="team-card"><h3>Documents enregistrés</h3>'+(docs.length?docs.map(d=>'<div class="team-row" style="justify-content:space-between;align-items:center"><div><strong>'+esc(d.title)+'</strong><p class="team-small team-muted">'+esc(types.find(x=>x[0]===d.kind)?.[1]||d.kind)+' · '+esc(statusLabels[d.status]||d.status)+'</p></div><button type="button" class="team-button light" data-written-open="'+esc(d.id)+'">Ouvrir</button></div>').join(''):'<p>Aucun document enregistré.</p>')+'</section>';
+}
 
 function agendaItems(text){return String(text||'').split(/\r?\n/).map(s=>s.replace(/^\s*\d+[.)-]\s*/,'').trim()).filter(Boolean);}
 function agendaPointRows(value){return agendaItems(value).map((p,i)=>'<div class="team-row" data-agenda-point="'+i+'"><span style="flex:1;min-width:10rem">'+(i+1)+'. '+esc(p)+'</span><button type="button" class="team-button light" data-agenda-action="up" data-agenda-index="'+i+'" aria-label="Monter le point">↑</button><button type="button" class="team-button light" data-agenda-action="down" data-agenda-index="'+i+'" aria-label="Descendre le point">↓</button><button type="button" class="team-button light" data-agenda-action="edit" data-agenda-index="'+i+'">Modifier</button><button type="button" class="team-button light" data-agenda-action="delete" data-agenda-index="'+i+'">Supprimer</button></div>').join('')||'<p class="team-small team-muted">Aucun point validé pour le moment.</p>';}
@@ -825,6 +856,31 @@ document.addEventListener('click',e=>{
  action.catch(error=>{feedback.textContent='❌ '+(error?.message||'Erreur de traitement.');state.busy=false;});
 },true);
 
+
+root.addEventListener('click',async e=>{
+ const b=e.target.closest('button[data-written-new],button[data-written-open],button[data-written-generate],button[data-written-export],button[data-written-review]');
+ if(!b)return;e.preventDefault();e.stopPropagation();
+ if(b.hasAttribute('data-written-new')){state.editWrittenDocument=null;render();return;}
+ if(b.dataset.writtenOpen){state.editWrittenDocument=b.dataset.writtenOpen;render();return;}
+ const form=root.querySelector('#teamWrittenForm');if(!form)return;
+ const raw=()=>({kind:form.elements.kind?.value||state.manage?.writtenDocuments?.find(d=>d.id===state.editWrittenDocument)?.kind||'courrier',title:form.elements.title?.value||'',body:form.elements.body?.value||''});
+ if(b.hasAttribute('data-written-generate')){const text=writtenDocumentBody(form);if(!text){toast('Choisis une réunion contenant un ordre du jour.');return;}form.elements.body.value=text;if(!form.elements.title.value){const a=state.manage?.activities.find(a=>a.id===form.elements.activityId.value);form.elements.title.value=a?.title||'Réunion';}toast('Les points ont été repris automatiquement.');return;}
+ if(b.dataset.writtenExport){const doc=raw();if(!doc.title||!doc.body){toast('Renseigne l’objet et le contenu.');return;}writtenExport(doc,b.dataset.writtenExport);return;}
+ if(b.dataset.writtenReview){
+  if(!state.me.admin)return;
+  const feedback=root.querySelector('#writtenReviewFeedback')?.value||'';
+  if(b.dataset.writtenReview==='rejected'&&!feedback.trim()){toast('Le motif du refus est obligatoire.');return;}
+  await perform(async()=>{await command('document.review',{id:state.editWrittenDocument,status:b.dataset.writtenReview,feedback});});
+ }
+},true);
+root.addEventListener('submit',async e=>{
+ if(e.target.id!=='teamWrittenForm')return;
+ e.preventDefault();e.stopPropagation();const f=e.target,mode=e.submitter?.value||'draft';
+ if(!f.reportValidity())return;
+ const existing=state.manage?.writtenDocuments?.find(d=>d.id===state.editWrittenDocument);
+ const body={id:existing?.id,kind:f.elements.kind.value,activityId:f.elements.activityId.value||null,title:f.elements.title.value,body:f.elements.body.value,submit:mode==='pending'};
+ await perform(async()=>{const saved=await command('document.save',body);state.editWrittenDocument=saved.id;});
+},true);
 root.addEventListener('click',e=>{
  const button=e.target.closest('button[data-agenda-action],button[data-agenda-document],button[data-agenda-word]');
  if(!button)return;
