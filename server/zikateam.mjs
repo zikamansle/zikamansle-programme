@@ -161,7 +161,8 @@ async function getManage(db,ctx){
  const consentsAdmin=ctx.admin||ctx.secretariat?await all(db,'SELECT member_id,kind,granted,updated_at FROM team_member_consents'):[];
  const savedLists=ctx.admin||ctx.secretariat?await all(db,'SELECT id,title,columns_json,member_ids_json,created_by,created_at,updated_at FROM team_saved_lists ORDER BY updated_at DESC LIMIT 100'):[];
  const contacts=ctx.admin||ctx.secretariat?await all(db,"SELECT m.id AS member_id,m.name,m.email,m.active,COALESCE(c.phone,'') AS phone,COALESCE(c.address,'') AS address,COALESCE(c.postal_code,'') AS postal_code,COALESCE(c.city,'') AS city,c.updated_at,c.updated_by FROM team_members m LEFT JOIN team_member_contacts c ON c.member_id=m.id WHERE m.active=1 ORDER BY m.name"):[];
- return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,invitations,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists});
+ const writtenDocuments=ctx.admin||ctx.secretariat?await all(db,'SELECT * FROM team_written_documents ORDER BY updated_at DESC LIMIT 250'):[];
+ return reply({poles,members,memberships,activities,audit:logs,secretariatIds,pendingRequests,invitations,dues,contacts,listMemberships,listRoles,consentsAdmin,savedLists,writtenDocuments});
 }
 async function enqueue(db,a,reason,native=false){
  const memberIds=await audienceMembers(db,a);
@@ -708,7 +709,36 @@ async function signingAction(db,ctx,d){
  return fail('Commande d’émargement inconnue.',404);
 }
 
+
+async function manageWrittenDocument(db,ctx,d){
+ if(!ctx.admin&&!ctx.secretariat)return fail('Documents réservés au secrétariat et à la présidence.',403);
+ if(d.op==='document.review'){
+  if(!ctx.admin)return fail('Validation réservée au président.',403);
+  if(!idok(d.id)||!['approved','rejected'].includes(d.status))return fail('Décision invalide.');
+  const previous=await one(db,'SELECT * FROM team_written_documents WHERE id=?',d.id);
+  if(!previous)return fail('Document introuvable.',404);
+  if(previous.status!=='pending')return fail('Seul un document soumis peut être validé ou refusé.',409);
+  const feedback=clean(d.feedback,2000);
+  if(d.status==='rejected'&&!feedback)return fail('Indique la raison du refus.');
+  await db.prepare('UPDATE team_written_documents SET status=?,feedback=?,reviewed_by=?,reviewed_at=?,updated_by=?,updated_at=? WHERE id=?').bind(d.status,feedback,ctx.email,now(),ctx.email,now(),d.id).run();
+  await audit(db,ctx.email,'document.review',d.id,d.status);
+  return reply({ok:true,id:d.id,status:d.status});
+ }
+ const kind=d.kind,title=clean(d.title,180),body=clean(d.body,20000),status=d.submit===true?'pending':'draft';
+ if(!['courrier','ordre_du_jour','compte_rendu','invitation'].includes(kind)||!title||!body)return fail('Type, objet et texte du document obligatoires.');
+ if(d.activityId&&(!idok(d.activityId)||!await one(db,'SELECT id FROM team_activities WHERE id=?',d.activityId)))return fail('Réunion associée introuvable.');
+ if(d.id&&!idok(d.id))return fail('Identifiant invalide.');
+ const existing=d.id?await one(db,'SELECT * FROM team_written_documents WHERE id=?',d.id):null;
+ if(d.id&&!existing)return fail('Document introuvable.',404);
+ if(existing?.status==='approved')return fail('Un document approuvé est archivé. Crée une nouvelle version.',409);
+ if(existing?.status==='pending'&&!ctx.admin)return fail('En attente de validation : document verrouillé.',409);
+ const id=d.id||uuid(),stamp=now();
+ await db.prepare('INSERT INTO team_written_documents (id,kind,activity_id,title,body,status,feedback,created_by,updated_by,reviewed_by,reviewed_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,activity_id=excluded.activity_id,title=excluded.title,body=excluded.body,status=excluded.status,feedback=excluded.feedback,updated_by=excluded.updated_by,reviewed_by=NULL,reviewed_at=NULL,updated_at=excluded.updated_at').bind(id,kind,d.activityId||null,title,body,status,'',existing?.created_by||ctx.email,ctx.email,null,null,existing?.created_at||stamp,stamp).run();
+ await audit(db,ctx.email,'document.save',id,kind+' · '+status);
+ return reply({ok:true,id,status});
+}
 async function adminAction(db,ctx,d,env){
+ if(d.op==='document.save'||d.op==='document.review')return manageWrittenDocument(db,ctx,d);
  if(d.op==='invite.create'){
   if(!ctx.admin)return fail('Seul un administrateur peut inviter de nouveaux bénévoles.',403);
   const email=clean(d.email,254).toLowerCase(),name=clean(d.name,110);

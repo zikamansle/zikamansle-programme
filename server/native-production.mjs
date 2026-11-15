@@ -134,7 +134,7 @@ export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
     const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false});
     const start=prefs.quiet_start||'22:00',end=prefs.quiet_end||'08:00';
     if(start<=end?(local>=start&&local<end):(local>=start||local<end)){
-     await db.prepare("UPDATE native_delivery_jobs SET status='pending' WHERE id=?").bind(job.id).run();
+     await db.prepare("UPDATE native_delivery_jobs SET status='pending',attempts=CASE WHEN attempts>0 THEN attempts-1 ELSE 0 END,next_retry_at=? WHERE id=?").bind(Date.now()+900000,job.id).run();
      continue;
     }
    }

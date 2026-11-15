@@ -60,6 +60,10 @@ export async function handle(req,env,authorize=isAdmin){
    let code=0,failure=null;try{code=await sendPush(s,payload,env)}catch(e){failure={stage:e.stage||'unknown',kind:e.kind||'Error'}}
    const accepted=code>=200&&code<300;
    await db.prepare('UPDATE push_deliveries SET status=?,code=? WHERE message=? AND subscription=?').bind(accepted?'accepted':'failed',code,message,id).run();
+   if(code===404||code===410){
+    await db.prepare('DELETE FROM team_push_links WHERE subscription_id=?').bind(id).run();
+    await db.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(id).run();
+   }
    console.info(JSON.stringify({event:'push-selftest',id:message,provider:new URL(s.endpoint).hostname,code,failure}));
    return json({id:message,accepted,code,failure});
   }
@@ -68,7 +72,7 @@ export async function handle(req,env,authorize=isAdmin){
    if(!registered||registered.auth!==s.keys.auth)return json({error:'Abonnement non reconnu'},403);
    await db.prepare('UPDATE push_deliveries SET received=?,displayed=? WHERE message=? AND subscription=?').bind(Date.now(),data.displayed===true?1:0,String(data.id||''),id).run();return json({ok:true});
   }
-  if(action==='unsubscribe'){await db.prepare('DELETE FROM push_subscriptions WHERE id=? AND auth=?').bind(id,s.keys.auth).run();return json({ok:true})}
+  if(action==='unsubscribe'){await db.prepare('DELETE FROM push_subscriptions WHERE id=? AND auth=?').bind(id,s.keys.auth).run();await db.prepare('DELETE FROM team_push_links WHERE subscription_id=? AND NOT EXISTS(SELECT 1 FROM push_subscriptions WHERE id=?)').bind(id,id).run();return json({ok:true})}
   await crypto.subtle.importKey('raw',un64(s.keys.p256dh),{name:'ECDH',namedCurve:'P-256'},false,[]);
   const old=await db.prepare('SELECT id FROM push_subscriptions WHERE id=?').bind(id).first();
   if(!old){
@@ -102,7 +106,7 @@ export async function handle(req,env,authorize=isAdmin){
    const claim=await db.prepare("UPDATE push_deliveries SET status='sending' WHERE message=? AND subscription=? AND status='pending'").bind(n.id,s.subscription).run();if(!claim.meta.changes)return;
    let code=410;try{if(s.endpoint)code=await sendPush({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},{id:n.id,title:n.test?'[TEST] '+n.title:n.title,body:n.body,url:n.url,...(n.media&&JSON.parse(n.media).type.startsWith('image/')?{image:JSON.parse(n.media).url}:{})},env)}catch{code=0}
    await db.prepare('UPDATE push_deliveries SET status=?,code=? WHERE message=? AND subscription=?').bind(code>=200&&code<300?'accepted':'failed',code,n.id,s.subscription).run();
-   if(code===404||code===410)await db.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(s.subscription).run();
+   if(code===404||code===410){await db.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(s.subscription).run();await db.prepare('DELETE FROM team_push_links WHERE subscription_id=?').bind(s.subscription).run();}
   }));
   if(!n.test){await queueNativeNews(env,n);await drainNativePush(env,25)}
   const pending=await db.prepare("SELECT COUNT(*) n FROM push_deliveries WHERE message=? AND status='pending'").bind(n.id).first();return json({pending:pending.n});

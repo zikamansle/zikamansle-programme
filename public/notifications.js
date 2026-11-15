@@ -32,6 +32,17 @@ async function renewSubscription(previous){
   throw error;
  }
  await api('subscribe',{subscription:replacement.toJSON()});
+ // Lier immédiatement le nouvel abonnement au compte bénévole actif.
+ if(location.pathname.startsWith('/zikateam')){
+  const linked=await fetch('/zikateam/api/command',{
+   method:'POST',credentials:'same-origin',cache:'no-store',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({op:'push.link',subscription:replacement.toJSON()}),
+   signal:AbortSignal.timeout(12000)
+  });
+  if(!linked.ok)throw Error('Abonnement renouvelé, mais liaison ZikaTeam impossible : réactive les notifications dans ton espace.');
+ }
+
  return replacement;
 }
 function pushKeyBytes(key){return Uint8Array.from(atob(key.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))}
