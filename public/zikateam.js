@@ -901,6 +901,14 @@ root.addEventListener('click',e=>{
   case 'down':if(index>=0&&index<items.length-1){[items[index+1],items[index]]=[items[index],items[index+1]];agendaUpdate(form,items);}break;
  }
 },true);
+root.addEventListener('change',e=>{
+ if(e.target.matches('#teamWrittenForm [name="activityId"],#teamWrittenForm [name="kind"]')){
+  const form=e.target.closest('form');if(!form||form.elements.id.value)return;
+  const body=form.elements.body;if(!body||body.value.trim())return;
+  const prepared=writtenDocumentBody(form);
+  if(prepared){body.value=prepared;const activity=state.manage?.activities.find(a=>a.id===form.elements.activityId.value);if(activity&&!form.elements.title.value)form.elements.title.value=activity.title;toast('Ordre du jour repris automatiquement dans le document.');}
+ }
+});
 root.addEventListener('keydown',e=>{if(e.target.matches('[data-agenda-new]')&&e.key==='Enter'){e.preventDefault();e.target.closest('#activityForm')?.querySelector('[data-agenda-action="add"]')?.click();}});
 root.addEventListener('click',async e=>{const b=e.target.closest('button[data-test-receipt-push],button[data-save-member],button[data-save-member-functions],button[data-password-toggle],button[data-invite-revoke],button[data-invite-copy],button[data-notice-open],button[data-notice-dismiss],button[data-chat-back],button[data-chat-icon],button[data-chat-room],button[data-team-logout],button[data-team-reset],button[data-team-code-login],button[data-team-password-login],button[data-delete-message],button[data-export-attendance],button[data-print-attendance],button[data-secretariat],button[data-list-apply],button[data-list-reset],button[data-list-export],button[data-list-new],button[data-list-open],button[data-list-exit],button[data-list-delete],button[data-list-toggle],button[data-list-move],button[data-list-column-move],button[data-print-team],button[data-signing-delete],button[data-signing-open],button[data-signing-member],button[data-signing-remove],button[data-signing-all],button[data-signing-none],button[data-signing-clear],button[data-signing-confirm],button[data-signing-return],button[data-signing-export],button[data-signing-close],button[data-reject-member],button[data-export-adhesions],button[data-export-directory],button[data-tab],button[data-mtab],button[data-rsvp],button[data-shift-sign],button[data-link-push],button[data-test-local-push],button[data-test-server-push],button[data-edit-activity],button[data-edit-pole],button[data-edit-member],button[data-edit-shift],button[data-archive-pole],button[data-delete-pole],button[data-remove-member],button[data-remove-shift],button[data-reset-activity],button[data-reset-pole],button[data-reset-member],button[data-back-edit],button[data-signing-back],button[data-checkin],button[data-delete-task],button[data-task-status]');if(!b)return;
  if(b.matches('[data-save-member], [data-save-member-functions]')){
