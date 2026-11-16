@@ -216,7 +216,7 @@ test('secrétariat : filtrage consentements distincts et exports liés',()=>{
 });
 test('les messages déclenchent un push ciblé sans diffusion générale en staging',()=>{
  assert.ok(server.includes('export async function notifyTeamChat('));
- assert.ok(server.includes("if(!teamPushRecipientAllowed(env,recipient.id))continue;"));
+ assert.ok(server.includes("if(env.APP_ENV==='staging'&&!teamPushRecipientAllowed(env,recipient.id))continue;"));
  assert.ok(server.includes("data.op==='message.send'&&result.status===200"));
  assert.ok(server.includes("if(muted?.muted===1)continue"));
  assert.ok(server.includes("env.TEAM_PUSH_ENABLED==='true'"));
