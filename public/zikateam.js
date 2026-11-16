@@ -25,9 +25,18 @@ const command=(op,data={})=>api('command',{op,...data});
 const pills=arr=>arr.map(t=>'<span class="team-pill">'+esc(t)+'</span>').join('');
 function header(){const m=state.me;return '<header class="team-heading"><span>Espace privé · '+(m.pending?'Inscription en attente':m.admin?'Administration et bénévoles':m.leadPoles.length?'Responsable et bénévoles':m.secretariat?'Secrétariat':'Bénévoles')+'</span><h1>Bonjour '+esc(m.member?.name||'ZikaTeam')+' !</h1><p class="team-muted">Vos équipes, vos rendez-vous et vos informations au même endroit.</p>'+(state.freeLogin?'<button type="button" class="team-button light" data-team-logout>Me déconnecter</button>':'')+'</header>';
 }
-function menu(){return '<nav class="team-tabs" aria-label="Rubriques ZikaTeam">'+(state.me.pending?[['fiche','Mon accueil']]:[
- ['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'],...((state.me.admin||state.me.leadPoles.length||state.me.secretariat)?[['gestion',state.me.secretariat&&!state.me.admin&&!state.me.leadPoles.length?'Secrétariat':'Gestion des équipes']]:[])
- ]).map(([id,title])=>'<button type="button" data-tab="'+id+'" aria-current="'+(state.tab===id?'page':'false')+'">'+title+(id==='messages'&&state.chatUnread?'<span class="team-unread team-tab-unread" aria-label="'+state.chatUnread+' messages non lus">'+(state.chatUnread>99?'99+':state.chatUnread)+'</span>':'')+'</button>').join('')+'</nav>'}
+function menu(){
+ const m=state.me,manager=!!(m.admin||m.secretariat||m.leadPoles.length);
+ const items=m.pending?[['fiche','Mon accueil']]:[['fiche','Ma fiche'],['activites','Mon agenda'],['messages','Discussions'],...(manager?[['gestion','Administration / équipes']]:[])];
+ const top='<nav class="team-tabs" style="display:flex;flex-wrap:wrap;overflow:visible;gap:8px" aria-label="Rubriques ZikaTeam">'+items.map(([id,title])=>'<button type="button" data-tab="'+id+'" aria-current="'+(state.tab===id?'page':'false')+'">'+title+(id==='messages'&&state.chatUnread?'<span class="team-unread team-tab-unread">'+(state.chatUnread>99?'99+':state.chatUnread)+'</span>':'')+'</button>').join('')+'</nav>';
+ if(!manager||m.pending)return top;
+ const teams=[['benevoles','Bénévoles & fonctions'],['poles','Pôles & équipes'],['annuaire','Annuaire'],['adhesions','Adhésions']];
+ const planning=[['activites','Réunions & stands']];
+ const documents=[['documents','Courriers & comptes rendus'],['emargements','Émargements'],['listes','Listes & exports']];
+ const rights=id=>m.admin||(m.secretariat&&['benevoles','poles','annuaire','adhesions','documents','emargements','listes'].includes(id))||(m.leadPoles.length&&['poles','activites'].includes(id));
+ const group=(title,entries)=>{const allowed=entries.filter(([id])=>rights(id));return allowed.length?'<section style="min-width:185px;flex:1"><h3 style="margin:4px 0 9px;font-size:1rem">'+title+'</h3><div style="display:flex;flex-wrap:wrap;gap:6px">'+allowed.map(([id,label])=>'<button type="button" data-go-mtab="'+id+'" class="team-button light" aria-current="'+(state.tab==='gestion'&&state.managementTab===id?'page':'false')+'">'+label+'</button>').join('')+'</div></section>':'';};
+ return top+'<details class="team-card" style="margin:10px 0" '+(state.tab==='gestion'?'open':'')+'><summary style="cursor:pointer;font-weight:700;padding:3px 0">Menu complet · accès rapides aux fonctions</summary><div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px">'+group('Bénévoles & équipes',teams)+group('Organisation',planning)+group('Documents & suivi',documents)+(m.admin?group('Administration',[['charte','Charte'],['journal','Historique']]):'')+(m.admin?'<section style="min-width:185px;flex:1"><h3 style="margin:4px 0 9px;font-size:1rem">Communication</h3><a href="/administration/notifications" class="team-button light">Notifications publiques</a></section>':'')+'</div></details>';
+}
 function consentQuestions(consents={}){
  const items=[
   ['image','Droit à l’image','J’autorise ZikaMansle à utiliser les photos et vidéos sur lesquelles je suis reconnaissable, réalisées lors des activités de l’association, pour communiquer sur ses événements (site, réseaux sociaux, affiches et publications).'],
@@ -165,7 +174,7 @@ function secretaryTestGuide(){
 }
 function management(){const data=state.manage;if(!data)return '<section class="team-card">Chargement des données de gestion…</section>';
  const tabs=[...((state.me.admin||state.me.leadPoles.length)?[['activites','Réunions & stands'],['poles','Pôles & équipes']]:state.me.secretariat?[['poles','Pôles & équipes']]:[]),...((state.me.admin||state.me.secretariat)?[['documents','Courriers & comptes rendus'],['emargements','Émargements'],['adhesions','Adhésions'],['annuaire','Annuaire'],['listes','Listes & exports']]:[]),...((state.me.admin||state.me.secretariat)?[['benevoles','Bénévoles & fonctions']]:[]),...(state.me.admin?[['charte','Charte'],['journal','Historique']]:[])];
- return secretaryTestGuide()+'<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,documents:manageWrittenDocuments,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
+ return secretaryTestGuide()+'<div class="team-card"><h2>'+ (state.me.admin?'Administration générale':state.me.leadPoles.length?'Gestion de mes pôles':'Secrétariat · suivi des présences')+'</h2><p>Les modifications sont tracées. Les responsables gèrent leurs pôles ; le secrétariat suit les présences de toutes les équipes ; l’administration conserve le contrôle général.</p><nav class="team-tabs" style="display:flex;flex-wrap:wrap;overflow:visible;gap:8px">'+tabs.map(([id,title])=>'<button data-mtab="'+id+'" aria-current="'+(state.managementTab===id?'page':'false')+'">'+title+'</button>').join('')+'</nav></div>'+({activites:manageActivities,poles:managePoles,documents:manageWrittenDocuments,emargements:manageAttendance,benevoles:manageMembers,charte:manageCharter,adhesions:manageDues,annuaire:manageDirectory,listes:manageLists,journal:manageAudit}[state.managementTab]||manageActivities)();
 }
 const opt=(arr,selected)=>arr.map(([v,l])=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(l)+'</option>').join('');
 
@@ -1051,6 +1060,7 @@ root.addEventListener('click',async e=>{const b=e.target.closest('button[data-te
  }
  if(b.dataset.exportAttendance){const a=state.manage?.activities.find(a=>a.id===b.dataset.exportAttendance);if(a)downloadAttendance(a);return;}
  if(b.dataset.printAttendance){const a=state.manage?.activities.find(a=>a.id===b.dataset.printAttendance);if(a)printAttendance(a);return;}
+ if(b.dataset.goMtab){state.tab='gestion';state.managementTab=b.dataset.goMtab;render();return;}
  if(b.dataset.tab){state.tab=b.dataset.tab;if(state.tab==='messages')state.chatMobileOpen=false;render();if(state.tab==='messages')try{await refreshMessages()}catch(e){toast(e.message)}return;}
  if(b.dataset.mtab){state.managementTab=b.dataset.mtab;render();return;}
  if(b.dataset.editActivity){state.editActivity=b.dataset.editActivity;state.managementTab='activites';render();window.scrollTo({top:0,behavior:'smooth'});return;}
