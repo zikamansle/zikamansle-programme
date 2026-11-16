@@ -129,7 +129,7 @@ window.zikaLoadNews=async()=>{
  try{
   const {items}=await api('news');
   if(!$('newsList'))return;
-  $('newsList').innerHTML='<h2>Le fil du festival</h2>'+(items.length?items.map(n=>'<article class="news-card"><time>'+new Date(n.created).toLocaleString('fr-FR')+'</time><h3>'+escape(n.title)+'</h3><p>'+escape(n.body)+'</p>'+mediaHTML(n.media)+'<a class="small-link" href="'+escape(n.url)+'">En savoir plus →</a></article>').join(''):'<p>Les prochaines annonces du festival apparaîtront ici.</p>');
+  $('newsList').innerHTML='<h2>Le fil du festival</h2>'+(items.length?items.map(n=>'<article class="news-card"><time>'+new Date(n.created).toLocaleString('fr-FR')+'</time><h3>'+escape(n.title)+'</h3><p>'+escape(n.body)+'</p>'+mediaHTML(n.media)+'</article>').join(''):'<p>Les prochaines annonces du festival apparaîtront ici.</p>');
  }catch(e){if($('newsList'))$('newsList').textContent='Actualités indisponibles. Vérifiez votre connexion Internet.'}
 };
 })();
