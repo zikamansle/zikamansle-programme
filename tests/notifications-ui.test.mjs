@@ -13,6 +13,7 @@ test('Actualités et notifications : JavaScript complet et syntaxiquement valide
  assert.ok(js.includes('id="pushEnable"'));
  assert.ok(js.includes('id="pushDisable"'));
  assert.ok(js.includes('id="pushRemoteTest"'));
+ assert.equal(js.includes('En savoir plus →'),false,'Aucun lien redondant sous les actualités');
  assert.ok(js.includes("testButton.onclick=async()=>"));
  assert.ok(js.includes('await remoteTest(message=>'));
  assert.ok(js.includes("action==='selftest'" ) === false);
