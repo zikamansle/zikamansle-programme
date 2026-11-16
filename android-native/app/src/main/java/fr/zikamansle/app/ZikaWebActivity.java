@@ -183,6 +183,17 @@ public final class ZikaWebActivity extends Activity {
         if (code == NOTIFICATION_REQUEST) {
             boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
             ZikaPushRegistration.setApproved(this, granted);
+            // La liaison JS peut être demandée avant la fin de l'autorisation Android.
+            // Après accord, rattacher l'appareil au compte ZikaTeam connecté.
+            if (granted && web != null && !isFinishing() && !isDestroyed()) {
+                Uri current = Uri.parse(web.getUrl());
+                if (sameOrigin(current) && current.getPath() != null
+                        && current.getPath().startsWith("/zikateam")) {
+                    String cookies = CookieManager.getInstance().getCookie(
+                        "https://app.zikamansle.fr/zikateam/api/command");
+                    ZikaPushRegistration.linkTeam(this, cookies);
+                }
+            }
             updateNativeNotificationControls();
             Toast.makeText(this, granted
                 ? "Notifications Android autorisées. Enregistrement du téléphone demandé."
