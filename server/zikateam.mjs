@@ -1229,7 +1229,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
      const saved=await response.clone().json();
      execution.waitUntil(notifyTeamChat(env,ctx,{
       id:saved.messageId,channel:url.searchParams.get('channel'),channelId:url.searchParams.get('id')||null
-     }).catch(error=>console.error('ZikaTeam media push',error?.message)));
+     }).then(()=>drainNativePush(env)).catch(error=>console.error('ZikaTeam media push',error?.message)));
     }
     return response;
    }
@@ -1256,7 +1256,7 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){
      const saved=await result.clone().json();
      execution.waitUntil(notifyTeamChat(env,ctx,{id:saved.id,channel:data.channel,channelId:data.channelId||null})
-      .catch(error=>console.error('ZikaTeam chat push',error?.message)));
+      .then(()=>drainNativePush(env)).catch(error=>console.error('ZikaTeam chat push',error?.message)));
     }
     return result;
    }
