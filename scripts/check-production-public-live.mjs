@@ -45,6 +45,11 @@ for(const base of urls){
   if(!r.body.includes('ZikaPush'))throw Error('Script de notifications incomplet');
   return 'script disponible';
  });
+ await check(site+' : actualités sans lien « En savoir plus » redondant',async()=>{
+  const r=await get(base,'/notifications.js');requireStatus(r,200,'notifications.js');
+  if(r.body.includes('En savoir plus'))throw Error('Un lien « En savoir plus » automatique subsiste dans le fil des notifications');
+  return 'aucun lien redondant dans le script';
+ });
  await check(site+' : service worker',async()=>{
   const r=await get(base,'/sw.js');requireStatus(r,200,'sw.js');
   if(!r.body.includes('push')||!r.body.includes('notificationclick'))throw Error('Réception/clic de notification absents');
