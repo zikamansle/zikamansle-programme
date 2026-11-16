@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {handleNativeProduction,handleNativeRelay,queueNativeNews,queueNativeActivity,
+import {handleNativeProduction,handleNativeRelay,queueNativeNews,queueNativeActivity,queueNativeChat,
  linkNativeMember,drainNativePush,sendNativeFCM} from '../server/native-production.mjs';
 
 const token='FCM_NATIVE_TEST_'+('x'.repeat(100));
@@ -11,14 +11,17 @@ function fakeDB(){
  for(const name of ['0003_native_android_test.sql','0120_native_android_production.sql']){
   sql.exec(readFileSync(new URL('../drizzle/'+name,import.meta.url),'utf8'));
  }
- sql.exec(`CREATE TABLE team_members(id TEXT PRIMARY KEY,active INTEGER);
+ sql.exec(`CREATE TABLE team_members(id TEXT PRIMARY KEY,active INTEGER,email TEXT);
  CREATE TABLE team_activities(id TEXT PRIMARY KEY,status TEXT,audience TEXT,starts_at TEXT);
- CREATE TABLE team_notification_preferences(member_id TEXT PRIMARY KEY,activity_enabled INTEGER,urgent_enabled INTEGER,quiet_enabled INTEGER,quiet_start TEXT,quiet_end TEXT);
+ CREATE TABLE team_notification_preferences(member_id TEXT PRIMARY KEY,activity_enabled INTEGER,urgent_enabled INTEGER,quiet_enabled INTEGER,quiet_start TEXT,quiet_end TEXT,chat_mode TEXT);
  CREATE TABLE team_member_roles(member_id TEXT,role TEXT);
  CREATE TABLE team_memberships(member_id TEXT,pole_id TEXT,role TEXT);
  CREATE TABLE team_poles(id TEXT,archived INTEGER);
  CREATE TABLE team_activity_poles(activity_id TEXT,pole_id TEXT);
- CREATE TABLE team_activity_bureau_audience(activity_id TEXT);`);
+ CREATE TABLE team_activity_bureau_audience(activity_id TEXT);
+ CREATE TABLE team_messages(id TEXT PRIMARY KEY,author_id TEXT,channel TEXT,channel_id TEXT,deleted_at INTEGER);
+ CREATE TABLE team_leader_messages(id TEXT PRIMARY KEY,author_id TEXT,deleted_at INTEGER);
+ CREATE TABLE team_chat_mutes(member_id TEXT,channel TEXT,channel_id TEXT,muted INTEGER);`);
  const DB={prepare(query){
   let params=[];
   const bound={bind(...values){params=values;return bound},
@@ -120,6 +123,41 @@ test('Notifications Android : une plage silencieuse conserve le push sans bloque
  sql.prepare('UPDATE team_notification_preferences SET quiet_enabled=0 WHERE member_id=?').run('member-quiet');
  assert.equal((await drainNativePush(env)).sent,1);
  assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='activity-quiet'").get().status,'sent');
+});
+
+
+test('ZikaTeam : notification Android du chat seulement si les droits restent valides',async()=>{
+ const {sql,DB}=fakeDB(),env=readyEnv(DB);
+ await handleNativeProduction(post('/api/native/subscribe',{token,platform:'android'}),env);
+ await linkNativeMember(DB,'recipient',token);
+ sql.prepare('INSERT INTO team_members(id,active,email) VALUES(?,?,?)').run('recipient',1,'recipient@example.org');
+ sql.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id) VALUES(?,?,?,?)')
+  .run('chat-public','author','general',null);
+ assert.equal(await queueNativeChat(DB,{id:'chat-public',channel:'general',sender:'Bénévole'},'recipient'),1);
+ assert.equal((await drainNativePush(env)).sent,1);
+ assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='chat-public'").get().status,'sent');
+
+ sql.prepare('INSERT INTO team_poles(id,archived) VALUES(?,0)').run('pole-1');
+ sql.prepare('INSERT INTO team_memberships(member_id,pole_id,role) VALUES(?,?,?)').run('recipient','pole-1','member');
+ sql.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id) VALUES(?,?,?,?)')
+  .run('chat-pole','author','pole','pole-1');
+ assert.equal(await queueNativeChat(DB,{id:'chat-pole',channel:'pole',sender:'Responsable'},'recipient'),1);
+ sql.prepare('DELETE FROM team_memberships WHERE member_id=?').run('recipient');
+ assert.equal((await drainNativePush(env)).sent,0);
+ assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='chat-pole'").get().status,'failed');
+});
+
+test('ZikaTeam : une discussion mise en sourdine ne déclenche pas de push Android',async()=>{
+ const {sql,DB}=fakeDB(),env=readyEnv(DB);
+ await handleNativeProduction(post('/api/native/subscribe',{token,platform:'android'}),env);
+ await linkNativeMember(DB,'recipient',token);
+ sql.prepare('INSERT INTO team_members(id,active,email) VALUES(?,?,?)').run('recipient',1,'recipient@example.org');
+ sql.prepare('INSERT INTO team_chat_mutes(member_id,channel,channel_id,muted) VALUES(?,?,?,1)').run('recipient','general','');
+ sql.prepare('INSERT INTO team_messages(id,author_id,channel,channel_id) VALUES(?,?,?,?)')
+  .run('chat-muted','author','general',null);
+ await queueNativeChat(DB,{id:'chat-muted',channel:'general'},'recipient');
+ assert.equal((await drainNativePush(env)).sent,0);
+ assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='chat-muted'").get().status,'failed');
 });
 
 test('Relais interne Firebase: toute requête sans secret partagé est interdite',async()=>{
