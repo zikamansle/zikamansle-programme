@@ -1,0 +1,23 @@
+name: ZikaTeam - garde anti-regression (lecture seule)
+
+on:
+  schedule:
+    - cron: '13 */6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/zikateam-regression-guard.yml'
+      - 'ops/zikateam-smoke-test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read-only checkout
+        uses: actions/checkout@v4
+      - name: Test ZikaTeam public frontend and API protection
+        run: node ops/zikateam-smoke-test.mjs
