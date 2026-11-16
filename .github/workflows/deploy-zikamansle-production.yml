@@ -1,10 +1,12 @@
 name: Préparer le Worker ZikaMansle production (approbation explicite)
 on:
   push:
-    branches: [feat/zikateam-fiches-notifications]
+    branches: [feat/zikateam-messagerie-visible-20261116]
     paths:
       - 'wrangler.production.jsonc'
       - 'public/zikateam.js'
+      - 'public/zikateam.css'
+      - 'server/zikateam.mjs'
       - 'scripts/zikamansle-production-guard.mjs'
       - '.github/workflows/deploy-zikamansle-production.yml'
   workflow_dispatch:
@@ -37,8 +39,6 @@ jobs:
         run: node scripts/zikamansle-production-guard.mjs
       - name: Vérifier la compilation du Worker de production
         run: npx wrangler deploy --dry-run --outdir dist-production --config wrangler.production.jsonc
-      - name: Installer le schéma sur la base de production uniquement
-        run: npx wrangler d1 migrations apply zikamansle-app-production --remote --config wrangler.production.jsonc
       - name: Déployer uniquement sur workers.dev (aucun changement DNS)
         run: npx wrangler deploy --keep-vars --config wrangler.production.jsonc
       - name: Vérifier la santé du Worker de production
