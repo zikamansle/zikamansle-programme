@@ -20,6 +20,7 @@ jobs:
       ZIKA_D1_DATABASE_ID: ${{ vars.ZIKA_D1_DATABASE_ID }}
       ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
       ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+      TEAM_ACCESS_AUD: ${{ vars.TEAM_ACCESS_AUD }}
       ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
       WRANGLER_SEND_METRICS: 'false'
     steps:

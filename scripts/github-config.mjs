@@ -11,10 +11,10 @@ export function configure(source,env) {
   c.d1_databases=[{binding:'DB',database_name:'zikamansle-app-staging',database_id:env.ZIKA_D1_DATABASE_ID,migrations_dir:'drizzle'}];
   c.r2_buckets=[{binding:'BUCKET',bucket_name:'zikamansle-app-staging'}];
   c.workers_dev=true;c.preview_urls=false;
-  c.vars={...c.vars,APP_ENV:'staging',PUSH_SEND_ENABLED:'false',PUSH_TEST_ENABLED:'true'};
+  c.vars={...c.vars,APP_ENV:'staging',PUSH_SEND_ENABLED:'false',TEAM_PUSH_ENABLED:'false',PUSH_TEST_ENABLED:'true'};
   // VAPID keys are managed only as independent Cloudflare staging secrets.
   delete c.vars.VAPID_PUBLIC_KEY;
-  for(const key of ['ACCESS_TEAM_DOMAIN','ACCESS_AUD'])c.vars[key]=env[key]||'';
+  for(const key of ['ACCESS_TEAM_DOMAIN','ACCESS_AUD','TEAM_ACCESS_AUD'])c.vars[key]=env[key]||'';
   return c;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){

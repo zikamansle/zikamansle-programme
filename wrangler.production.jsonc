@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zikamansle-app-production",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "keep_vars": true,
+  "services": [{"binding":"FIREBASE_RELAY","service":"zikamansle-app-staging"}],
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zikamansle-app-production",
+      "database_id": "fe7c5010-d6e9-48ed-88aa-ff1402820e02",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "zikamansle-app-production"
+    }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "PUSH_SEND_ENABLED": "true",
+    "PUSH_TEST_ENABLED": "true",
+    "TEAM_PUSH_ENABLED": "true",
+    "NATIVE_PUSH_ENABLED": "true",
+    "TEAM_AUTH_PROVIDER": "supabase",
+    "TEAM_SUPABASE_URL": "https://kuipdwzqamiduhosofjb.supabase.co",
+    "TEAM_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_22bY8y3TXUNg_h6xrBztEw_g2nzc2d3"
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  }
+}
