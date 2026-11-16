@@ -131,10 +131,10 @@ function messages(){
  const active=rooms.find(r=>r.channel===state.chatChannel&&(r.id||null)===(state.chatId||null))||rooms[0]||null;
  const toInitials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
  const fmtTime=value=>{if(!value)return '';const time=new Date(value);return Number.isNaN(time.valueOf())?'':time.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
- const roomsView=rooms.map(room=>{
+ const roomsView=[...rooms].sort((a,b)=>(b.unread>0)-(a.unread>0)||String(b.last?.created_at||'').localeCompare(String(a.last?.created_at||''))).map(room=>{
   const selected=active?.channel===room.channel&&(active?.id||null)===(room.id||null);
   const brief=room.last?.body||'Aucun message pour le moment';
-  return '<button class="team-wa-room'+(selected?' selected':'')+'" type="button" data-chat-room="'+esc(room.channel+':'+(room.id||''))+'" aria-current="'+(selected?'true':'false')+'"><span class="team-wa-room-icon">'+roomIcon(room)+'</span><span class="team-wa-room-summary"><strong>'+esc(room.title)+'</strong><small>'+esc(room.last?.author?room.last.author+' : '+brief:brief)+'</small></span><span class="team-wa-room-trailing"><time>'+esc(fmtTime(room.last?.created_at))+'</time>'+(room.unread?'<span class="team-unread">'+Math.min(room.unread,99)+(room.unread>99?'+':'')+'</span>':'')+'</span></button>';
+  return '<button class="team-wa-room'+(selected?' selected':'')+(room.unread?' has-unread':'')+'" type="button" data-chat-room="'+esc(room.channel+':'+(room.id||''))+'" aria-current="'+(selected?'true':'false')+'"><span class="team-wa-room-icon">'+roomIcon(room)+'</span><span class="team-wa-room-summary"><strong>'+esc(room.title)+'</strong><small>'+esc(room.last?.author?room.last.author+' : '+brief:brief)+'</small></span><span class="team-wa-room-trailing"><time>'+esc(fmtTime(room.last?.created_at))+'</time>'+(room.unread?'<span class="team-unread">'+Math.min(room.unread,99)+(room.unread>99?'+':'')+'</span>':'')+'</span></button>';
  }).join('');
  const people=active?.responsibles||[];
  const peopleView=people.length?'<div class="team-wa-leaders"><span>Responsable'+(people.length>1?'s':'')+' :</span>'+people.map(person=>'<details class="team-wa-contact"><summary>'+esc(person.name)+'</summary><div class="team-wa-contact-panel"><strong>'+esc(person.name)+'</strong>'+(person.phone?'<a href="tel:'+esc(person.phone)+'">📞 '+esc(person.phone)+'</a>':'')+(person.email?'<a href="mailto:'+esc(person.email)+'">✉️ Envoyer un e-mail</a>':'')+(!person.phone&&!person.email?'<small>Coordonnées non partagées</small>':'')+'</div></details>').join('')+'</div>':'';
@@ -565,6 +565,18 @@ async function saveNewPassword(password,confirmation){
  await refresh();toast('Ton mot de passe est enregistré. La prochaine connexion se fera sans code e-mail.');
 }
 
+function unreadShortcut(){
+ if(state.me?.pending||!state.me?.member||state.tab==='messages'||!state.chatUnread)return '';
+ return '<button type="button" data-tab="messages" class="team-message-shortcut" aria-label="Ouvrir les discussions : '+state.chatUnread+' messages non lus"><span aria-hidden="true">💬</span><span>Messages non lus</span><strong>'+(state.chatUnread>99?'99+':state.chatUnread)+'</strong></button>';
+}
+const originalPageTitle=document.title;
+function updateUnreadSignals(){
+ const count=state.chatUnread||0;
+ document.title=(count?'('+Math.min(count,99)+(count>99?'+':'')+') ':'')+originalPageTitle;
+ const shortcut=root.querySelector('.team-message-shortcut');
+ if(shortcut){shortcut.querySelector('strong').textContent=count>99?'99+':String(count);shortcut.hidden=!count;}
+ else if(count&&state.tab!=='messages'&&state.me?.member&&!state.me.pending){root.insertAdjacentHTML('beforeend',unreadShortcut());}
+}
 function render(){
  if(!state.me)return;
  if(state.me.passwordRequired||state.forcePasswordSetup){passwordSetupScreen();return;}
@@ -578,7 +590,8 @@ function render(){
   return;
  }
  if(state.me.pending&&state.tab!=='fiche')state.tab='fiche';
- root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)();
+ root.innerHTML=header()+menu()+({fiche,activites:activities,messages,gestion:management}[state.tab]||fiche)()+unreadShortcut();
+ updateUnreadSignals();
  if(state.tab==='messages'){const pane=$('teamMessages');if(pane)pane.scrollTop=pane.scrollHeight;}
  if(state.signingMember)setupSigningCanvas();
 }
@@ -627,6 +640,7 @@ async function refresh(){
 async function refreshChatSummary(){
  if(!state.me?.charterAccepted||state.me.pending||!state.me.member){state.chatRooms=[];state.chatUnread=0;return;}
  const data=await api('chat-summary');state.chatRooms=data.rooms||[];state.chatUnread=data.total||0;
+ updateUnreadSignals();
  const allowed=state.chatRooms.some(x=>x.channel===state.chatChannel&&(x.id||null)===(state.chatId||null));
  if(!allowed){state.chatChannel=state.chatRooms[0]?.channel||'general';state.chatId=state.chatRooms[0]?.id||null;state.messages=[];}
 }
@@ -1219,9 +1233,10 @@ setInterval(async()=>{
    render();
    const field=document.querySelector('#messageForm textarea[name="body"]');if(field)field.value=draft;
   }else if(state.chatUnread!==previous){
+   updateUnreadSignals();
    const tab=root.querySelector('button[data-tab="messages"]');
    if(tab){tab.textContent='Discussions';if(state.chatUnread){const badge=document.createElement('span');badge.className='team-unread team-tab-unread';badge.setAttribute('aria-label',state.chatUnread+' messages non lus');badge.textContent=state.chatUnread>99?'99+':String(state.chatUnread);tab.append(badge);}}
   }
  }catch{}
-},20000);
+},10000);
 })();
