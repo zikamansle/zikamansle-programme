@@ -1,0 +1,29 @@
+name: Contrôler chaque jour la disponibilité de ZikaMansle
+on:
+  push:
+    branches: [main, ops/read-only-production-smoke-20261116]
+    paths:
+      - scripts/check-production-public-live.mjs
+      - .github/workflows/check-production-public-live.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/check-production-public-live.mjs
+      - .github/workflows/check-production-public-live.yml
+  schedule:
+    - cron: '15 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check scripts/check-production-public-live.mjs
+      - name: Vérifier 16 points publics sans envoyer de notification
+        run: node scripts/check-production-public-live.mjs
