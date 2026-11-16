@@ -661,3 +661,18 @@ body{background:radial-gradient(ellipse at 6% 9%,#94e7ff 0,transparent 37%),radi
 #teamRoot .team-consent-filters label:nth-child(3){color:#a44b18}
 #teamRoot .team-consent-filters select{display:block;width:100%;margin-top:6px;background:#fff;border:2px solid #99cce7;border-radius:9px;padding:9px;color:#193653}
 @media(max-width:760px){#teamRoot .team-consent-filters{grid-template-columns:1fr;gap:9px;padding:12px}}
+
+
+/* Messages ZikaTeam : repérage immédiat des nouvelles discussions */
+#teamRoot .team-unread{background:#d92d46;color:#fff;box-shadow:0 2px 9px #d92d4652;font-weight:900}
+#teamRoot .team-tabs button[data-tab="messages"]{position:relative;display:inline-flex;align-items:center;gap:9px;font-weight:800}
+#teamRoot .team-tabs button[data-tab="messages"]:has(.team-unread){border:2px solid #d92d46;background:#fff4f5;color:#9d1730}
+#teamRoot .team-tabs button[data-tab="messages"][aria-current="page"]{background:#102c45;color:#fff}
+#teamRoot .team-wa-room.has-unread{background:#fff1f3!important;box-shadow:inset 4px 0 #d92d46}
+#teamRoot .team-wa-room.has-unread .team-wa-room-summary strong{font-weight:900;color:#801329}
+#teamRoot .team-wa-room.has-unread .team-wa-room-summary small{font-weight:750;color:#4a2430}
+#teamRoot .team-message-shortcut{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:1100;display:flex;align-items:center;gap:10px;border:2px solid #fff;border-radius:999px;padding:12px 15px;background:#ba1637;color:#fff;font:800 14px/1.25 system-ui,sans-serif;box-shadow:0 8px 25px #30132270;cursor:pointer}
+#teamRoot .team-message-shortcut strong{display:grid;place-items:center;background:#fff;color:#a30b2d;border-radius:999px;min-width:28px;height:28px;padding:0 5px}
+#teamRoot .team-message-shortcut[hidden]{display:none}
+#teamRoot .team-message-shortcut:focus-visible{outline:3px solid #1487c7;outline-offset:3px}
+@media(max-width:600px){#teamRoot .team-message-shortcut{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}}
