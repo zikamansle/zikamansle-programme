@@ -1,7 +1,7 @@
 import {verifyAccessIdentity} from './admin-auth.mjs';
 import {getTeamSupabaseIdentity,handleTeamLogin} from './zikateam-login.mjs';
 import {sendPush, b64, enc} from './webpush.mjs';
-import {queueNativeActivity,linkNativeMember,drainNativePush} from './native-production.mjs';
+import {queueNativeActivity,linkNativeMember,drainNativePush,nativeDeliveryReady,sendNativeFCM} from './native-production.mjs';
 
 const reply=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
@@ -225,7 +225,9 @@ export async function drainTeamPush(env,maximum=40){
  * volontairement leur appareil à ZikaTeam. Une seule alerte par appareil.
  */
 export async function notifyTeamChat(env,ctx,message){
- if(!teamPushConfigured(env))return {sent:0,disabled:true};
+ const webEnabled=teamPushConfigured(env);
+ const nativeEnabled=await nativeDeliveryReady(env).catch(()=>false);
+ if(!webEnabled&&!nativeEnabled)return {sent:0,disabled:true};
  const db=env.DB;
  const channel=message.channel,channelId=message.channelId||null;
  const members=await all(db,"SELECT id,email FROM team_members WHERE active=1 AND id<>? LIMIT 200",ctx.member.id);
@@ -234,7 +236,7 @@ export async function notifyTeamChat(env,ctx,message){
  // Le staging n'autorise que les identifiants explicitement prévus pour le test.
  let sent=0;
  for(const recipient of members){
-  if(!teamPushRecipientAllowed(env,recipient.id))continue;
+  if(!nativeEnabled&&!teamPushRecipientAllowed(env,recipient.id))continue;
   const recipientCtx={admin:recipient.email===String(env.ADMIN_EMAIL||'').toLowerCase().trim(),member:recipient,pending:false,leadPoles:[],memberships:[]};
   recipientCtx.memberships=await all(db,'SELECT pole_id,role FROM team_memberships WHERE member_id=?',recipient.id);
   recipientCtx.leadPoles=recipientCtx.memberships.filter(x=>x.role==='lead').map(x=>x.pole_id);
@@ -248,7 +250,8 @@ export async function notifyTeamChat(env,ctx,message){
    const start=preferences.quiet_start||'22:00',end=preferences.quiet_end||'08:00';
    if(start<=end?(local>=start&&local<end):(local>=start||local<end))continue;
   }
-  const links=await all(db,'SELECT ps.id,ps.endpoint,ps.p256dh,ps.auth FROM team_push_links l JOIN push_subscriptions ps ON ps.id=l.subscription_id WHERE l.member_id=? LIMIT 5',recipient.id);
+  const links=webEnabled&&teamPushRecipientAllowed(env,recipient.id)
+   ?await all(db,'SELECT ps.id,ps.endpoint,ps.p256dh,ps.auth FROM team_push_links l JOIN push_subscriptions ps ON ps.id=l.subscription_id WHERE l.member_id=? LIMIT 5',recipient.id):[];
   for(const sub of links){
    const title=channel==='general'?'Discussion générale':channel==='leaders'?'Entre responsables':channel==='pole'?'Message dans un pôle':'Discussion d’activité';
    const silent=preferences?.sound_mode==='none';
@@ -256,6 +259,25 @@ export async function notifyTeamChat(env,ctx,message){
    let code=0;try{code=await sendPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},payload,env)}catch{}
    await audit(db,'system-chat-push',code>=200&&code<300?'chat.push.sent':'chat.push.failed',recipient.id,String(code)+' · '+channel+' · '+message.id);
    if(code>=200&&code<300)sent++;
+  }
+  // The Android application uses Firebase tokens, not Web Push subscriptions.
+  // Only devices expressly linked to this authorized recipient can be notified.
+  if(nativeEnabled){
+   const devices=await all(db,'SELECT d.token FROM native_push_links l JOIN native_push_devices d ON d.id=l.device_id WHERE l.member_id=? LIMIT 5',recipient.id);
+   const title=channel==='general'?'Discussion générale':channel==='leaders'?'Entre responsables':channel==='pole'?'Message dans un pôle':'Discussion d’activité';
+   for(const device of devices){
+    let code=0;
+    try{
+     const result=await sendNativeFCM(device.token,{
+      title:'ZikaTeam · '+title,
+      body:(ctx.member.name||'Un bénévole')+' a envoyé un nouveau message.',
+      url:'/zikateam#messages'
+     },env);
+     code=result.code||0;
+    }catch{}
+    await audit(db,'system-chat-fcm',code>=200&&code<300?'chat.fcm.sent':'chat.fcm.failed',recipient.id,String(code)+' · '+channel+' · '+message.id);
+    if(code>=200&&code<300)sent++;
+   }
   }
  }
  return {sent,disabled:false};
