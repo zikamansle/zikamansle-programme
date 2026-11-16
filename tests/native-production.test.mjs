@@ -101,6 +101,27 @@ test('ZikaTeam: abonnement lié uniquement après connexion et suppression si dr
  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM native_delivery_jobs WHERE status='failed'").get().n,1);
 });
 
+test('Notifications Android : une plage silencieuse conserve le push sans bloquer la file D1',async()=>{
+ const {sql,DB}=fakeDB(),env=readyEnv(DB);
+ await handleNativeProduction(post('/api/native/subscribe',{token,platform:'android'}),env);
+ await linkNativeMember(DB,'member-quiet',token);
+ sql.prepare('INSERT INTO team_members(id,active) VALUES(?,?)').run('member-quiet',1);
+ sql.prepare('INSERT INTO team_activities(id,status,audience,starts_at) VALUES(?,?,?,?)')
+  .run('activity-quiet','published','all','2027-04-24T18:00:00.000Z');
+ // Calcule une plage couvrant les deux prochaines minutes à Paris.
+ const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false});
+ const [h,m]=local.split(':').map(Number),after=(h*60+m+2)%1440;
+ const end=String(Math.floor(after/60)).padStart(2,'0')+':'+String(after%60).padStart(2,'0');
+ sql.prepare('INSERT INTO team_notification_preferences(member_id,activity_enabled,urgent_enabled,quiet_enabled,quiet_start,quiet_end) VALUES(?,1,1,1,?,?)')
+  .run('member-quiet',local,end);
+ await queueNativeActivity(DB,{id:'activity-quiet',title:'Réunion confidentielle',starts_at:'2027-04-24T18:00:00.000Z'},'created',['member-quiet']);
+ assert.equal((await drainNativePush(env)).sent,0);
+ assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='activity-quiet'").get().status,'pending');
+ sql.prepare('UPDATE team_notification_preferences SET quiet_enabled=0 WHERE member_id=?').run('member-quiet');
+ assert.equal((await drainNativePush(env)).sent,1);
+ assert.equal(sql.prepare("SELECT status FROM native_delivery_jobs WHERE source_id='activity-quiet'").get().status,'sent');
+});
+
 test('Relais interne Firebase: toute requête sans secret partagé est interdite',async()=>{
  const request=post('/internal/native/send',{token,data:{title:'Test',body:'Test',url:'/index.html#actualites'}});
  const staging={APP_ENV:'staging',PUSH_SEND_ENABLED:'false',FCM_RELAY_TOKEN:'f'.repeat(64)};
