@@ -1,0 +1,22 @@
+name: Contrôler ZikaMansle réellement en ligne (lecture seule)
+on:
+  push:
+    branches: [audit/live-zikamansle-20261116]
+    paths:
+      - scripts/check-production-public-live.mjs
+      - .github/workflows/check-production-public-live.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check scripts/check-production-public-live.mjs
+      - name: Vérifier les deux domaines en lecture seule
+        run: node scripts/check-production-public-live.mjs
