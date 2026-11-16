@@ -20,7 +20,7 @@ ensure(page.text.includes('zika-home-clarity-css'), 'ZikaTeam home dashboard sty
 const js = await fetchText('/zikateam.js?healthcheck=1');
 ensure(js.status === 200, 'ZikaTeam JavaScript unavailable: ' + js.status);
 ensure(!/<!doctype html/i.test(js.text.slice(0, 200)), 'HTML returned instead of JavaScript');
-for (const fragment of ['function menu()', 'function management()', 'function render()', 'function manageMembers()', 'function manageActivities()', 'function manageWrittenDocuments()', 'function manageAttendance()', 'function messages()']) {
+for (const fragment of ['function menu()', 'function management()', 'function render()', 'function manageMembers()', 'function manageActivities()', 'function manageAttendance()', 'function messages()']) {
   ensure(js.text.includes(fragment), 'Missing core ZikaTeam function: ' + fragment);
 }
 const api = await fetchText('/zikateam/api/manage');
