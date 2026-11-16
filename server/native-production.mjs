@@ -93,6 +93,21 @@ export async function queueNativeActivity(db,activity,reason,members){
  }
  return changes;
 }
+/** Prépare les notifications de chat Android dans D1.
+ * La vérification définitive des droits a lieu juste avant l'envoi FCM.
+ */
+export async function queueNativeChat(db,message,memberId){
+ if(!message?.id||!memberId||!['general','leaders','pole','activity'].includes(message.channel))return 0;
+ const label=message.channel==='general'?'Discussion générale':message.channel==='leaders'?'Entre responsables':message.channel==='pole'?'Discussion de pôle':'Discussion d’activité';
+ const sender=String(message.sender||'Un bénévole').slice(0,110);
+ const result=await db.prepare(`INSERT OR IGNORE INTO native_delivery_jobs(id,source_type,source_id,device_id,member_id,reason,title,body,url,created_at)
+  SELECT lower(hex(randomblob(16))),'chat',?,l.device_id,l.member_id,?,?,?,?,?
+  FROM native_push_links l JOIN native_push_devices d ON d.id=l.device_id
+  JOIN team_members m ON m.id=l.member_id AND m.active=1
+  WHERE l.member_id=?`)
+  .bind(message.id,message.channel,'ZikaTeam · '+label,sender+' a envoyé un nouveau message.','/zikateam#messages',Date.now(),memberId).run();
+ return result.meta?.changes||0;
+}
 export async function linkNativeMember(db,memberId,token){
  if(!validToken(token)||!memberId)return false;
  const id=await hash(token);
@@ -111,6 +126,38 @@ async function memberStillAllowed(db,activity,memberId){
   return !!await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND tm.role='lead' AND p.archived=0 LIMIT 1",memberId);
  }
  return !!await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_activity_poles ap ON ap.pole_id=tm.pole_id JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND p.archived=0 AND ap.activity_id=? LIMIT 1",memberId,activity.id);
+}
+/** Contrôle à l'envoi : un appareil révoqué ou un membre retiré du groupe
+ * ne doit jamais recevoir une notification de discussion différée.
+ */
+async function nativeChatAccess(db,job,env){
+ const channel=job.reason;
+ if(!['general','leaders','pole','activity'].includes(channel))return {allowed:false,quiet:false};
+ const link=await one(db,'SELECT member_id FROM native_push_links WHERE device_id=? AND member_id=?',job.device_id,job.member_id);
+ const member=await one(db,'SELECT active,email FROM team_members WHERE id=?',job.member_id);
+ if(!link||!member?.active)return {allowed:false,quiet:false};
+ const msg=channel==='leaders'
+  ?await one(db,'SELECT id FROM team_leader_messages WHERE id=? AND deleted_at IS NULL',job.source_id)
+  :await one(db,'SELECT id,channel,channel_id FROM team_messages WHERE id=? AND channel=? AND deleted_at IS NULL',job.source_id,channel);
+ if(!msg)return {allowed:false,quiet:false};
+ const adminEmail=String(env.ADMIN_EMAIL||'').toLowerCase().trim();
+ const isAdmin=Boolean(adminEmail&&String(member.email||'').toLowerCase()===adminEmail);
+ let authorized=false;
+ if(channel==='general')authorized=!msg.channel_id;
+ if(channel==='leaders')authorized=isAdmin||Boolean(await one(db,"SELECT 1 AS ok FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND tm.role='lead' AND p.archived=0 LIMIT 1",job.member_id));
+ if(channel==='pole')authorized=Boolean(await one(db,'SELECT 1 AS ok FROM team_memberships tm JOIN team_poles p ON p.id=tm.pole_id WHERE tm.member_id=? AND tm.pole_id=? AND p.archived=0 LIMIT 1',job.member_id,msg.channel_id));
+ if(channel==='activity'){
+  const activity=await one(db,'SELECT * FROM team_activities WHERE id=?',msg.channel_id);
+  authorized=Boolean(activity&&activity.status==='published'&&(isAdmin||await memberStillAllowed(db,activity,job.member_id)));
+ }
+ if(!authorized)return {allowed:false,quiet:false};
+ const muted=await one(db,'SELECT muted FROM team_chat_mutes WHERE member_id=? AND channel=? AND channel_id=?',job.member_id,channel,msg.channel_id||'');
+ const prefs=await one(db,'SELECT chat_mode,quiet_enabled,quiet_start,quiet_end FROM team_notification_preferences WHERE member_id=?',job.member_id);
+ if(muted?.muted===1||prefs?.chat_mode==='silent')return {allowed:false,quiet:false};
+ const local=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hour12:false});
+ const start=prefs?.quiet_start||'22:00',end=prefs?.quiet_end||'08:00';
+ const quiet=Boolean(prefs?.quiet_enabled&&(start<=end?(local>=start&&local<end):(local>=start||local<end)));
+ return {allowed:true,quiet};
 }
 export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
  if(!await nativeDeliveryReady(env))return {sent:0,disabled:true};
@@ -139,6 +186,14 @@ export async function drainNativePush(env,maximum=25,send=sendNativeFCM){
      await db.prepare("UPDATE native_delivery_jobs SET status='pending',created_at=? WHERE id=?").bind(Date.now(),job.id).run();
      continue;
     }
+   }
+  }
+  if(allowed&&job.source_type==='chat'){
+   const access=await nativeChatAccess(db,job,env);
+   allowed=access.allowed;
+   if(allowed&&access.quiet){
+    await db.prepare("UPDATE native_delivery_jobs SET status='pending',created_at=? WHERE id=?").bind(Date.now(),job.id).run();
+    continue;
    }
   }
   if(!allowed){await db.prepare("UPDATE native_delivery_jobs SET status='failed',code=0 WHERE id=?").bind(job.id).run();continue;}
