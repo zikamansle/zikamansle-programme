@@ -1,7 +1,7 @@
 import {verifyAccessIdentity} from './admin-auth.mjs';
 import {getTeamSupabaseIdentity,handleTeamLogin} from './zikateam-login.mjs';
 import {sendPush, b64, enc} from './webpush.mjs';
-import {queueNativeActivity,linkNativeMember,drainNativePush} from './native-production.mjs';
+import {queueNativeActivity,queueNativeChat,linkNativeMember,drainNativePush} from './native-production.mjs';
 
 const reply=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
@@ -226,16 +226,18 @@ export async function drainTeamPush(env,maximum=40){
  * volontairement leur appareil à ZikaTeam. Une seule alerte par appareil.
  */
 export async function notifyTeamChat(env,ctx,message){
- if(!teamPushConfigured(env))return {sent:0,disabled:true};
+ const webEnabled=teamPushConfigured(env);
+ const nativeEnabled=env.APP_ENV==='production'&&env.NATIVE_PUSH_ENABLED==='true'&&Boolean(env.DB);
+ if(!webEnabled&&!nativeEnabled)return {sent:0,queued:0,disabled:true};
  const db=env.DB;
  const channel=message.channel,channelId=message.channelId||null;
  const members=await all(db,"SELECT id,email FROM team_members WHERE active=1 AND id<>? LIMIT 200",ctx.member.id);
  // Les abonnements suivent les droits réels : groupe général, pôles actuels,
  // responsables et discussions des activités publiées concernées.
  // Le staging n'autorise que les identifiants explicitement prévus pour le test.
- let sent=0;
+ let sent=0,queued=0;
  for(const recipient of members){
-  if(!teamPushRecipientAllowed(env,recipient.id))continue;
+  if(env.APP_ENV==='staging'&&!teamPushRecipientAllowed(env,recipient.id))continue;
   const recipientCtx={admin:recipient.email===String(env.ADMIN_EMAIL||'').toLowerCase().trim(),member:recipient,pending:false,leadPoles:[],memberships:[]};
   recipientCtx.memberships=await all(db,'SELECT pole_id,role FROM team_memberships WHERE member_id=?',recipient.id);
   recipientCtx.leadPoles=recipientCtx.memberships.filter(x=>x.role==='lead').map(x=>x.pole_id);
@@ -249,6 +251,10 @@ export async function notifyTeamChat(env,ctx,message){
    const start=preferences.quiet_start||'22:00',end=preferences.quiet_end||'08:00';
    if(start<=end?(local>=start&&local<end):(local>=start||local<end))continue;
   }
+  if(nativeEnabled&&message.id){
+   queued+=await queueNativeChat(db,{id:message.id,channel,sender:ctx.member.name},recipient.id);
+  }
+  if(!webEnabled)continue;
   const links=await all(db,'SELECT ps.id,ps.endpoint,ps.p256dh,ps.auth FROM team_push_links l JOIN push_subscriptions ps ON ps.id=l.subscription_id WHERE l.member_id=? LIMIT 5',recipient.id);
   for(const sub of links){
    const title=channel==='general'?'Discussion générale':channel==='leaders'?'Entre responsables':channel==='pole'?'Message dans un pôle':'Discussion d’activité';
@@ -259,7 +265,7 @@ export async function notifyTeamChat(env,ctx,message){
    if(code>=200&&code<300)sent++;
   }
  }
- return {sent,disabled:false};
+ return {sent,queued,disabled:false};
 }
 
 // Rappels horaires, exclusivement pour les destinataires encore autorisés.
@@ -1216,7 +1222,17 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
   if(request.method==='POST'){
    if(request.headers.get('origin')!==url.origin)return fail('Origine non autorisée.',403);
    if(path==='/zikateam/api/chat-icon')return locked||ctx.pending?fail(notice,403):uploadChatIcon(request,env,ctx,url);
-   if(path==='/zikateam/api/chat-media')return locked||ctx.pending?fail(notice,403):uploadChatMedia(request,env,ctx,url);
+   if(path==='/zikateam/api/chat-media'){
+    if(locked||ctx.pending)return fail(notice,403);
+    const response=await uploadChatMedia(request,env,ctx,url);
+    if(response.ok&&execution?.waitUntil){
+     const saved=await response.clone().json();
+     execution.waitUntil(notifyTeamChat(env,ctx,{
+      id:saved.messageId,channel:url.searchParams.get('channel'),channelId:url.searchParams.get('id')||null
+     }).catch(error=>console.error('ZikaTeam media push',error?.message)));
+    }
+    return response;
+   }
    if(path==='/zikateam/api/photo')return ctx.pending?fail('Inscription en attente de validation.',403):locked?fail(notice,403):uploadTeamPhoto(request,env,ctx,url);
    if(path==='/zikateam/api/upload'){
     if(ctx.pending)return fail('Inscription en attente de validation.',403);
@@ -1237,7 +1253,11 @@ async function handleProtectedZikaTeam(request,env,execution,verified){
     if(['charter.accept','activity.rsvp','shift.signup','push.link','push.test','message.send','task.status','consents.save','contact.self','notice.read','notification.settings','notification.chat.mute','native.link'].includes(data.op))result=await memberAction(db,ctx,data,env);
     else result=await adminAction(db,ctx,data,env);
     if(data.op==='activity.save'&&result.status===200&&execution?.waitUntil){execution.waitUntil(Promise.all([drainTeamPush(env),drainNativePush(env)]).catch(()=>{}));}
-    if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){execution.waitUntil(notifyTeamChat(env,ctx,{id:'',channel:data.channel,channelId:data.channelId||null}).catch(error=>{console.error('ZikaTeam chat push',error?.message);}));}
+    if(data.op==='message.send'&&result.status===200&&execution?.waitUntil){
+     const saved=await result.clone().json();
+     execution.waitUntil(notifyTeamChat(env,ctx,{id:saved.id,channel:data.channel,channelId:data.channelId||null})
+      .catch(error=>console.error('ZikaTeam chat push',error?.message)));
+    }
     return result;
    }
   }
