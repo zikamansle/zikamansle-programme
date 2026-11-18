@@ -2098,6 +2098,16 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
           const requested=qs.get('event');
           if(requested&&events.some(x=>x.id===requested))choose(requested);
         }
+        const field=qs.get('edit_field');
+        if(['short','description'].includes(field)){
+          setTimeout(()=>{
+            const input=form.elements[field];
+            if(input&&!form.classList.contains('hidden')){
+              input.scrollIntoView({block:'center',behavior:'instant'});
+              input.focus({preventScroll:true});
+            }
+          },350);
+        }
       }catch(err){
         document.getElementById('loginMsg').textContent='Connexion automatique impossible : '+err.message+'. Utilise la connexion administrateur.';
       }
@@ -2112,16 +2122,59 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
     btn.title='Ouvrir l’éditeur en dehors de ZikaTeam sans ressaisir de mot de passe';
     btn.style.cssText='background:#167b59;color:white;margin:4px 8px';
     document.querySelector('#editorPanel .tools')?.prepend(btn);
-    btn.addEventListener('click',()=>{
-      if(!token){msg('La session administrateur n’est pas encore prête.');return}
+    function openStableEditor(fieldName){
+      if(!token){
+        msg('Connexion administrateur en cours. Réessaie dès que la fiche apparaît.');
+        return false;
+      }
+      if(!selected){
+        msg('Sélectionne d’abord une fiche à modifier.');
+        return false;
+      }
       const href=new URL('./admin.html',location.href);
       href.searchParams.set('detached','1');
-      if(selected)href.searchParams.set('event',selected);
+      href.searchParams.set('event',selected);
+      if(fieldName)href.searchParams.set('edit_field',fieldName);
       const popup=window.open(href.href,'_blank');
-      if(!popup){msg('Autorise les nouveaux onglets pour ouvrir l’éditeur stable.');return}
+      if(!popup){
+        msg('Le navigateur a bloqué le nouvel onglet. Autorise les fenêtres de ce site et utilise « Édition stable ».');
+        return false;
+      }
       popupPeers.set(popup,{draft:snapshot(),at:Date.now()});
-      msg('Éditeur ouvert dans un nouvel onglet. Ta session est transmise sans mot de passe.');
-    });
+      msg('Fiche ouverte dans un onglet indépendant pour éviter les actualisations de ZikaTeam.');
+      return true;
+    }
+    btn.addEventListener('click',()=>openStableEditor());
+    const textFields=new Set(['short','description']);
+    let opening=false;
+    function detachWhenEditing(e){
+      const el=e.target;
+      if(opening||!el||!textFields.has(el.name))return;
+      if(e.type==='mousedown'&&e.button!==0)return;
+      opening=true;
+      const ok=openStableEditor(el.name);
+      opening=false;
+      if(ok){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }
+    // Mouse: intercept before focus/selection; touch: handle the first tap.
+    form.addEventListener('mousedown',detachWhenEditing,true);
+    form.addEventListener('touchend',detachWhenEditing,true);
+    for(const name of textFields){
+      const textarea=form.elements[name];
+      const wrapper=textarea?.closest('div.wide');
+      if(!wrapper||wrapper.querySelector('[data-stable-edit]'))continue;
+      const helper=document.createElement('button');
+      helper.type='button';
+      helper.dataset.stableEdit=name;
+      helper.className='btn secondary';
+      helper.style.cssText='display:block;margin:8px 0 12px;font-size:13px';
+      helper.textContent='↗ Modifier sans actualisation (onglet indépendant)';
+      helper.addEventListener('click',()=>openStableEditor(name));
+      textarea.before(helper);
+    }
     window.addEventListener('message',event=>{
       if(event.origin!==origin||event.data?.type!=='ZIKA_EDITOR_DETACHED_READY')return;
       const peer=popupPeers.get(event.source);
