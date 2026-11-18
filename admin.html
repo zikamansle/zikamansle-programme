@@ -2058,8 +2058,9 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
 
   let saveTimer=0;
   const schedule=()=>{clearTimeout(saveTimer);saveTimer=setTimeout(persist,180)};
-  form.addEventListener('input',schedule,true);
-  form.addEventListener('change',schedule,true);
+  // Keep every keystroke; an asynchronous parent redraw can occur in <180 ms.
+  form.addEventListener('input',persist,true);
+  form.addEventListener('change',persist,true);
   window.addEventListener('pagehide',persist);
   window.addEventListener('scroll',()=>{if(selected)schedule()},{passive:true});
   try{
@@ -2082,9 +2083,10 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
     document.getElementById('loginMsg').textContent='';
   }
   if(detached){
-    window.addEventListener('message',async event=>{
-      if(event.origin!==origin||event.source!==window.opener||event.data?.type!=='ZIKA_EDITOR_DETACHED_SESSION')return;
-      const incoming=event.data.accessToken;
+    let authenticated=false;
+    async function acceptHandoff(payload){
+      if(authenticated)return;
+      const incoming=payload?.accessToken;
       if(typeof incoming!=='string'||incoming.length<80||incoming.length>10000)return;
       try{
         const response=await fetch(c.url+'/auth/v1/user',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+incoming},cache:'no-store'});
@@ -2093,7 +2095,8 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
         token=incoming;refresh='';
         await load();
         showEditor();
-        const transferred=event.data.draft;
+        authenticated=true;
+        const transferred=payload.draft;
         if(!restore(transferred)){
           const requested=qs.get('event');
           if(requested&&events.some(x=>x.id===requested))choose(requested);
@@ -2111,8 +2114,26 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
       }catch(err){
         document.getElementById('loginMsg').textContent='Connexion automatique impossible : '+err.message+'. Utilise la connexion administrateur.';
       }
+    }
+    // Read and immediately erase the one-time transfer before the opener can
+    // be destroyed by a ZikaTeam rerender. Never store the bearer in a URL.
+    let direct=null;
+    const prefix='ZIKA_EDITOR_HANDOFF_V3:';
+    if(window.name.startsWith(prefix)){
+      const encoded=window.name.slice(prefix.length);
+      window.name='';
+      try{
+        const item=JSON.parse(decodeURIComponent(encoded));
+        if(item?.origin===origin&&Number.isFinite(item.at)&&Date.now()-item.at>=0&&Date.now()-item.at<30000)
+          direct=item;
+      }catch(err){console.warn('Transfert de session non lisible',err)}
+    }
+    if(direct)void acceptHandoff(direct);
+    window.addEventListener('message',event=>{
+      if(event.origin!==origin||event.source!==window.opener||event.data?.type!=='ZIKA_EDITOR_DETACHED_SESSION')return;
+      void acceptHandoff(event.data);
     });
-    if(window.opener)window.opener.postMessage({type:'ZIKA_EDITOR_DETACHED_READY'},origin);
+    if(!direct&&window.opener)window.opener.postMessage({type:'ZIKA_EDITOR_DETACHED_READY'},origin);
   }
 
   if(window.parent!==window){
@@ -2135,13 +2156,26 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
       href.searchParams.set('detached','1');
       href.searchParams.set('event',selected);
       if(fieldName)href.searchParams.set('edit_field',fieldName);
-      const popup=window.open(href.href,'_blank');
+      // Open a blank same-origin tab *inside the trusted pointer activation*.
+      // Transfer the already-authorized admin session synchronously, then
+      // navigate. Unlike a postMessage handshake, this survives if ZikaTeam
+      // destroys the iframe on focus before the new page has loaded.
+      const popup=window.open('about:blank','_blank');
       if(!popup){
-        msg('Le navigateur a bloqué le nouvel onglet. Autorise les fenêtres de ce site et utilise « Édition stable ».');
+        msg('Nouvel onglet bloqué : utilise le bouton vert « Édition stable » et autorise les fenêtres.');
         return false;
       }
-      popupPeers.set(popup,{draft:snapshot(),at:Date.now()});
-      msg('Fiche ouverte dans un onglet indépendant pour éviter les actualisations de ZikaTeam.');
+      const handoff={accessToken:token,draft:snapshot(),origin,at:Date.now()};
+      try{
+        popup.name='ZIKA_EDITOR_HANDOFF_V3:'+encodeURIComponent(JSON.stringify(handoff));
+        popupPeers.set(popup,{draft:handoff.draft,at:handoff.at});
+        popup.location.replace(href.href);
+      }catch(error){
+        popup.close();
+        msg('Ouverture de la fiche impossible : '+error.message);
+        return false;
+      }
+      msg('La fiche s’ouvre hors de ZikaTeam pour éviter tout rechargement.');
       return true;
     }
     btn.addEventListener('click',()=>openStableEditor());
@@ -2150,7 +2184,7 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
     function detachWhenEditing(e){
       const el=e.target;
       if(opening||!el||!textFields.has(el.name))return;
-      if(e.type==='mousedown'&&e.button!==0)return;
+      if(e.type==='pointerdown'&&(e.button!==0||e.pointerType!=='mouse'))return;
       opening=true;
       const ok=openStableEditor(el.name);
       opening=false;
@@ -2159,8 +2193,9 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
         e.stopImmediatePropagation();
       }
     }
-    // Mouse: intercept before focus/selection; touch: handle the first tap.
-    form.addEventListener('mousedown',detachWhenEditing,true);
+    // Pointerdown (mouse) has a browser user activation, unlike mousedown.
+    // Touchend is the activation event for touchscreens.
+    form.addEventListener('pointerdown',detachWhenEditing,true);
     form.addEventListener('touchend',detachWhenEditing,true);
     for(const name of textFields){
       const textarea=form.elements[name];
