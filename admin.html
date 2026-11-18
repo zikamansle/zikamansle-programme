@@ -2031,6 +2031,7 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
   function restore(data){
     if(!data||typeof data!=='object'||!events.some(x=>x.id===data.eventId)||!Array.isArray(data.fields))return false;
     choose(data.eventId);
+    queueMicrotask(()=>{
     const saved=new Map(data.fields.map(x=>[x.key+':'+x.ordinal,x]));
     const counts=Object.create(null);
     for(const el of form.querySelectorAll('input,select,textarea')){
@@ -2051,6 +2052,7 @@ html body .event-main p,html body .hero p,html body .dialog-body article,html bo
     if(access)document.getElementById('zikaAccessLink').hidden=access.value==='free';
     if(Number.isFinite(data.scrollY))setTimeout(()=>window.scrollTo({top:data.scrollY,behavior:'instant'}),180);
     msg('Fiche retrouvée après actualisation — vérifie les modifications avant d’enregistrer.');
+    });
     return true;
   }
 
