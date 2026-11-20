@@ -21,6 +21,13 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Deep links use the same native WebView as main app, keeping ZikaTeam cookies. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.zikamansle.fr" />
+            </intent-filter>
         </activity>
 
         <!-- The application stays in the ZikaMansle process after notification consent. -->
@@ -47,13 +54,6 @@
                 android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
                 android:value="webview" />
 
-            <!-- Verify official ZikaMansle domain to enable Android app attribution of Web Push. -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="app.zikamansle.fr" />
-            </intent-filter>
         </activity>
 
         <!-- Required by Android Browser Helper: missing activity crashed the installed app. -->

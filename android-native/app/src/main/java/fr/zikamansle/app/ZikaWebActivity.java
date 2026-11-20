@@ -547,6 +547,13 @@ public final class ZikaWebActivity extends Activity {
         else super.onBackPressed();
     }
 
+    // Persist the authenticated ZikaTeam cookie when the app goes to the background.
+    // Never clear cookies on startup: members must remain signed in across launches.
+    @Override protected void onPause() {
+        CookieManager.getInstance().flush();
+        super.onPause();
+    }
+
     @Override protected void onDestroy() {
         closeFullscreen();
         if (pendingFiles != null) {
