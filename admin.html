@@ -154,15 +154,19 @@ $('logout').onclick=logout;setInterval(()=>{if(token)renew()},45*60*1000);
      const response=await fetch(c.url+'/auth/v1/user',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+incoming},cache:'no-store'});
      const user=await response.json();
      if(!response.ok||!user?.email)throw Error('Session invalide');
+     // A renewed SSO token must never reload the editor: load() replaces the
+     // form's data and can erase unsaved text while the user is typing.
+     const alreadyEditing=!!token&&!$('editorPanel').classList.contains('hidden');
      token=incoming;refresh='';
-     await load();
+     if(!alreadyEditing)await load();
      $('loginPanel').classList.add('hidden');
      $('editorPanel').classList.remove('hidden');
      $('logout').classList.remove('hidden');
      $('loginMsg').textContent='';
    }catch(error){
-     token='';
-     $('loginMsg').textContent='Connexion depuis ZikaTeam impossible : '+(error.message||error);
+     // Transient SSO handshakes must not destroy a form with unsaved changes.
+     if($('editorPanel').classList.contains('hidden'))token='';
+     $('loginMsg').textContent='Actualisation de session impossible : '+(error.message||error);
    }finally{loading=false;}
  });
  function notify(){window.parent.postMessage({type:'ZIKA_PROGRAM_READY'},parentOrigin);}
