@@ -511,11 +511,54 @@ wixAttachButtons();
  const desc=f.elements.description?.closest('div.wide');
  if(desc)desc.after(mediaGroup);else f.prepend(mediaGroup);
  f.addEventListener('input',e=>{if(mediaFields.includes(e.target?.name))zikaRefreshMediaList();});
+
+ const mediaLabels={image_url:'Photo principale',logo_url:'Logo',video_url:'Vidéo',video_poster_url:'Affiche de la vidéo',gallery_urls:'Galerie photos',attachment_urls:'Document ou fichier'};
+ const mediaValues=name=>String(f.elements[name]?.value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
  window.zikaRefreshMediaList=function(){
-  const vals=name=>String(f.elements[name]?.value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const urls=[...new Set([...vals('image_url'),...vals('logo_url'),...vals('video_url'),...vals('gallery_urls'),...vals('attachment_urls')])];
-  counter.textContent=urls.length ? urls.length+' fichier(s) associé(s)' : 'Aucun fichier associé';list.replaceChildren();
-  for(const url of urls){const chip=document.createElement('span');chip.style.cssText='background:white;border:1px solid #cfdfec;border-radius:8px;padding:6px 8px;font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';let filename='Média';try{filename=decodeURIComponent(new URL(url).pathname.split('/').pop()||'Fichier')}catch{}chip.title=url;chip.textContent=filename.slice(0,50);list.append(chip)}
+  const associated=new Map();
+  for(const field of mediaFields){
+   for(const url of mediaValues(field)){
+    if(!associated.has(url))associated.set(url,[]);
+    associated.get(url).push(field);
+   }
+  }
+  counter.textContent=associated.size ? associated.size+' média(s) associé(s) — clique sur Retirer pour détacher un média' : 'Aucun média associé';
+  list.replaceChildren();
+  for(const [url,fields] of associated){
+   const chip=document.createElement('div');
+   chip.style.cssText='display:flex;align-items:center;gap:8px;background:white;border:1px solid #cfdfec;border-radius:9px;padding:7px;max-width:100%;min-width:0';
+   let filename='Média';
+   try{filename=decodeURIComponent(new URL(url).pathname.split('/').pop()||'Fichier')}catch{}
+   const info=document.createElement('div');info.style.cssText='min-width:0;max-width:240px;display:flex;flex-direction:column;gap:3px';
+   const name=document.createElement('span');name.textContent=filename.slice(0,65);name.title=url;name.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:650';
+   const kind=document.createElement('small');kind.textContent=[...new Set(fields.map(x=>mediaLabels[x]||x))].join(' · ');kind.style.cssText='color:#52697e;font-size:11px';
+   info.append(name,kind);chip.append(info);
+   if(/^https:\/\//i.test(url)){
+    const preview=document.createElement('a');preview.href=url;preview.target='_blank';preview.rel='noopener noreferrer';preview.textContent='Voir';preview.title='Voir ce média dans un nouvel onglet';preview.style.cssText='font-size:12px';chip.append(preview);
+   }
+   const remove=document.createElement('button');remove.type='button';remove.className='btn secondary';remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer '+filename+' de cette fiche');remove.style.cssText='padding:6px 10px;font-size:12px;flex:none';
+   remove.onclick=()=>{
+    if(!selected || f.classList.contains('hidden'))return msg('Sélectionne une fiche avant de modifier ses médias.');
+    if(!confirm('Retirer « '+filename+' » de cette fiche ? Le fichier restera dans Wix. La suppression sera effective après Enregistrer cette fiche.'))return;
+    for(const field of mediaFields){
+     const input=f.elements[field];if(!input)continue;
+     const values=mediaValues(field).filter(x=>x!==url);
+     if(input.value!==values.join('\n')){
+      input.value=values.join('\n');
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+     }
+    }
+    if(f.elements.thumbnail_url?.value===url){
+     f.elements.thumbnail_url.value='';
+     f.elements.thumbnail_url.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    if(f.elements.image_url?.value==='')photo();
+    window.zikaRefreshMediaList();
+    msg('Média retiré de la fiche (non enregistré). Clique sur « Enregistrer cette fiche » pour confirmer.');
+   };
+   chip.append(remove);list.append(chip);
+  }
  };
  const originalChoose=window.choose; // choose is a top-level function declaration
  const buttons=document.querySelectorAll('#list button');
