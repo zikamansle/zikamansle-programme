@@ -927,13 +927,32 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('zikaPhotoLightb
 function closeModal(){ if(!$('modal').classList.contains('show'))return;$('modal').classList.remove('show'); $('modal').setAttribute('aria-hidden','true'); currentId=null;window.zikaPro.modalClosed(); }
 function makeCalendar(){
  const e=EVENTS.find(x=>x.id===currentId);if(!e)return;
- const start=e.startsAt||(e.customDate&&e.start?e.customDate+'T'+e.start:'')||(e.start?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.start):'');
- const end=e.endsAt||(e.customDate&&e.end?e.customDate+'T'+e.end:'')||(e.end?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.end):'');
- if(!start||!end||new Date(end)<=new Date(start))return;
- const date=s=>s.replace(/[-:]/g,'').replace('T','T').slice(0,13)+'00';
- const clean=s=>String(s||'').replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;').replace(/\n/g,'\\n');
- const data=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Festival ZikaMansle//FR','BEGIN:VEVENT',`UID:${e.id}@zikamansle.fr`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}`,`DTSTART:${date(start)}`,`DTEND:${date(end)}`,`SUMMARY:${clean(e.title)}`,`LOCATION:${clean(e.place)}`,`DESCRIPTION:${clean(e.description)}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
- const blob=new Blob([data],{type:'text/calendar;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`festival-zikamansle-${e.id}.ics`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+ const clean=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+ const stamp=s=>String(s).replace(/[-:]/g,'').slice(0,13)+'00';
+ const slots=Array.isArray(e.schedule)?e.schedule.map((slot,i)=>{
+  const m=String(slot.time||'').match(/(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})/);
+  if(!slot.date||!m)return null;
+  const pad=n=>String(n).padStart(2,'0');
+  return {start:slot.date+'T'+pad(m[1])+':'+m[2],end:slot.date+'T'+pad(m[3])+':'+m[4],title:slot.title||e.title,uid:e.id+'-'+(i+1)};
+ }).filter(Boolean):[];
+ if(!slots.length){
+  const start=e.startsAt||(e.customDate&&e.start?e.customDate+'T'+e.start:'')||(e.start?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.start):'');
+  const end=e.endsAt||(e.customDate&&e.end?e.customDate+'T'+e.end:'')||(e.end?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.end):'');
+  if(!start||!end||new Date(end)<=new Date(start))return;
+  slots.push({start,end,title:e.title,uid:e.id});
+ }
+ const data=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Festival ZikaMansle//FR','CALSCALE:GREGORIAN'];
+ for(const slot of slots){
+  const allDay=e.time==='Toute la journée'||(/T00:00$/.test(slot.start)&&/T23:59$/.test(slot.end));
+  const timing=allDay?(()=>{
+   const date=new Date(slot.end.slice(0,10)+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+1);
+   return ['DTSTART;VALUE=DATE:'+slot.start.slice(0,10).replace(/-/g,''),'DTEND;VALUE=DATE:'+date.toISOString().slice(0,10).replace(/-/g,'')];
+  })():['DTSTART;TZID=Europe/Paris:'+stamp(slot.start),'DTEND;TZID=Europe/Paris:'+stamp(slot.end)];
+  data.push('BEGIN:VEVENT','UID:'+slot.uid+'@zikamansle.fr','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),...timing,'SUMMARY:'+clean(slot.title),'LOCATION:'+clean(e.place),'DESCRIPTION:'+clean(e.description),'END:VEVENT');
+ }
+ data.push('END:VCALENDAR');
+ const blob=new Blob([data.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='festival-zikamansle-'+e.id+'.ics';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
 document.querySelectorAll('[data-day]').forEach(btn=>btn.onclick=()=>{
   state.day=btn.dataset.day;
