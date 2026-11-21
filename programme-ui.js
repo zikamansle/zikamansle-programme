@@ -72,7 +72,7 @@
   const generation=++shareGeneration;
   if(!shareDialog){shareDialog=document.createElement('dialog');shareDialog.id='proShareDialog';shareDialog.setAttribute('aria-labelledby','proShareTitle');document.body.append(shareDialog)}
   if(shareObjectURL){URL.revokeObjectURL(shareObjectURL);shareObjectURL=''}
-  const url=location.origin+location.pathname+'#fiche='+encodeURIComponent(e.shareSlug||e.id),image=[e.image,e.thumbnail,...(e.gallery||[])].find(safeImage);
+  const url='https://app.zikamansle.fr/share/'+encodeURIComponent(e.id),image=[e.image,e.thumbnail,...(e.gallery||[])].find(safeImage);
   shareDialog.innerHTML=`<div class="pro-share-head"><h2 id="proShareTitle">Partager ce rendez-vous</h2><button type="button" data-share-close aria-label="Fermer le partage">×</button></div><div class="pro-share-body">${image?`<img class="pro-share-preview" src="${esc(image)}" alt="Visuel principal de ${esc(e.title)}">`:''}<h3>${esc(e.title)}</h3><label for="proShareURL">Lien direct vers la fiche</label><input id="proShareURL" readonly value="${esc(url)}"><p id="proShareStatus" role="status">${image?'Préparation du visuel…':'Cette fiche ne contient pas de visuel.'}</p><div class="pro-share-actions"><button type="button" data-native-share hidden>Partager le visuel et le lien</button><button type="button" data-copy-share>Copier le lien</button>${image?'<a data-download-share target="_blank" rel="noopener noreferrer">Ouvrir le visuel</a>':''}</div></div>`;
   const status=shareDialog.querySelector('#proShareStatus'),native=shareDialog.querySelector('[data-native-share]'),download=shareDialog.querySelector('[data-download-share]');
   const close=()=>shareDialog.close();shareDialog.querySelector('[data-share-close]').onclick=close;
