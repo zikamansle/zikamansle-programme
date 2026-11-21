@@ -78,7 +78,7 @@
   const close=()=>shareDialog.close();shareDialog.querySelector('[data-share-close]').onclick=close;
   shareDialog.onclose=()=>{shareGeneration++;if(shareObjectURL){URL.revokeObjectURL(shareObjectURL);shareObjectURL=''}opener?.focus({preventScroll:true})};
   shareDialog.onclick=event=>{if(event.target===shareDialog)close()};
-  shareDialog.querySelector('[data-copy-share]').onclick=async()=>{let copied=false;try{if(navigator.clipboard){await navigator.clipboard.writeText(url);copied=true}}catch(_){}if(!copied){const input=shareDialog.querySelector('#proShareURL');input.focus();input.select();try{copied=document.execCommand('copy')}catch(_){}}status.textContent=copied?'Lien copié. Joins le visuel dans ton application pour partager les deux.':'Sélectionne et copie le lien ci-dessus.'};
+  shareDialog.querySelector('[data-copy-share]').onclick=async()=>{let copied=false;try{if(navigator.clipboard){await navigator.clipboard.writeText(url);copied=true}}catch(_){}if(!copied){const input=shareDialog.querySelector('#proShareURL');input.focus();input.select();try{copied=document.execCommand('copy')}catch(_){}}status.textContent=copied?'Lien copié. Les réseaux compatibles afficheront le visuel de cette fiche dans leur aperçu.':'Sélectionne et copie le lien ci-dessus.'};
   if(download)download.href=image;
   if(navigator.share){native.hidden=false;native.disabled=!!image;native.textContent=image?'Préparation du partage…':'Partager le lien';native.onclick=()=>navigator.share({title:e.title,url}).catch(err=>{if(err.name!=='AbortError')status.textContent='Le partage n’a pas abouti. Tu peux copier le lien.'})}
   if(!shareDialog.open)shareDialog.showModal();shareDialog.querySelector('[data-share-close]').focus();
@@ -94,8 +94,8 @@
    if(navigator.share&&navigator.canShare?.({files:[file]})){
     native.hidden=false;native.disabled=false;native.textContent='Partager le visuel et le lien';native.onclick=async()=>{try{await navigator.share({files:[file],title:e.title,text:url});status.textContent='Partage envoyé à ton application.'}catch(err){if(err.name!=='AbortError')status.textContent='Le partage n’a pas abouti. Télécharge le visuel et copie le lien.'}};
     status.textContent='Le visuel principal et le lien direct seront joints au partage.';
-   }else{if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Sur cet appareil, télécharge le visuel puis joins-le avec le lien copié dans ton application.'}
-  }catch(_){if(generation!==shareGeneration)return;if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Le visuel ne peut pas être joint automatiquement ici. Ouvre-le pour l’enregistrer, puis copie le lien.'}finally{clearTimeout(timer)}
+   }else{if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Le lien contient le visuel de cette fiche pour les aperçus des réseaux compatibles. Tu peux aussi télécharger l’image.'}
+  }catch(_){if(generation!==shareGeneration)return;if(navigator.share){native.disabled=false;native.textContent='Partager le lien'}status.textContent='Le partage du fichier image n’est pas disponible ici, mais le lien contient un aperçu avec le visuel de cette fiche.'}finally{clearTimeout(timer)}
  }
  function init(){
   $('proHeaderMap').onclick=()=>showMap();$('filterLocationType').onchange=e=>{state.locationType=e.target.value;render()};$('filterCategory').onchange=e=>{state.cat=e.target.value||'Tout';render()};$('zikaMobileMap').onclick=()=>showMap();$('zikaMobileFavorites').onclick=()=>{state.mine=!state.mine;render();$('programme').scrollIntoView({behavior:'smooth'})};$('zikaMapClose').onclick=closeMap;$('zikaMapDialog').addEventListener('close',returnMap);
