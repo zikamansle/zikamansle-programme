@@ -90,6 +90,31 @@ public final class ZikaWebActivity extends Activity {
             return ZikaPushRegistration.deliveryReady(ZikaWebActivity.this)?"enabled":"server_pending";
         }
 
+        /** Android Sharesheet: show installed apps for a validated ZikaMansle event link. */
+        @JavascriptInterface public void shareEvent(String title, String url) {
+            runOnUiThread(() -> {
+                if (web == null || isFinishing() || isDestroyed()) return;
+                Uri current = web.getUrl() == null ? null : Uri.parse(web.getUrl());
+                Uri target;
+                try { target = Uri.parse(url); }
+                catch (RuntimeException invalid) { return; }
+                if (!sameOrigin(current) || !sameOrigin(target)) return;
+                if (target.getFragment() == null || !target.getFragment().startsWith("fiche/")) return;
+                String label = title == null ? "Festival ZikaMansle" : title.trim();
+                if (label.length() > 180) label = label.substring(0, 180);
+                if (label.isEmpty()) label = "Festival ZikaMansle";
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(Intent.EXTRA_SUBJECT, label);
+                send.putExtra(Intent.EXTRA_TEXT, label + " · Festival ZikaMansle\n" + target.toString());
+                try {
+                    startActivity(Intent.createChooser(send, "Partager avec"));
+                } catch (ActivityNotFoundException | SecurityException error) {
+                    Toast.makeText(ZikaWebActivity.this, "Aucune application de partage disponible.", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
         @JavascriptInterface public void linkZikaTeam() {
             runOnUiThread(() -> {
                 if(web==null||isFinishing()||isDestroyed())return;
