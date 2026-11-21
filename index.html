@@ -927,32 +927,31 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('zikaPhotoLightb
 function closeModal(){ if(!$('modal').classList.contains('show'))return;$('modal').classList.remove('show'); $('modal').setAttribute('aria-hidden','true'); currentId=null;window.zikaPro.modalClosed(); }
 function makeCalendar(){
  const e=EVENTS.find(x=>x.id===currentId);if(!e)return;
- const clean=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
- const stamp=s=>String(s).replace(/[-:]/g,'').slice(0,13)+'00';
  const slots=Array.isArray(e.schedule)?e.schedule.map((slot,i)=>{
   const m=String(slot.time||'').match(/(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})/);
-  if(!slot.date||!m)return null;
-  const pad=n=>String(n).padStart(2,'0');
-  return {start:slot.date+'T'+pad(m[1])+':'+m[2],end:slot.date+'T'+pad(m[3])+':'+m[4],title:slot.title||e.title,uid:e.id+'-'+(i+1)};
+  if(!slot.date||!m)return null;const pad=n=>String(n).padStart(2,'0');
+  return {start:slot.date+'T'+pad(m[1])+':'+m[2],end:slot.date+'T'+pad(m[3])+':'+m[4],title:slot.title||e.title};
  }).filter(Boolean):[];
  if(!slots.length){
   const start=e.startsAt||(e.customDate&&e.start?e.customDate+'T'+e.start:'')||(e.start?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.start):'');
   const end=e.endsAt||(e.customDate&&e.end?e.customDate+'T'+e.end:'')||(e.end?('2027-04-'+(e.day==='dimanche'?'25':'24')+'T'+e.end):'');
-  if(!start||!end||new Date(end)<=new Date(start))return;
-  slots.push({start,end,title:e.title,uid:e.id});
+  if(start&&end&&new Date(end)>new Date(start))slots.push({start,end,title:e.title});
  }
- const data=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Festival ZikaMansle//FR','CALSCALE:GREGORIAN'];
+ if(!slots.length)return;
+ let dialog=document.getElementById('zikaCalendarDialog');
+ if(!dialog){dialog=document.createElement('dialog');dialog.id='zikaCalendarDialog';dialog.style.cssText='border:0;border-radius:18px;padding:24px;max-width:min(430px,94vw);box-shadow:0 16px 60px #0005';document.body.append(dialog)}
+ dialog.replaceChildren();
+ const h=document.createElement('h2');h.textContent='Ajouter à mon calendrier';h.style.margin='0 0 8px';dialog.append(h);
+ const p=document.createElement('p');p.textContent='Choisissez le rendez-vous à ajouter dans Google Agenda.';dialog.append(p);
  for(const slot of slots){
   const allDay=e.time==='Toute la journée'||(/T00:00$/.test(slot.start)&&/T23:59$/.test(slot.end));
-  const timing=allDay?(()=>{
-   const date=new Date(slot.end.slice(0,10)+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+1);
-   return ['DTSTART;VALUE=DATE:'+slot.start.slice(0,10).replace(/-/g,''),'DTEND;VALUE=DATE:'+date.toISOString().slice(0,10).replace(/-/g,'')];
-  })():['DTSTART;TZID=Europe/Paris:'+stamp(slot.start),'DTEND;TZID=Europe/Paris:'+stamp(slot.end)];
-  data.push('BEGIN:VEVENT','UID:'+slot.uid+'@zikamansle.fr','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),...timing,'SUMMARY:'+clean(slot.title),'LOCATION:'+clean(e.place),'DESCRIPTION:'+clean(e.description),'END:VEVENT');
+  let dates;
+  if(allDay){const d=new Date(slot.end.slice(0,10)+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);dates=slot.start.slice(0,10).replace(/-/g,'')+'/'+d.toISOString().slice(0,10).replace(/-/g,'')}
+  else dates=slot.start.replace(/[-:]/g,'').slice(0,13)+'00/'+slot.end.replace(/[-:]/g,'').slice(0,13)+'00';
+  const q=new URLSearchParams({action:'TEMPLATE',text:slot.title,dates,ctz:'Europe/Paris',location:e.place||'',details:'Festival ZikaMansle'});
+  const a=document.createElement('a');a.href='https://calendar.google.com/calendar/render?'+q.toString();a.target='_blank';a.rel='noopener noreferrer';a.textContent=slots.length>1?slot.title+' — Ouvrir Google Agenda':'Ouvrir Google Agenda';a.style.cssText='display:block;margin:10px 0;padding:13px 16px;border-radius:10px;background:#1769ab;color:#fff;text-align:center;font-weight:700;text-decoration:none';dialog.append(a);
  }
- data.push('END:VCALENDAR');
- const blob=new Blob([data.join('\r\n')],{type:'text/calendar;charset=utf-8'});
- const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='festival-zikamansle-'+e.id+'.ics';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ const close=document.createElement('button');close.type='button';close.textContent='Fermer';close.style.cssText='margin-top:12px;padding:10px 16px';close.onclick=()=>dialog.close();dialog.append(close);if(!dialog.open)dialog.showModal();
 }
 document.querySelectorAll('[data-day]').forEach(btn=>btn.onclick=()=>{
   state.day=btn.dataset.day;
