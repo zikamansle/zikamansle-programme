@@ -1,4 +1,4 @@
-const CACHE='zikamansle-app-v1';
+const CACHE='zikamansle-app-v2';
 const FILES=['index.html','plan.html','config.js','programme-initial.js','programme-ui.js','programme-ui.css','app.js','app.css','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','festival-scene.svg','festival-scene-static.svg'];
 const base=new URL('./',self.location.href);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new URL(f,base).href)))));
