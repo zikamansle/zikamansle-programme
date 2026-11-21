@@ -99,7 +99,7 @@ public final class ZikaWebActivity extends Activity {
                 try { target = Uri.parse(url); }
                 catch (RuntimeException invalid) { return; }
                 if (!sameOrigin(current) || !sameOrigin(target)) return;
-                if (target.getFragment() == null || !target.getFragment().startsWith("fiche/")) return;
+                if (target.getPath() == null || !target.getPath().matches("/share/[0-9a-fA-F-]{36}")) return;
                 String label = title == null ? "Festival ZikaMansle" : title.trim();
                 if (label.length() > 180) label = label.substring(0, 180);
                 if (label.isEmpty()) label = "Festival ZikaMansle";
