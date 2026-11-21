@@ -613,6 +613,7 @@ body *{box-sizing:border-box}
               <button data-day="before">Avant le festival</button>
               <button data-day="samedi">Samedi 24 avril</button>
               <button data-day="dimanche">Dimanche 25 avril</button>
+              <button data-day="after">Après le festival</button>
             </div>
           </div>
           <div class="control-block">
@@ -765,8 +766,9 @@ function eventStamp(e){
 function minPrice(e){return Number(e.priceMin??(e.free?0:999999));}
 function matchesProgrammePeriod(e,period){
  if(period==='all')return true;
- const chosen=Array.isArray(e.programmePeriods)?e.programmePeriods.filter(p=>['before','samedi','dimanche'].includes(p)):[];
+ const chosen=Array.isArray(e.programmePeriods)?e.programmePeriods.filter(p=>['before','samedi','dimanche','after'].includes(p)):[];
  if(period==='before'){const dates=[e.startsAt?.slice(0,10)||e.customDate,...(e.schedule||[]).map(slot=>slot.date)];return chosen.includes('before')||!!e.alwaysAvailable||dates.some(date=>/^\d{4}-\d{2}-\d{2}$/.test(date||'')&&date<'2027-04-24')}
+ if(period==='after'){const dates=[e.startsAt?.slice(0,10)||e.customDate,...(e.schedule||[]).map(slot=>slot.date)].filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d||''));const last=e.endsAt?.slice(0,10)||dates.sort().at(-1);return chosen.includes('after')||!!e.alwaysAvailable||!!(last&&last>'2027-04-25')}
  if(chosen.length)return chosen.includes(period);
  if(e.alwaysAvailable)return true;
  const start=e.startsAt?.slice(0,10)||e.schedule?.[0]?.date||e.customDate;
