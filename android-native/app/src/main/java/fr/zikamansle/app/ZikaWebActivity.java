@@ -19,6 +19,17 @@ import android.speech.RecognizerIntent;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import android.graphics.Bitmap;
+import android.media.AudioManager;
+import android.media.AudioDeviceInfo;
+import android.view.WindowManager;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebViewRenderProcess;
+import android.webkit.WebViewRenderProcessClient;
+import android.provider.MediaStore;
+import android.content.ClipData;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.IOException;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -58,6 +69,14 @@ public final class ZikaWebActivity extends Activity {
     private LinearLayout root;
     private TextView status;
     private boolean loadError;
+    private Button recoverButton;
+    private Uri recoveryUrl;
+    private Uri cameraUri;
+    private File cameraFile;
+    private boolean talkActive;
+    private boolean routeSelected;
+    private boolean oldSpeaker;
+    private String talkRoute = "auto";
     // HTML5 full-screen content (ZikaRun) needs a native WebChromeClient host.
     private FrameLayout fullscreenContainer;
     private View fullscreenView;
@@ -97,6 +116,30 @@ public final class ZikaWebActivity extends Activity {
 
     /** Android-only notification controls. No browser PushManager is used. */
     public final class NativeNotificationBridge {
+        @JavascriptInterface public void setTalkActive(boolean enabled) {
+            runOnUiThread(() -> {
+                if (!enabled) { stopTalkDevice(); return; }
+                if (!isReportPage() || !hasWindowFocus()) return;
+                talkActive = true;
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            });
+        }
+
+        @JavascriptInterface public void setTalkAudioRoute(String route) {
+            runOnUiThread(() -> {
+                if (!isReportPage() || !talkActive || !hasWindowFocus()) return;
+                if (!"auto".equals(route) && !"speaker".equals(route) && !"headset".equals(route)) return;
+                chooseTalkRoute(route);
+            });
+        }
+
+        @JavascriptInterface public void recoverApplication() {
+            runOnUiThread(() -> {
+                if (web != null && web.getUrl() != null && sameOrigin(Uri.parse(web.getUrl())))
+                    confirmRecovery();
+            });
+        }
+
         /** Open the Android recognition provider's visible UI, only on ZikaTeam. */
         @JavascriptInterface public void dictateReport(String token) {
             if (token == null || !token.matches("[a-zA-Z0-9_-]{8,80}")) return;
@@ -215,6 +258,113 @@ public final class ZikaWebActivity extends Activity {
     // The WebView may only request audio capture on the official ZikaTeam page.
     // No microphone is opened by this activity; the site's push-to-talk gesture
     // remains the sole trigger for getUserMedia. Never grant video or unknown resources.
+    private void chooseTalkRoute(String route) {
+        AudioManager manager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (manager == null) return;
+        boolean ok = false;
+        try {
+            if ("auto".equals(route)) {
+                clearTalkRoute();
+                ok = true;
+            } else if (Build.VERSION.SDK_INT >= 31) {
+                AudioDeviceInfo target = null;
+                for (AudioDeviceInfo device : manager.getAvailableCommunicationDevices()) {
+                    int type = device.getType();
+                    if ("speaker".equals(route) && type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                        target = device; break;
+                    }
+                    if ("headset".equals(route) && (type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                        || type == AudioDeviceInfo.TYPE_BLE_HEADSET || type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+                        || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES || type == AudioDeviceInfo.TYPE_USB_HEADSET)) {
+                        target = device; break;
+                    }
+                }
+                if (target != null) {
+                    ok = manager.setCommunicationDevice(target);
+                    if (ok) routeSelected = true;
+                }
+            } else if ("speaker".equals(route)) {
+                if (!routeSelected) oldSpeaker = manager.isSpeakerphoneOn();
+                manager.setSpeakerphoneOn(true);
+                routeSelected = true; ok = true;
+            }
+        } catch (RuntimeException ignored) { }
+        if (ok) talkRoute = route;
+        if (isReportPage()) web.evaluateJavascript(
+            "if(typeof window.__zikaTalkRouteResult==='function')window.__zikaTalkRouteResult("
+            + JSONObject.quote(talkRoute) + "," + ok + ");", null);
+    }
+
+    private void clearTalkRoute() {
+        if (!routeSelected) return;
+        AudioManager manager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        try {
+            if (manager != null) {
+                if (Build.VERSION.SDK_INT >= 31) manager.clearCommunicationDevice();
+                else manager.setSpeakerphoneOn(oldSpeaker);
+            }
+        } catch (RuntimeException ignored) { }
+        routeSelected = false;
+        talkRoute = "auto";
+    }
+
+    private void stopTalkDevice() {
+        talkActive = false;
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        clearTalkRoute();
+    }
+
+    private void confirmRecovery() {
+        new AlertDialog.Builder(this).setTitle("Relancer ZikaMansle")
+            .setMessage("La connexion sera conservée. Les modifications non enregistrées et les échanges en cours peuvent être perdus.")
+            .setNegativeButton("Annuler", null)
+            .setPositiveButton("Relancer", (dialog, which) -> {
+                stopTalkDevice();
+                CookieManager.getInstance().flush();
+                if (web != null) {
+                    loadError = false;
+                    web.reload();
+                } else {
+                    loadError = false;
+                    startWebView(recoveryUrl);
+                }
+            }).show();
+    }
+
+    private void showRecovery(String message) {
+        if (status != null) { status.setText(message); status.setVisibility(View.VISIBLE); }
+        if (recoverButton != null) recoverButton.setVisibility(View.VISIBLE);
+    }
+
+    private void clearCamera(boolean delete) {
+        if (cameraUri != null) {
+            try { revokeUriPermission(cameraUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); }
+            catch (RuntimeException ignored) { }
+        }
+        if (delete && cameraFile != null) cameraFile.delete();
+        cameraUri = null; cameraFile = null;
+    }
+
+    private Intent photoIntent() {
+        try {
+            File directory = new File(getCacheDir(), "zika-photos");
+            if (!directory.exists() && !directory.mkdirs()) return null;
+            File[] existing = directory.listFiles();
+            if (existing != null) for (File file : existing)
+                if (file.lastModified() < System.currentTimeMillis() - 86400000L) file.delete();
+            cameraFile = File.createTempFile("zika-photo-", ".jpg", directory);
+            cameraUri = FileProvider.getUriForFile(this, getPackageName() + ".zika.photos", cameraFile);
+            Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            camera.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
+            camera.setClipData(ClipData.newRawUri("Photo ZikaTeam", cameraUri));
+            camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            return camera;
+        } catch (IOException | RuntimeException error) {
+            clearCamera(true);
+            return null;
+        }
+    }
+
     private boolean isReportPage() {
         if (web == null || isFinishing() || isDestroyed() || web.getUrl() == null) return false;
         Uri current = Uri.parse(web.getUrl());
@@ -323,6 +473,11 @@ public final class ZikaWebActivity extends Activity {
         status.setText("Ouverture de ZikaMansle…");
         status.setPadding(24, 22, 24, 22);
         root.addView(status);
+        recoverButton = new Button(this);
+        recoverButton.setText("Relancer l’application");
+        recoverButton.setVisibility(View.GONE);
+        recoverButton.setOnClickListener(v -> confirmRecovery());
+        root.addView(recoverButton);
         web = new WebView(this);
         web.setId(View.generateViewId());
         root.addView(web, new LinearLayout.LayoutParams(
@@ -404,15 +559,34 @@ public final class ZikaWebActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view,
                 ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFiles != null) pendingFiles.onReceiveValue(null);
+                clearCamera(true);
+                if (view.getUrl() == null || !sameOrigin(Uri.parse(view.getUrl()))) {
+                    callback.onReceiveValue(null); return true;
+                }
                 pendingFiles = callback;
                 Intent picker = params.createIntent();
+                boolean image = false;
+                String[] accepted = params.getAcceptTypes();
+                if (accepted != null) for (String type : accepted)
+                    if (type != null && type.toLowerCase(java.util.Locale.ROOT).contains("image/")) image = true;
+                if (image && isReportPage()) {
+                    Intent camera = photoIntent();
+                    if (camera != null) {
+                        if (params.isCaptureEnabled()) picker = camera;
+                        else {
+                            picker = Intent.createChooser(picker, "Choisir une photo ou un fichier");
+                            picker.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{camera});
+                        }
+                    }
+                }
                 try {
                     startActivityForResult(picker, FILE_PICKER_REQUEST);
                     return true;
                 } catch (ActivityNotFoundException | SecurityException e) {
                     pendingFiles = null;
+                    clearCamera(true);
                     callback.onReceiveValue(null);
-                    return false;
+                    return true;
                 }
             }
         });
@@ -420,6 +594,10 @@ public final class ZikaWebActivity extends Activity {
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 cancelPendingMicrophone();
                 pendingDictation = null;
+                stopTalkDevice();
+                loadError = false;
+                if (sameOrigin(Uri.parse(url))) recoveryUrl = Uri.parse(url);
+                recoverButton.setVisibility(View.GONE);
                 super.onPageStarted(view, url, favicon);
             }
 
@@ -440,6 +618,7 @@ public final class ZikaWebActivity extends Activity {
             @Override public void onPageFinished(WebView view, String url) {
                 if (!loadError) {
                     status.setVisibility(View.GONE);
+                    recoverButton.setVisibility(View.GONE);
                     android.util.Log.i("ZikaMansle", "ZIKA_WEBVIEW_PAGE_FINISHED host=" + Uri.parse(url).getHost());
                     if (sameOrigin(Uri.parse(url))) installZikaTeamMenu(view);
                     if (isTeamOrigin(Uri.parse(url))) {
@@ -455,12 +634,38 @@ public final class ZikaWebActivity extends Activity {
                 WebResourceError error) {
                 if (request.isForMainFrame()) {
                     loadError = true;
-                    status.setText("Impossible de charger ZikaMansle. Vérifie ta connexion Internet.");
-                    status.setVisibility(View.VISIBLE);
+                    showRecovery("Impossible de charger ZikaMansle. Vérifie ta connexion Internet.");
+                }
+            }
+            @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (web != view) return false;
+                pendingMicrophone = null;
+                pendingDictation = null;
+                pendingFiles = null;
+                clearCamera(true);
+                stopTalkDevice();
+                closeFullscreen();
+                root.removeView(view);
+                web = null;
+                view.destroy();
+                loadError = true;
+                showRecovery("L’affichage de ZikaMansle a été interrompu. Tu peux relancer l’application.");
+                return true;
+            }
+        });
+        if (Build.VERSION.SDK_INT >= 29) web.setWebViewRenderProcessClient(new WebViewRenderProcessClient() {
+            @Override public void onRenderProcessUnresponsive(WebView view, WebViewRenderProcess renderer) {
+                if (web == view) showRecovery("L’application ne répond pas. Tu peux la relancer.");
+            }
+            @Override public void onRenderProcessResponsive(WebView view, WebViewRenderProcess renderer) {
+                if (web == view && !loadError) {
+                    status.setVisibility(View.GONE);
+                    recoverButton.setVisibility(View.GONE);
                 }
             }
         });
         Uri target = sameOrigin(incoming) ? incoming : officialUrl;
+        recoveryUrl = target;
         web.loadUrl(target.toString());
     }
 
@@ -659,11 +864,34 @@ public final class ZikaWebActivity extends Activity {
             return;
         }
         if (code == FILE_PICKER_REQUEST && pendingFiles != null) {
-            pendingFiles.onReceiveValue(
-                result == RESULT_OK ? WebChromeClient.FileChooserParams.parseResult(result, data) : null
-            );
+            Uri[] selected = result == RESULT_OK ? WebChromeClient.FileChooserParams.parseResult(result, data) : null;
+            boolean captured = result == RESULT_OK && (selected == null || selected.length == 0)
+                && cameraUri != null && cameraFile != null && cameraFile.length() > 0;
+            if (captured) selected = new Uri[]{cameraUri};
+            if (selected != null) {
+                for (Uri item : selected) {
+                    if (item == null || !"content".equals(item.getScheme())
+                        || ((getPackageName() + ".zika.photos").equals(item.getAuthority()) && !item.equals(cameraUri))) {
+                        selected = null; break;
+                    }
+                }
+            }
+            if (web == null || web.getUrl() == null || !sameOrigin(Uri.parse(web.getUrl()))) selected = null;
+            pendingFiles.onReceiveValue(selected);
             pendingFiles = null;
+            clearCamera(!captured || selected == null);
         }
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        Uri incoming = intent == null ? null : intent.getData();
+        if (!sameOrigin(incoming)) return;
+        stopTalkDevice();
+        CookieManager.getInstance().flush();
+        if (web != null) web.loadUrl(incoming.toString());
+        else { loadError = false; startWebView(incoming); }
     }
 
     @Override public void onBackPressed() {
@@ -678,11 +906,14 @@ public final class ZikaWebActivity extends Activity {
     // Persist the authenticated ZikaTeam cookie when the app goes to the background.
     // Never clear cookies on startup: members must remain signed in across launches.
     @Override protected void onPause() {
+        stopTalkDevice();
         CookieManager.getInstance().flush();
         super.onPause();
     }
 
     @Override protected void onDestroy() {
+        stopTalkDevice();
+        clearCamera(true);
         pendingDictation = null;
         cancelPendingMicrophone();
         closeFullscreen();
