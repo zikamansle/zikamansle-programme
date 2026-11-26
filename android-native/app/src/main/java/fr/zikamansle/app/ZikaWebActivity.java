@@ -15,6 +15,9 @@ import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.PermissionRequest;
+import android.speech.RecognizerIntent;
+import org.json.JSONObject;
+import java.util.ArrayList;
 import android.graphics.Bitmap;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -43,6 +46,8 @@ public final class ZikaWebActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 701;
     private static final int MICROPHONE_REQUEST = 711;
     private PermissionRequest pendingMicrophone;
+    private static final int DICTATION_REQUEST = 712;
+    private String pendingDictation;
     private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
     private static final String ASKED = "notification_permission_asked";
     private WebView web;
@@ -92,6 +97,31 @@ public final class ZikaWebActivity extends Activity {
 
     /** Android-only notification controls. No browser PushManager is used. */
     public final class NativeNotificationBridge {
+        /** Open the Android recognition provider's visible UI, only on ZikaTeam. */
+        @JavascriptInterface public void dictateReport(String token) {
+            if (token == null || !token.matches("[a-zA-Z0-9_-]{8,80}")) return;
+            runOnUiThread(() -> {
+                if (!isReportPage() || pendingDictation != null || pendingMicrophone != null) {
+                    deliverDictation(token, "", "busy");
+                    return;
+                }
+                pendingDictation = token;
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR");
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+                intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Dicter le commentaire du compte rendu");
+                intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+                try {
+                    startActivityForResult(intent, DICTATION_REQUEST);
+                } catch (ActivityNotFoundException | SecurityException error) {
+                    pendingDictation = null;
+                    deliverDictation(token, "", "unavailable");
+                }
+            });
+        }
+
         @JavascriptInterface public String getNotificationStatus() {
             if (FirebaseApp.getApps(ZikaWebActivity.this).isEmpty()) return "unconfigured";
             if (!ZikaPushRegistration.approved(ZikaWebActivity.this)) return "disabled";
@@ -185,6 +215,21 @@ public final class ZikaWebActivity extends Activity {
     // The WebView may only request audio capture on the official ZikaTeam page.
     // No microphone is opened by this activity; the site's push-to-talk gesture
     // remains the sole trigger for getUserMedia. Never grant video or unknown resources.
+    private boolean isReportPage() {
+        if (web == null || isFinishing() || isDestroyed() || web.getUrl() == null) return false;
+        Uri current = Uri.parse(web.getUrl());
+        return sameOrigin(current) && ("/zikateam".equals(current.getPath())
+            || "/zikateam/".equals(current.getPath()));
+    }
+
+    private void deliverDictation(String token, String text, String status) {
+        if (!isReportPage()) return;
+        String safe = text == null ? "" : text.substring(0, Math.min(8000, text.length()));
+        web.evaluateJavascript("if(typeof window.__zikaNativeReportResult==='function')"
+            + "window.__zikaNativeReportResult(" + JSONObject.quote(token) + ","
+            + JSONObject.quote(safe) + "," + JSONObject.quote(status) + ");", null);
+    }
+
     private boolean canGrantMicrophone(PermissionRequest request) {
         if (request == null || web == null || isFinishing() || isDestroyed()
             || !sameOrigin(request.getOrigin()) || !web.isShown()) return false;
@@ -205,7 +250,7 @@ public final class ZikaWebActivity extends Activity {
     }
 
     private void handleMicrophoneRequest(PermissionRequest request) {
-        if (!canGrantMicrophone(request) || pendingMicrophone != null) {
+        if (!canGrantMicrophone(request) || pendingMicrophone != null || pendingDictation != null) {
             request.deny();
             return;
         }
@@ -374,6 +419,7 @@ public final class ZikaWebActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 cancelPendingMicrophone();
+                pendingDictation = null;
                 super.onPageStarted(view, url, favicon);
             }
 
@@ -601,6 +647,17 @@ public final class ZikaWebActivity extends Activity {
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
         super.onActivityResult(code, result, data);
+        if (code == DICTATION_REQUEST) {
+            String token = pendingDictation;
+            pendingDictation = null;
+            if (token != null) {
+                ArrayList<String> words = result == RESULT_OK && data != null
+                    ? data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS) : null;
+                String spoken = words != null && !words.isEmpty() && words.get(0) != null ? words.get(0).trim() : "";
+                deliverDictation(token, spoken, result != RESULT_OK ? "cancelled" : spoken.isEmpty() ? "empty" : "ok");
+            }
+            return;
+        }
         if (code == FILE_PICKER_REQUEST && pendingFiles != null) {
             pendingFiles.onReceiveValue(
                 result == RESULT_OK ? WebChromeClient.FileChooserParams.parseResult(result, data) : null
@@ -626,6 +683,7 @@ public final class ZikaWebActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        pendingDictation = null;
         cancelPendingMicrophone();
         closeFullscreen();
         if (pendingFiles != null) {
