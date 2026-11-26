@@ -1,0 +1,41 @@
+name: Capture public mobile source for safe admin menu patch
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Save public frontend scripts
+        run: |
+          mkdir -p web-snapshot
+          for path in index.html mobile.js notifications.js admin-notifications.js; do
+            curl --fail -sSL --retry 2 --connect-timeout 10 --max-time 25 \
+              "https://app.zikamansle.fr/$path" -o "web-snapshot/$path"
+            test -s "web-snapshot/$path"
+          done
+          node --check web-snapshot/mobile.js
+          node --check web-snapshot/admin-notifications.js
+      - name: Check Android notification resources compile
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+          gradle -p android-native :app:assembleDebug --no-daemon -PzikaLaunchUrl=https://app.zikamansle.fr/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-mobile-public-source
+          path: web-snapshot
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,32 @@
+name: Check ZikaMansle notifications admin URL
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Probe admin URLs and push API without sending
+        run: |
+          for path in /admin-notifications.html /admin.html /api/push/status /notifications.js; do
+            echo "=== $path ==="
+            curl -sSL -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36' \
+              --connect-timeout 10 --max-time 20 \
+              -o /tmp/response -w 'HTTP_CODE=%{http_code} URL=%{url_effective} CONTENT_TYPE=%{content_type} TOTAL=%{size_download}\n' \
+              "https://app.zikamansle.fr$path" || true
+            if [ "$path" = '/admin-notifications.html' ]; then
+              python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('/tmp/response').read_text(errors='replace')
+          print('HTML_TITLE=', re.findall(r'<title[^>]*>(.*?)</title>', s, re.I|re.S)[:2])
+          print('ADMIN_MARKERS=', [(w, bool(re.search(w,s,re.I))) for w in ('admin','connexion','notification','auth','push')])
+          print('SCRIPTS=',re.findall(r'<script[^>]+src=[\"\\\']([^\"\\\']+)',s,re.I)[:15])
+          print('PAGE_TEXT=',re.sub(r'\\s+',' ',re.sub(r'<[^>]*>',' ',s))[:2200])
+          print('FORM_TAGS=',re.findall(r'<(?:button|input|form|textarea|select)\\b[^>]*>',s,re.I)[:25])
+          PY
+            fi
+          done

@@ -1,0 +1,62 @@
+name: Diagnostic appli mobile ZikaMansle (site public)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check live URLs and mobile UI without logging in
+        shell: bash
+        run: |
+          npm install --no-save playwright@1.58.2
+          cat > check-mobile.mjs <<'JS'
+          import { chromium, devices } from 'playwright';
+          const origin='https://app.zikamansle.fr/';
+          const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+          const page=await browser.newPage({...devices['Pixel 7'],ignoreHTTPSErrors:false});
+          const diagnostics={requestsFailed:[],consoleErrors:[],pageErrors:[],responsesBad:[]};
+          page.on('requestfailed',req=>diagnostics.requestsFailed.push({url:req.url().slice(0,180),error:req.failure()?.errorText}));
+          page.on('pageerror',err=>diagnostics.pageErrors.push(err.message.slice(0,250)));
+          page.on('console',msg=>{if(msg.type()==='error')diagnostics.consoleErrors.push(msg.text().slice(0,250))});
+          page.on('response',resp=>{if(resp.status()>=400)diagnostics.responsesBad.push({url:resp.url().slice(0,180),status:resp.status()})});
+          try {
+            const res=await page.goto(origin,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(6500);
+            const overview=await page.evaluate(()=>({
+              title:document.title,
+              href:location.href,
+              readyState:document.readyState,
+              bodyText:document.body?.innerText?.slice(0,1800),
+              visibleNavigation:[...document.querySelectorAll('nav a, [role=navigation] a, nav button')].slice(0,24).map(e=>({tag:e.tagName,label:(e.innerText||e.getAttribute('aria-label')||'').trim().slice(0,75),href:e.getAttribute('href')})),
+              buttons:[...document.querySelectorAll('button')].filter(e=>e.getBoundingClientRect().width>0).slice(0,20).map(e=>(e.innerText||e.getAttribute('aria-label')||'').trim().slice(0,75)),
+              scriptSources:[...document.scripts].map(x=>x.src||'inline').slice(0,20),
+              viewport:{width:innerWidth,height:innerHeight},
+              h1:[...document.querySelectorAll('h1')].map(x=>x.innerText)
+            }));
+            console.log('PAGE:',JSON.stringify({status:res?.status(),...overview}));
+            const manifest=await page.request.get(new URL('/manifest.webmanifest',origin).toString());
+            console.log('MANIFEST:',JSON.stringify({status:manifest.status(),contentType:manifest.headers()['content-type'],text:(await manifest.text()).slice(0,1500)}));
+            const dal=await page.request.get(new URL('/.well-known/assetlinks.json',origin).toString());
+            console.log('DIGITAL_ASSET_LINKS:',JSON.stringify({status:dal.status(),text:(await dal.text()).slice(0,300)}));
+            for (const section of ['Programme','Plan','Favoris','Plus','Accueil']) {
+              try {
+                const sel=page.locator('nav a').filter({hasText:section}).first();
+                if(await sel.count()===0){ console.log('NAV_MISSING:',section);continue; }
+                await sel.click({timeout:8000});
+                await page.waitForTimeout(900);
+                const info=await page.evaluate(()=>({hash:location.hash,visibleHeading:[...document.querySelectorAll('main h1, main h2, [role=main] h1, [role=main] h2')].filter(e=>e.getBoundingClientRect().height>0).map(e=>e.innerText.slice(0,75)).slice(0,4),mainText:(document.querySelector('main')?.innerText||'').slice(0,200)}));
+                console.log('NAV_CLICK:',JSON.stringify({section,...info}));
+              } catch(e){console.log('NAV_ERROR:',section,e.message.slice(0,250));}
+            }
+            console.log('ERRORS:',JSON.stringify(diagnostics));
+          }catch(e){console.log('FATAL:',e.toString());process.exitCode=1}finally{await browser.close()}
+          JS
+          node check-mobile.mjs
