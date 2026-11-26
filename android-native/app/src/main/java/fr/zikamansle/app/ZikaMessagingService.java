@@ -38,8 +38,14 @@ public final class ZikaMessagingService extends FirebaseMessagingService {
         if(body.length()>300)body=body.substring(0,300);
         Intent launch=new Intent(this,ZikaLauncherActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        Uri target=Uri.parse(data.containsKey("url")?data.get("url"):"");
+        String rawUrl = data.get("url");
+        if (rawUrl == null || rawUrl.isEmpty()) rawUrl = "/";
         Uri base=Uri.parse(getString(R.string.zika_launch_url));
+        Uri target=Uri.parse(rawUrl);
+        if (rawUrl.startsWith("/") && !rawUrl.startsWith("//")) {
+            target=base.buildUpon().encodedPath(target.getEncodedPath())
+                .encodedQuery(target.getEncodedQuery()).encodedFragment(target.getEncodedFragment()).build();
+        }
         if("https".equals(target.getScheme())&&base.getHost()!=null&&base.getHost().equals(target.getHost())
             &&target.getPort()==base.getPort())launch.setData(target);
         int notificationId=(int)(System.currentTimeMillis()&0x7fffffff);
