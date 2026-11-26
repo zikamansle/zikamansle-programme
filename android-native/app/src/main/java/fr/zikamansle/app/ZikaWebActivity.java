@@ -368,8 +368,8 @@ public final class ZikaWebActivity extends Activity {
           + "   var teamLinks=anchors.filter(isTeam);"
           + "   var official=teamLinks.find(function(a){return !a.hasAttribute('data-zikateam-native-menu');});"
           + "   if(official){teamLinks.forEach(function(a){if(a!==official&&a.hasAttribute('data-zikateam-native-menu'))a.remove();});}"
-          + "   else if(!teamLinks.length){"
-          + "     var source=anchors.find(function(a){return /Devenir partenaire/i.test(text(a));});"
+          + "   else if(!teamLinks.length&&location.hash==='#plus'){"
+          + "     var source=anchors.find(function(a){return a.closest('#main .list-menu')&&/Devenir partenaire/i.test(text(a));});"
           + "     if(source){"
           + "       var item=source.cloneNode(true);"
           + "       item.removeAttribute('id');item.removeAttribute('onclick');item.removeAttribute('target');"
@@ -442,7 +442,7 @@ public final class ZikaWebActivity extends Activity {
           + "   }"
           + " },true);"
           + " run();"
-          + " new MutationObserver(run).observe(document.documentElement,{subtree:true,childList:true});"
+          + " var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;run();});} new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true});"
           + "})();";
         view.evaluateJavascript(js, result ->
             android.util.Log.i("ZikaMansle", "ZIKA_NATIVE_UI_CLEANUP_READY"));
