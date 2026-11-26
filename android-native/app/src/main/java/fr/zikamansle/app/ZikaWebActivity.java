@@ -14,6 +14,8 @@ import com.google.firebase.FirebaseApp;
 import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
+import android.webkit.PermissionRequest;
+import android.graphics.Bitmap;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -39,6 +41,8 @@ import android.widget.FrameLayout;
 public final class ZikaWebActivity extends Activity {
     private static final int FILE_PICKER_REQUEST = 710;
     private static final int NOTIFICATION_REQUEST = 701;
+    private static final int MICROPHONE_REQUEST = 711;
+    private PermissionRequest pendingMicrophone;
     private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
     private static final String ASKED = "notification_permission_asked";
     private WebView web;
@@ -178,8 +182,62 @@ public final class ZikaWebActivity extends Activity {
         }
     }
 
+    // The WebView may only request audio capture on the official ZikaTeam page.
+    // No microphone is opened by this activity; the site's push-to-talk gesture
+    // remains the sole trigger for getUserMedia. Never grant video or unknown resources.
+    private boolean canGrantMicrophone(PermissionRequest request) {
+        if (request == null || web == null || isFinishing() || isDestroyed()
+            || !sameOrigin(request.getOrigin()) || !web.isShown()) return false;
+        String url = web.getUrl();
+        Uri current = url == null ? null : Uri.parse(url);
+        if (!sameOrigin(current)) return false;
+        String path = current.getPath();
+        if (!"/zikateam".equals(path) && !"/zikateam/".equals(path)) return false;
+        String[] resources = request.getResources();
+        return resources != null && resources.length == 1
+            && PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0]);
+    }
+
+    private void cancelPendingMicrophone() {
+        PermissionRequest request = pendingMicrophone;
+        pendingMicrophone = null;
+        if (request != null) request.deny();
+    }
+
+    private void handleMicrophoneRequest(PermissionRequest request) {
+        if (!canGrantMicrophone(request) || pendingMicrophone != null) {
+            request.deny();
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            return;
+        }
+        pendingMicrophone = request;
+        try {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MICROPHONE_REQUEST);
+        } catch (RuntimeException error) {
+            cancelPendingMicrophone();
+        }
+    }
+
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
+        if (code == MICROPHONE_REQUEST) {
+            PermissionRequest request = pendingMicrophone;
+            pendingMicrophone = null;
+            if (request != null) {
+                if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                    && canGrantMicrophone(request)) {
+                    request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                } else {
+                    request.deny();
+                }
+            }
+            return;
+        }
         if (code == NOTIFICATION_REQUEST) {
             boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
             ZikaPushRegistration.setApproved(this, granted);
@@ -263,6 +321,14 @@ public final class ZikaWebActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onPermissionRequest(PermissionRequest request) {
+                handleMicrophoneRequest(request);
+            }
+
+            @Override public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (pendingMicrophone == request) pendingMicrophone = null;
+            }
+
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
                 if (fullscreenView != null || isFinishing() || isDestroyed()) {
                     callback.onCustomViewHidden();
@@ -306,6 +372,11 @@ public final class ZikaWebActivity extends Activity {
             }
         });
         web.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                cancelPendingMicrophone();
+                super.onPageStarted(view, url, favicon);
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri target = request.getUrl();
                 if (sameOrigin(target) || isTeamOrigin(target)) return false;
@@ -555,6 +626,7 @@ public final class ZikaWebActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        cancelPendingMicrophone();
         closeFullscreen();
         if (pendingFiles != null) {
             pendingFiles.onReceiveValue(null);
