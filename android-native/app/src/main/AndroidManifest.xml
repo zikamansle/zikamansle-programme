@@ -36,6 +36,7 @@
         <!-- The application stays in the ZikaMansle process after notification consent. -->
         <activity
             android:name=".ZikaWebActivity"
+            android:launchMode="singleTop"
             android:exported="false"
             android:theme="@style/Theme.ZikaMansle" />
 
@@ -67,6 +68,16 @@
                 android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
                 android:value="@string/zika_launch_url" />
         </activity>
+
+        <!-- Private cache only; URI grants are scoped to the chosen camera application. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.zika.photos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/zika_photo_paths" />
+        </provider>
 
         <!-- Browser fallback when no compatible Trusted Web Activity provider is available. -->
         <activity
