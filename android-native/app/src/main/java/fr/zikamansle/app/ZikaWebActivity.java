@@ -74,6 +74,9 @@ public final class ZikaWebActivity extends Activity {
     private Uri cameraUri;
     private File cameraFile;
     private boolean talkActive;
+    private boolean activityResumed;
+    private boolean rendererUnresponsive;
+    private boolean recoveryRequested;
     private boolean routeSelected;
     private boolean oldSpeaker;
     private String talkRoute = "auto";
@@ -119,7 +122,7 @@ public final class ZikaWebActivity extends Activity {
         @JavascriptInterface public void setTalkActive(boolean enabled) {
             runOnUiThread(() -> {
                 if (!enabled) { stopTalkDevice(); return; }
-                if (!isReportPage() || !hasWindowFocus()) return;
+                if (!isReportPage() || !activityResumed) return;
                 talkActive = true;
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             });
@@ -323,6 +326,12 @@ public final class ZikaWebActivity extends Activity {
                 CookieManager.getInstance().flush();
                 if (web != null) {
                     loadError = false;
+                    if (rendererUnresponsive && Build.VERSION.SDK_INT >= 29) {
+                        WebViewRenderProcess renderer = web.getWebViewRenderProcess();
+                        recoveryRequested = renderer != null;
+                        if (renderer != null && renderer.terminate()) return;
+                        recoveryRequested = false;
+                    }
                     web.reload();
                 } else {
                     loadError = false;
@@ -644,21 +653,32 @@ public final class ZikaWebActivity extends Activity {
                 pendingFiles = null;
                 clearCamera(true);
                 stopTalkDevice();
+                fullscreenCallback = null;
                 closeFullscreen();
                 root.removeView(view);
                 web = null;
                 view.destroy();
                 loadError = true;
                 showRecovery("L’affichage de ZikaMansle a été interrompu. Tu peux relancer l’application.");
+                rendererUnresponsive = false;
+                if (recoveryRequested) {
+                    recoveryRequested = false;
+                    loadError = false;
+                    startWebView(recoveryUrl);
+                }
                 return true;
             }
         });
         if (Build.VERSION.SDK_INT >= 29) web.setWebViewRenderProcessClient(new WebViewRenderProcessClient() {
             @Override public void onRenderProcessUnresponsive(WebView view, WebViewRenderProcess renderer) {
-                if (web == view) showRecovery("L’application ne répond pas. Tu peux la relancer.");
+                if (web == view) {
+                    rendererUnresponsive = true;
+                    showRecovery("L’application ne répond pas. Tu peux la relancer.");
+                }
             }
             @Override public void onRenderProcessResponsive(WebView view, WebViewRenderProcess renderer) {
                 if (web == view && !loadError) {
+                    rendererUnresponsive = false;
                     status.setVisibility(View.GONE);
                     recoverButton.setVisibility(View.GONE);
                 }
@@ -879,7 +899,8 @@ public final class ZikaWebActivity extends Activity {
             if (web == null || web.getUrl() == null || !sameOrigin(Uri.parse(web.getUrl()))) selected = null;
             pendingFiles.onReceiveValue(selected);
             pendingFiles = null;
-            clearCamera(!captured || selected == null);
+            boolean retainPhoto = selected != null && cameraUri != null && java.util.Arrays.asList(selected).contains(cameraUri);
+            clearCamera(!retainPhoto);
         }
     }
 
@@ -905,7 +926,14 @@ public final class ZikaWebActivity extends Activity {
 
     // Persist the authenticated ZikaTeam cookie when the app goes to the background.
     // Never clear cookies on startup: members must remain signed in across launches.
+    @Override protected void onResume() {
+        super.onResume();
+        activityResumed = true;
+        if (web != null && isReportPage()) web.evaluateJavascript("if(window.__zikaSyncNativeTalk)window.__zikaSyncNativeTalk();", null);
+    }
+
     @Override protected void onPause() {
+        activityResumed = false;
         stopTalkDevice();
         CookieManager.getInstance().flush();
         super.onPause();
