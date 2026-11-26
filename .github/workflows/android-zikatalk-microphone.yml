@@ -3,6 +3,12 @@ on:
   push:
     branches:
       - fix/android-zikatalk-microphone-20261127
+  pull_request:
+    branches:
+      - fix/android-zikateam-session-routing-20261120
+    paths:
+      - 'android-native/**'
+      - '.github/workflows/android-zikatalk-microphone.yml'
   workflow_dispatch:
 permissions:
   contents: read
