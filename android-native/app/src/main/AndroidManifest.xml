@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Reserved for ZikaTalk; microphone requested only when explicitly enabled in ZikaTeam. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Only requested after an explicit position request; no background location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
         android:name=".ZikaApplication"
@@ -33,6 +40,10 @@
         <!-- The application stays in the ZikaMansle process after notification consent. -->
         <activity
             android:name=".ZikaWebActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
+            android:enableOnBackInvokedCallback="false"
+            android:launchMode="singleTop"
             android:exported="false"
             android:theme="@style/Theme.ZikaMansle" />
 
@@ -64,6 +75,16 @@
                 android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
                 android:value="@string/zika_launch_url" />
         </activity>
+
+        <!-- Private cache only; URI grants are scoped to the chosen camera application. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.zika.photos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/zika_photo_paths" />
+        </provider>
 
         <!-- Browser fallback when no compatible Trusted Web Activity provider is available. -->
         <activity

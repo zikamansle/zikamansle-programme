@@ -1,0 +1,67 @@
+name: Android ZikaMansle - compilation de test
+on:
+  push:
+    branches:
+      - fix/android-zikatalk-microphone-20261127
+  pull_request:
+    branches:
+      - fix/android-zikateam-session-routing-20261120
+    paths:
+      - 'android-native/**'
+      - '.github/workflows/android-zikatalk-microphone.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Installer Android 36
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"; fi
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - name: Restaurer la mascotte officielle
+        run: |
+          DIR=android-native/app/src/main/res
+          mkdir -p "$DIR/drawable-nodpi"
+          curl --fail --location --retry 3 https://app.zikamansle.fr/assets/icon-512.png -o "$DIR/drawable-nodpi/zika_icon.png"
+          echo "0516c318b7fd0e74978b2f75995fa5e40a96a875d2e7c518be8f3218336bab89  $DIR/drawable-nodpi/zika_icon.png" | sha256sum -c -
+          rm "$DIR/drawable/zika_icon.xml"
+      - name: Compiler les variantes
+        run: gradle -p android-native :app:assembleDebug :app:bundleRelease --no-daemon
+      - name: Vérifier les artefacts et les permissions
+        run: |
+          test -s android-native/app/build/outputs/apk/debug/app-debug.apk
+          test -s android-native/app/build/outputs/bundle/release/app-release.aab
+          AAPT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0/aapt"
+          "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -F "android.permission.RECORD_AUDIO"
+          "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -F "android.permission.MODIFY_AUDIO_SETTINGS"
+          if "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -E "android.permission.(CAMERA|MANAGE_EXTERNAL_STORAGE|FOREGROUND_SERVICE_MICROPHONE)"; then exit 1; fi
+          "$AAPT" dump badging android-native/app/build/outputs/apk/debug/app-debug.apk | grep "versionCode='22'"
+          python3 -c 'import zipfile,struct; z=zipfile.ZipFile("android-native/app/build/outputs/bundle/release/app-release.aab"); names=[n for n in z.namelist() if n.startswith("base/res/") and n.endswith("/zika_icon.png")]; assert len(names)==1,names; b=z.read(names[0]); assert b[:8]==bytes.fromhex("89504e470d0a1a0a") and struct.unpack(">II",b[16:24])==(512,512); print("Launcher PNG 512x512 verified:",names[0])'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-1.0.21-code22-build
+          path: |
+            android-native/app/build/outputs/apk/debug/app-debug.apk
+            android-native/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-1.0.20-code21-build
+          path: |
+            android-native/app/build/outputs/apk/debug/app-debug.apk
+            android-native/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

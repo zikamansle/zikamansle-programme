@@ -23,8 +23,8 @@ android {
         applicationId 'fr.zikamansle.app'
         minSdk 24
         targetSdk 36
-        versionCode 19
-        versionName '1.0.18'
+        versionCode 22
+        versionName '1.0.21'
         resValue 'string', 'zika_launch_url', nativeLaunch(launchUrl)
 
     }
@@ -85,6 +85,8 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.core:core:1.15.0'
+    implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
     implementation platform('com.google.firebase:firebase-bom:35.1.0')
     implementation 'com.google.firebase:firebase-messaging'
