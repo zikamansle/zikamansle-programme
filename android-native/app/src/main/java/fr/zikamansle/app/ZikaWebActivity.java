@@ -131,8 +131,10 @@ public final class ZikaWebActivity extends Activity {
                 new AlertDialog.Builder(ZikaWebActivity.this)
                     .setTitle("Document prêt")
                     .setMessage(name)
-                    .setItems(new String[]{"Enregistrer sur le téléphone","Partager par mail ou messagerie"},(dialog, which) ->
-                        prepareExport(name,mime,encoded,pdf,which == 0))
+                    .setPositiveButton("Enregistrer",(dialog, which) ->
+                        prepareExport(name,mime,encoded,pdf,true))
+                    .setNeutralButton("Partager",(dialog, which) ->
+                        prepareExport(name,mime,encoded,pdf,false))
                     .setNegativeButton("Annuler",null).show();
             });
             return true;
