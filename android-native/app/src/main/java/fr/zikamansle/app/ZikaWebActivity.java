@@ -112,8 +112,23 @@ public final class ZikaWebActivity extends Activity {
             if (sameOrigin(restored)) initial = restored;
         }
         startWebView(initial);
+        registerTeamShortcut();
         // The app window exists before any notification prompt is shown.
         askNotificationPermissionIfNeeded();
+    }
+
+    private void registerTeamShortcut() {
+        if (Build.VERSION.SDK_INT < 25) return;
+        try {
+            android.content.pm.ShortcutManager manager=getSystemService(android.content.pm.ShortcutManager.class);
+            if(manager==null || manager.isRateLimitingActive())return;
+            Intent intent=new Intent(this,ZikaLauncherActivity.class).setAction(Intent.ACTION_VIEW).setData(teamUrl);
+            android.content.pm.ShortcutInfo shortcut=new android.content.pm.ShortcutInfo.Builder(this,"zika-team")
+                .setShortLabel("ZikaTeam").setLongLabel("Ouvrir ZikaTeam")
+                .setIcon(android.graphics.drawable.Icon.createWithResource(this,R.drawable.zika_icon))
+                .setIntent(intent).build();
+            manager.addDynamicShortcuts(java.util.Collections.singletonList(shortcut));
+        }catch(RuntimeException ignored){}
     }
 
     private void askNotificationPermissionIfNeeded() {
@@ -879,6 +894,7 @@ public final class ZikaWebActivity extends Activity {
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 if (web != view) return false;
+                finishLocation(false);
                 stopTalkDevice();
                 pendingMicrophone = null;
                 pendingDictation = null;
@@ -1190,6 +1206,7 @@ public final class ZikaWebActivity extends Activity {
         if (!sameOrigin(incoming)) return;
         stopTalkDevice();
         cancelPendingMicrophone();
+        finishLocation(false);
         CookieManager.getInstance().flush();
         if (web != null) web.loadUrl(incoming.toString());
         else { loadError = false; startWebView(incoming); }
