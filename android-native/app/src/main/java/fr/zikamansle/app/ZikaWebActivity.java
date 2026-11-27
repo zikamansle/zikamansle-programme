@@ -15,6 +15,9 @@ import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.PermissionRequest;
+import android.media.AudioManager;
+import android.media.AudioDeviceInfo;
+import android.view.WindowManager;
 import android.speech.RecognizerIntent;
 import org.json.JSONObject;
 import java.util.ArrayList;
@@ -59,6 +62,10 @@ public final class ZikaWebActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 701;
     private static final int DICTATION_REQUEST = 712;
     private String pendingDictation;
+    private static final int MICROPHONE_REQUEST = 711;
+    private PermissionRequest pendingMicrophone;
+    private boolean talkActive, activityResumed, routeSelected, oldSpeaker;
+    private String talkRoute = "auto";
     private static final int DOCUMENT_SAVE_REQUEST = 713;
     private File pendingExport;
     private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
@@ -138,6 +145,23 @@ public final class ZikaWebActivity extends Activity {
                     .setNegativeButton("Annuler",null).show();
             });
             return true;
+        }
+
+        @JavascriptInterface public void setTalkActive(boolean enabled) {
+            runOnUiThread(() -> {
+                if (!enabled) { stopTalkDevice(); return; }
+                if (!isReportPage() || !activityResumed) return;
+                talkActive = true;
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            });
+        }
+
+        @JavascriptInterface public void setTalkAudioRoute(String route) {
+            runOnUiThread(() -> {
+                if (!isReportPage() || !talkActive || !hasWindowFocus()) return;
+                if (!"auto".equals(route) && !"speaker".equals(route) && !"headset".equals(route)) return;
+                chooseTalkRoute(route);
+            });
         }
 
         @JavascriptInterface public void recoverApplication() {
@@ -302,6 +326,62 @@ public final class ZikaWebActivity extends Activity {
         }
     }
 
+    private void chooseTalkRoute(String route) {
+        AudioManager manager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (manager == null) return;
+        boolean ok = false;
+        try {
+            if ("auto".equals(route)) {
+                clearTalkRoute();
+                ok = true;
+            } else if (Build.VERSION.SDK_INT >= 31) {
+                AudioDeviceInfo target = null;
+                for (AudioDeviceInfo device : manager.getAvailableCommunicationDevices()) {
+                    int type = device.getType();
+                    if ("speaker".equals(route) && type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                        target = device; break;
+                    }
+                    if ("headset".equals(route) && (type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                        || type == AudioDeviceInfo.TYPE_BLE_HEADSET || type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+                        || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES || type == AudioDeviceInfo.TYPE_USB_HEADSET)) {
+                        target = device; break;
+                    }
+                }
+                if (target != null) {
+                    ok = manager.setCommunicationDevice(target);
+                    if (ok) routeSelected = true;
+                }
+            } else if ("speaker".equals(route)) {
+                if (!routeSelected) oldSpeaker = manager.isSpeakerphoneOn();
+                manager.setSpeakerphoneOn(true);
+                routeSelected = true; ok = true;
+            }
+        } catch (RuntimeException ignored) { }
+        if (ok) talkRoute = route;
+        if (isReportPage()) web.evaluateJavascript(
+            "if(typeof window.__zikaTalkRouteResult==='function')window.__zikaTalkRouteResult("
+            + JSONObject.quote(talkRoute) + "," + ok + ");", null);
+    }
+
+    private void clearTalkRoute() {
+        if (!routeSelected) return;
+        AudioManager manager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        try {
+            if (manager != null) {
+                if (Build.VERSION.SDK_INT >= 31) manager.clearCommunicationDevice();
+                else manager.setSpeakerphoneOn(oldSpeaker);
+            }
+        } catch (RuntimeException ignored) { }
+        routeSelected = false;
+        talkRoute = "auto";
+    }
+
+    private void stopTalkDevice() {
+        talkActive = false;
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        clearTalkRoute();
+    }
+
     private void confirmRecovery() {
         new AlertDialog.Builder(this).setTitle("Relancer ZikaMansle")
             .setMessage("La connexion sera conservée. Les modifications non enregistrées et les échanges en cours peuvent être perdus.")
@@ -373,8 +453,59 @@ public final class ZikaWebActivity extends Activity {
             + JSONObject.quote(safe) + "," + JSONObject.quote(status) + ");", null);
     }
 
+    private boolean canGrantMicrophone(PermissionRequest request) {
+        if (!talkActive || !activityResumed || request == null || web == null || isFinishing() || isDestroyed()
+            || !sameOrigin(request.getOrigin()) || !web.isShown()) return false;
+        String url = web.getUrl();
+        Uri current = url == null ? null : Uri.parse(url);
+        if (!sameOrigin(current)) return false;
+        String path = current.getPath();
+        if (!"/zikateam".equals(path) && !"/zikateam/".equals(path)) return false;
+        String[] resources = request.getResources();
+        return resources != null && resources.length == 1
+            && PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0]);
+    }
+
+    private void cancelPendingMicrophone() {
+        PermissionRequest request = pendingMicrophone;
+        pendingMicrophone = null;
+        if (request != null) request.deny();
+    }
+
+    private void handleMicrophoneRequest(PermissionRequest request) {
+        if (!canGrantMicrophone(request) || pendingMicrophone != null || pendingDictation != null) {
+            request.deny();
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            return;
+        }
+        pendingMicrophone = request;
+        try {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MICROPHONE_REQUEST);
+        } catch (RuntimeException error) {
+            cancelPendingMicrophone();
+        }
+    }
+
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
+        if (code == MICROPHONE_REQUEST) {
+            PermissionRequest request = pendingMicrophone;
+            pendingMicrophone = null;
+            if (request != null) {
+                if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                    && canGrantMicrophone(request)) {
+                    request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                } else {
+                    request.deny();
+                }
+            }
+            return;
+        }
         if (code == NOTIFICATION_REQUEST) {
             boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
             ZikaPushRegistration.setApproved(this, granted);
@@ -464,7 +595,10 @@ public final class ZikaWebActivity extends Activity {
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest request) {
-                request.deny(); // Android dictation uses its own visible activity.
+                handleMicrophoneRequest(request);
+            }
+            @Override public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (pendingMicrophone == request) pendingMicrophone = null;
             }
 
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
@@ -530,6 +664,8 @@ public final class ZikaWebActivity extends Activity {
         });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                stopTalkDevice();
+                cancelPendingMicrophone();
                 pendingDictation = null;
                 loadError = false;
                 if (sameOrigin(Uri.parse(url))) recoveryUrl = Uri.parse(url);
@@ -575,6 +711,8 @@ public final class ZikaWebActivity extends Activity {
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 if (web != view) return false;
+                stopTalkDevice();
+                pendingMicrophone = null;
                 pendingDictation = null;
                 pendingFiles = null;
                 clearCamera(true);
@@ -758,7 +896,7 @@ public final class ZikaWebActivity extends Activity {
           + "   }"
           + " },true);"
           + " run();"
-          + " new MutationObserver(run).observe(document.documentElement,{subtree:true,childList:true});"
+          + " var queued=false;new MutationObserver(function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;run();});}).observe(document.documentElement,{subtree:true,childList:true});"
           + "})();";
         view.evaluateJavascript(js, result ->
             android.util.Log.i("ZikaMansle", "ZIKA_NATIVE_UI_CLEANUP_READY"));
@@ -853,6 +991,8 @@ public final class ZikaWebActivity extends Activity {
         setIntent(intent);
         Uri incoming = intent == null ? null : intent.getData();
         if (!sameOrigin(incoming)) return;
+        stopTalkDevice();
+        cancelPendingMicrophone();
         CookieManager.getInstance().flush();
         if (web != null) web.loadUrl(incoming.toString());
         else { loadError = false; startWebView(incoming); }
@@ -869,12 +1009,22 @@ public final class ZikaWebActivity extends Activity {
 
     // Persist the authenticated ZikaTeam cookie when the app goes to the background.
     // Never clear cookies on startup: members must remain signed in across launches.
+    @Override protected void onResume() {
+        super.onResume();
+        activityResumed = true;
+        if (web != null && isReportPage()) web.evaluateJavascript("if(window.__zikaSyncNativeTalk)window.__zikaSyncNativeTalk();",null);
+    }
+
     @Override protected void onPause() {
+        activityResumed = false;
+        stopTalkDevice();
         CookieManager.getInstance().flush();
         super.onPause();
     }
 
     @Override protected void onDestroy() {
+        stopTalkDevice();
+        cancelPendingMicrophone();
         clearCamera(true);
         if (pendingExport != null) { pendingExport.delete(); pendingExport=null; }
         pendingDictation = null;
