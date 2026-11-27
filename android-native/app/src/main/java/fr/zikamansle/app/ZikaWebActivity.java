@@ -70,6 +70,8 @@ public final class ZikaWebActivity extends Activity {
     private static final int LOCATION_REQUEST = 714;
     private GeolocationPermissions.Callback pendingLocation;
     private String pendingLocationOrigin;
+    private static final int QR_REQUEST = 715;
+    private String pendingQrToken, pendingQrPage;
     private boolean talkActive, activityResumed, routeSelected, oldSpeaker;
     private String talkRoute = "auto";
     private static final int DOCUMENT_SAVE_REQUEST = 713;
@@ -177,6 +179,23 @@ public final class ZikaWebActivity extends Activity {
                 catch (ActivityNotFoundException | SecurityException error) { Toast.makeText(ZikaWebActivity.this,"Aucun agenda disponible.",Toast.LENGTH_LONG).show(); }
             });
             return true;
+        }
+
+        // Prepared for future ticketing/activities. No scanner is exposed until the web UI enables it.
+        @JavascriptInterface public void scanQr(String token) {
+            if (token == null || !token.matches("[A-Za-z0-9_-]{8,80}")) return;
+            runOnUiThread(() -> {
+                if (!officialPageActive() || pendingQrToken!=null || pendingFiles!=null || pendingDictation!=null) return;
+                clearCamera(true);
+                pendingQrToken=token; pendingQrPage=web.getUrl();
+                Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                pick.addCategory(Intent.CATEGORY_OPENABLE); pick.setType("image/*");
+                Intent chooser=Intent.createChooser(pick,"Scanner un QR code");
+                Intent camera=photoIntent();
+                if (camera!=null) chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS,new Intent[]{camera});
+                try { startActivityForResult(chooser,QR_REQUEST); }
+                catch (RuntimeException error) { deliverQr(token,pendingQrPage,"","unavailable"); pendingQrToken=null; pendingQrPage=null; clearCamera(true); }
+            });
         }
 
         @JavascriptInterface public void openAndroidSettings() {
@@ -502,6 +521,42 @@ public final class ZikaWebActivity extends Activity {
         }
     }
 
+    private void deliverQr(String token, String page, String value, String status) {
+        if (web==null || page==null || !page.equals(web.getUrl()) || !sameOrigin(Uri.parse(page))) return;
+        web.evaluateJavascript("if(typeof window.__zikaQrResult==='function')window.__zikaQrResult("
+            +JSONObject.quote(token)+","+JSONObject.quote(value)+","+JSONObject.quote(status)+");",null);
+    }
+
+    private String decodeQr(Uri uri) throws IOException, com.google.zxing.NotFoundException {
+        android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();
+        options.inJustDecodeBounds=true;
+        try (InputStream in=getContentResolver().openInputStream(uri)) {
+            if(in==null) throw new IOException("Image indisponible");
+            android.graphics.BitmapFactory.decodeStream(in,null,options);
+        }
+        if(options.outWidth<=0||options.outHeight<=0)throw new IOException("Image invalide");
+        options.inJustDecodeBounds=false; options.inSampleSize=1;
+        while (Math.max(options.outWidth,options.outHeight)/options.inSampleSize>1800) options.inSampleSize*=2;
+        Bitmap bitmap;
+        try (InputStream in=getContentResolver().openInputStream(uri)) {
+            if(in==null)throw new IOException("Image indisponible");
+            bitmap=android.graphics.BitmapFactory.decodeStream(in,null,options);
+        }
+        if(bitmap==null)throw new IOException("Image invalide");
+        try {
+            int width=bitmap.getWidth(),height=bitmap.getHeight();
+            int[] pixels=new int[width*height];bitmap.getPixels(pixels,0,width,0,0,width,height);
+            com.google.zxing.RGBLuminanceSource source=new com.google.zxing.RGBLuminanceSource(width,height,pixels);
+            com.google.zxing.BinaryBitmap image=new com.google.zxing.BinaryBitmap(new com.google.zxing.common.HybridBinarizer(source));
+            java.util.Map<com.google.zxing.DecodeHintType,Object> hints=new java.util.EnumMap<>(com.google.zxing.DecodeHintType.class);
+            hints.put(com.google.zxing.DecodeHintType.POSSIBLE_FORMATS,java.util.Collections.singletonList(com.google.zxing.BarcodeFormat.QR_CODE));
+            hints.put(com.google.zxing.DecodeHintType.TRY_HARDER,Boolean.TRUE);
+            String value=new com.google.zxing.MultiFormatReader().decode(image,hints).getText();
+            if(value==null||value.length()>4096)throw new IOException("QR non pris en charge");
+            return value;
+        } finally { bitmap.recycle(); }
+    }
+
     private boolean officialPageActive() {
         return activityResumed && hasWindowFocus() && web != null && !isFinishing() && !isDestroyed()
             && web.getUrl()!=null && sameOrigin(Uri.parse(web.getUrl()));
@@ -735,6 +790,7 @@ public final class ZikaWebActivity extends Activity {
             }
             @Override public boolean onShowFileChooser(WebView view,
                 ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (pendingQrToken != null) { callback.onReceiveValue(null); return true; }
                 if (pendingFiles != null) pendingFiles.onReceiveValue(null);
                 clearCamera(true);
                 if (view.getUrl() == null || !sameOrigin(Uri.parse(view.getUrl()))) {
@@ -1052,6 +1108,30 @@ public final class ZikaWebActivity extends Activity {
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
         super.onActivityResult(code, result, data);
+        if (code == QR_REQUEST) {
+            String token=pendingQrToken,page=pendingQrPage;
+            pendingQrToken=null;pendingQrPage=null;
+            Uri chosen=result==RESULT_OK && data!=null?data.getData():null;
+            if (chosen==null && result==RESULT_OK && cameraFile!=null && cameraFile.length()>0) chosen=cameraUri;
+            if (token==null || chosen==null || !"content".equals(chosen.getScheme())) {
+                clearCamera(true);
+                if(token!=null) deliverQr(token,page,"",result==RESULT_OK?"invalid":"cancelled");
+                return;
+            }
+            final Uri source=chosen;
+            final File captured=cameraFile;
+            clearCamera(false);
+            new Thread(()->{
+                String value="",status="ok";
+                try { value=decodeQr(source); }
+                catch (com.google.zxing.NotFoundException error) { status="not_found"; }
+                catch (IOException | RuntimeException error) { status="invalid"; }
+                finally { if(captured!=null)captured.delete(); }
+                final String decoded=value,outcome=status;
+                runOnUiThread(()->deliverQr(token,page,decoded,outcome));
+            },"zika-qr").start();
+            return;
+        }
         if (code == DOCUMENT_SAVE_REQUEST) {
             File file = pendingExport;
             pendingExport = null;
