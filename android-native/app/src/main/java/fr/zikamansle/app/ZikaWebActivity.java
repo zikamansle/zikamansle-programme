@@ -104,7 +104,12 @@ public final class ZikaWebActivity extends Activity {
             showProblem("Adresse de l’application incorrecte.");
             return;
         }
-        startWebView(getIntent() != null ? getIntent().getData() : null);
+        Uri initial = getIntent() != null ? getIntent().getData() : null;
+        if (state != null && state.getString("zika_page") != null) {
+            Uri restored = Uri.parse(state.getString("zika_page"));
+            if (sameOrigin(restored)) initial = restored;
+        }
+        startWebView(initial);
         // The app window exists before any notification prompt is shown.
         askNotificationPermissionIfNeeded();
     }
@@ -156,7 +161,7 @@ public final class ZikaWebActivity extends Activity {
             runOnUiThread(() -> { if (officialPageActive()) web.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); });
         }
 
-        @JavascriptInterface public boolean addCalendarEvent(String title, long begin, long end, String location, String description) {
+        @JavascriptInterface public boolean addCalendarEvent(String title, long begin, long end, String location, String description, boolean allDay) {
             if (title == null || title.trim().isEmpty() || title.length()>200 || location == null || location.length()>300
                 || description == null || description.length()>4000 || begin<=0 || end<=begin || end-begin>7*86400000L) return false;
             runOnUiThread(() -> {
@@ -165,6 +170,7 @@ public final class ZikaWebActivity extends Activity {
                 intent.putExtra(android.provider.CalendarContract.Events.TITLE,title);
                 intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME,begin);
                 intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME,end);
+                intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_ALL_DAY,allDay);
                 intent.putExtra(android.provider.CalendarContract.Events.EVENT_LOCATION,location);
                 intent.putExtra(android.provider.CalendarContract.Events.DESCRIPTION,description);
                 try { startActivity(intent); }
@@ -487,7 +493,7 @@ public final class ZikaWebActivity extends Activity {
             cameraUri = FileProvider.getUriForFile(this, getPackageName() + ".zika.photos", cameraFile);
             Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             camera.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
-            camera.setClipData(ClipData.newRawUri("Photo ZikaTeam", cameraUri));
+            camera.setClipData(ClipData.newRawUri("Photo ZikaMansle", cameraUri));
             camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             return camera;
         } catch (IOException | RuntimeException error) {
@@ -777,7 +783,7 @@ public final class ZikaWebActivity extends Activity {
                 Uri target = request.getUrl();
                 if (sameOrigin(target) || isTeamOrigin(target)) return false;
                 if ("https".equals(target.getScheme()) || "http".equals(target.getScheme()) ||
-                    "mailto".equals(target.getScheme()) || "tel".equals(target.getScheme())) {
+                    "mailto".equals(target.getScheme()) || "tel".equals(target.getScheme()) || "sms".equals(target.getScheme())) {
                     try {
                         startActivity(new Intent(Intent.ACTION_VIEW, target));
                     } catch (ActivityNotFoundException | SecurityException ignored) {
@@ -876,7 +882,9 @@ public final class ZikaWebActivity extends Activity {
           + " if(window.__zikaNativeUiCleanup)return;"
           + " window.__zikaNativeUiCleanup=true;"
           + " if(window.ZikaAndroid&&typeof ZikaAndroid.shareText==='function'&&!navigator.share){try{Object.defineProperty(navigator,'share',{configurable:true,value:function(data){return new Promise(function(ok,fail){if(!navigator.userActivation||!navigator.userActivation.isActive){fail(new DOMException('Action requise','NotAllowedError'));return;}if(!data||data.files){fail(new DOMException('Partage de fichier non disponible','TypeError'));return;}if(ZikaAndroid.shareText(String(data.title||''),String(data.text||''),String(data.url||'')))ok();else fail(new Error('Partage refusé'));});}});}catch(e){}}"
-          + " window.__zikaNativeCloseOverlay=function(){var dialogs=document.querySelectorAll('[data-zika-native-overlay]');var last=dialogs[dialogs.length-1];if(last){last.remove();return true;}return false;};"
+          + " window.__zikaNativeCloseOverlay=function(){var dialogs=Array.from(document.querySelectorAll('[data-zika-native-overlay],[role=dialog]')).filter(function(d){return d.getAttribute('aria-label')==='Aperçu du document'||d.hasAttribute('data-zika-native-overlay');});var last=dialogs[dialogs.length-1];if(last){last.remove();return true;}return false;};"
+          + " function calendarStamp(v,zone){if(!/^[0-9]{8}(T[0-9]{6})?$/.test(v))return NaN;var target=Date.UTC(+v.slice(0,4),+v.slice(4,6)-1,+v.slice(6,8),+(v.slice(9,11)||0),+(v.slice(11,13)||0),+(v.slice(13,15)||0));if(v.length===8)return target;var guess=target,fmt=new Intl.DateTimeFormat('en-GB',{timeZone:zone||'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});for(var i=0;i<2;i++){var p={};fmt.formatToParts(new Date(guess)).forEach(function(x){p[x.type]=x.value});guess+=target-Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);}return guess;}"
+          + " document.addEventListener('click',function(e){var a=e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href);if(u.origin!=='https://calendar.google.com'||u.pathname!=='/calendar/render'||u.searchParams.get('action')!=='TEMPLATE')return;var dates=(u.searchParams.get('dates')||'').split('/');if(dates.length!==2)return;var begin=calendarStamp(dates[0],u.searchParams.get('ctz')),end=calendarStamp(dates[1],u.searchParams.get('ctz'));if(Number.isFinite(begin)&&Number.isFinite(end)&&ZikaAndroid.addCalendarEvent(u.searchParams.get('text')||'',begin,end,u.searchParams.get('location')||'',u.searchParams.get('details')||'',dates[0].length===8)){e.preventDefault();e.stopImmediatePropagation();}}catch(err){}},true);"
           + " function text(el){return (el.textContent||'').replace(/\\s+/g,' ').trim();}"
           + " function isTeam(a){return a.matches('a[href]')&&(/(?:^|\\/)zikateam(?:\\/|$|[?#])/i.test(a.getAttribute('href')||'')||/^ZikaTeam(?:\\s|$)/i.test(text(a)));}"
           + " function isNews(){"
@@ -1121,6 +1129,14 @@ public final class ZikaWebActivity extends Activity {
 
     // Persist the authenticated ZikaTeam cookie when the app goes to the background.
     // Never clear cookies on startup: members must remain signed in across launches.
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        if (web != null && web.getUrl()!=null) {
+            Uri uri = Uri.parse(web.getUrl());
+            if (sameOrigin(uri)) outState.putString("zika_page",uri.buildUpon().clearQuery().build().toString());
+        }
+        super.onSaveInstanceState(outState);
+    }
+
     @Override protected void onResume() {
         super.onResume();
         activityResumed = true;
