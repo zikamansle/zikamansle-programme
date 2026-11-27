@@ -31,6 +31,13 @@ jobs:
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - name: Restaurer la mascotte officielle
+        run: |
+          DIR=android-native/app/src/main/res
+          mkdir -p "$DIR/drawable-nodpi"
+          curl --fail --location --retry 3 https://app.zikamansle.fr/assets/icon-512.png -o "$DIR/drawable-nodpi/zika_icon.png"
+          echo "0516c318b7fd0e74978b2f75995fa5e40a96a875d2e7c518be8f3218336bab89  $DIR/drawable-nodpi/zika_icon.png" | sha256sum -c -
+          rm "$DIR/drawable/zika_icon.xml"
       - name: Compiler les variantes
         run: gradle -p android-native :app:assembleDebug :app:bundleRelease --no-daemon
       - name: Vérifier les artefacts et les permissions
@@ -41,7 +48,16 @@ jobs:
           "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -F "android.permission.RECORD_AUDIO"
           "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -F "android.permission.MODIFY_AUDIO_SETTINGS"
           if "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -E "android.permission.(CAMERA|MANAGE_EXTERNAL_STORAGE|FOREGROUND_SERVICE_MICROPHONE)"; then exit 1; fi
-          "$AAPT" dump badging android-native/app/build/outputs/apk/debug/app-debug.apk | grep "versionCode='21'"
+          "$AAPT" dump badging android-native/app/build/outputs/apk/debug/app-debug.apk | grep "versionCode='22'"
+          unzip -Z1 android-native/app/build/outputs/bundle/release/app-release.aab | grep -E 'base/res/drawable-nodpi(-v4)?/zika_icon.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zikamansle-1.0.21-code22-build
+          path: |
+            android-native/app/build/outputs/apk/debug/app-debug.apk
+            android-native/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v4
         with:
           name: zikamansle-1.0.20-code21-build
