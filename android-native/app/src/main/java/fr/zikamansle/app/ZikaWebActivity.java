@@ -175,7 +175,7 @@ public final class ZikaWebActivity extends Activity {
         @JavascriptInterface public void dictateReport(String token) {
             if (token == null || !token.matches("[a-zA-Z0-9_-]{8,80}")) return;
             runOnUiThread(() -> {
-                if (!isReportPage() || pendingDictation != null) {
+                if (!isReportPage() || pendingDictation != null || pendingMicrophone != null) {
                     deliverDictation(token, "", "busy");
                     return;
                 }
