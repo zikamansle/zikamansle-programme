@@ -1,4 +1,4 @@
-name: ZikaTalk Android - compilation de test
+name: Android ZikaMansle - compilation de test
 on:
   push:
     branches:
@@ -33,12 +33,12 @@ jobs:
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
       - name: Compiler les variantes
         run: gradle -p android-native :app:assembleDebug :app:bundleRelease --no-daemon
-      - name: Vérifier les artefacts et la permission
+      - name: Vérifier les artefacts et les permissions
         run: |
           test -s android-native/app/build/outputs/apk/debug/app-debug.apk
           test -s android-native/app/build/outputs/bundle/release/app-release.aab
           AAPT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0/aapt"
-          "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep android.permission.RECORD_AUDIO
+          if "$AAPT" dump permissions android-native/app/build/outputs/apk/debug/app-debug.apk | grep -E "android.permission.(RECORD_AUDIO|MODIFY_AUDIO_SETTINGS)"; then exit 1; fi
           "$AAPT" dump badging android-native/app/build/outputs/apk/debug/app-debug.apk | grep "versionCode='20'"
       - uses: actions/upload-artifact@v4
         with:
