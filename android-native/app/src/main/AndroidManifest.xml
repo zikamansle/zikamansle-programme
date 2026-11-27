@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Reserved for ZikaTalk; microphone requested only when explicitly enabled in ZikaTeam. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
@@ -33,6 +37,7 @@
         <!-- The application stays in the ZikaMansle process after notification consent. -->
         <activity
             android:name=".ZikaWebActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:launchMode="singleTop"
             android:exported="false"
             android:theme="@style/Theme.ZikaMansle" />
