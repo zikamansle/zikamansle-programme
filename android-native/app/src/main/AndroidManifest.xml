@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Only requested after an explicit position request; no background location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
         android:name=".ZikaApplication"
@@ -38,6 +41,8 @@
         <activity
             android:name=".ZikaWebActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
+            android:enableOnBackInvokedCallback="false"
             android:launchMode="singleTop"
             android:exported="false"
             android:theme="@style/Theme.ZikaMansle" />
