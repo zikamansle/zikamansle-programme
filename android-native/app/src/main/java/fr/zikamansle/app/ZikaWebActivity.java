@@ -15,6 +15,9 @@ import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.PermissionRequest;
+import android.webkit.GeolocationPermissions;
+import android.webkit.WebResourceResponse;
+import android.view.HapticFeedbackConstants;
 import android.media.AudioManager;
 import android.media.AudioDeviceInfo;
 import android.view.WindowManager;
@@ -64,6 +67,9 @@ public final class ZikaWebActivity extends Activity {
     private String pendingDictation;
     private static final int MICROPHONE_REQUEST = 711;
     private PermissionRequest pendingMicrophone;
+    private static final int LOCATION_REQUEST = 714;
+    private GeolocationPermissions.Callback pendingLocation;
+    private String pendingLocationOrigin;
     private boolean talkActive, activityResumed, routeSelected, oldSpeaker;
     private String talkRoute = "auto";
     private static final int DOCUMENT_SAVE_REQUEST = 713;
@@ -123,6 +129,58 @@ public final class ZikaWebActivity extends Activity {
 
     /** Android-only notification controls. No browser PushManager is used. */
     public final class NativeNotificationBridge {
+        @JavascriptInterface public String getAppVersion() {
+            try { return getPackageManager().getPackageInfo(getPackageName(),0).versionName; }
+            catch (PackageManager.NameNotFoundException error) { return ""; }
+        }
+
+        @JavascriptInterface public boolean shareText(String title, String text, String url) {
+            if (title == null || text == null || url == null || title.length()>200 || text.length()>12000 || url.length()>4000) return false;
+            if (!url.isEmpty() && !"https".equals(Uri.parse(url).getScheme())) return false;
+            if (text.trim().isEmpty() && url.trim().isEmpty()) return false;
+            runOnUiThread(() -> {
+                if (!officialPageActive()) return;
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(Intent.EXTRA_SUBJECT,title);
+                send.putExtra(Intent.EXTRA_TEXT,text+(url.isEmpty()?"":(text.isEmpty()?"":"\n")+url));
+                try { startActivity(Intent.createChooser(send,"Partager")); }
+                catch (ActivityNotFoundException | SecurityException error) {
+                    Toast.makeText(ZikaWebActivity.this,"Partage indisponible.",Toast.LENGTH_LONG).show();
+                }
+            });
+            return true;
+        }
+
+        @JavascriptInterface public void hapticFeedback() {
+            runOnUiThread(() -> { if (officialPageActive()) web.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); });
+        }
+
+        @JavascriptInterface public boolean addCalendarEvent(String title, long begin, long end, String location, String description) {
+            if (title == null || title.trim().isEmpty() || title.length()>200 || location == null || location.length()>300
+                || description == null || description.length()>4000 || begin<=0 || end<=begin || end-begin>7*86400000L) return false;
+            runOnUiThread(() -> {
+                if (!officialPageActive()) return;
+                Intent intent = new Intent(Intent.ACTION_INSERT,android.provider.CalendarContract.Events.CONTENT_URI);
+                intent.putExtra(android.provider.CalendarContract.Events.TITLE,title);
+                intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME,begin);
+                intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME,end);
+                intent.putExtra(android.provider.CalendarContract.Events.EVENT_LOCATION,location);
+                intent.putExtra(android.provider.CalendarContract.Events.DESCRIPTION,description);
+                try { startActivity(intent); }
+                catch (ActivityNotFoundException | SecurityException error) { Toast.makeText(ZikaWebActivity.this,"Aucun agenda disponible.",Toast.LENGTH_LONG).show(); }
+            });
+            return true;
+        }
+
+        @JavascriptInterface public void openAndroidSettings() {
+            runOnUiThread(() -> {
+                if (!officialPageActive()) return;
+                try { startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))); }
+                catch (ActivityNotFoundException | SecurityException ignored) {}
+            });
+        }
+
         @JavascriptInterface public boolean exportDocument(String name, String mime, String encoded) {
             if (name == null || mime == null || encoded == null || encoded.length() > 28_000_000
                 || !name.matches("[A-Za-z0-9_-]{1,90}\\.(pdf|docx)")) return false;
@@ -438,6 +496,18 @@ public final class ZikaWebActivity extends Activity {
         }
     }
 
+    private boolean officialPageActive() {
+        return activityResumed && hasWindowFocus() && web != null && !isFinishing() && !isDestroyed()
+            && web.getUrl()!=null && sameOrigin(Uri.parse(web.getUrl()));
+    }
+
+    private void finishLocation(boolean allowed) {
+        GeolocationPermissions.Callback callback = pendingLocation;
+        String origin = pendingLocationOrigin;
+        pendingLocation = null; pendingLocationOrigin = null;
+        if (callback != null) callback.invoke(origin,allowed,false);
+    }
+
     private boolean isReportPage() {
         if (web == null || isFinishing() || isDestroyed() || web.getUrl() == null) return false;
         Uri current = Uri.parse(web.getUrl());
@@ -492,6 +562,12 @@ public final class ZikaWebActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
+        if (code == LOCATION_REQUEST) {
+            finishLocation(web!=null && web.getUrl()!=null && sameOrigin(Uri.parse(web.getUrl()))
+                && (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED));
+            return;
+        }
         if (code == MICROPHONE_REQUEST) {
             PermissionRequest request = pendingMicrophone;
             pendingMicrophone = null;
@@ -538,7 +614,8 @@ public final class ZikaWebActivity extends Activity {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 android.graphics.Insets safe = insets.getInsets(
                     WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                android.graphics.Insets keyboard = insets.getInsets(WindowInsets.Type.ime());
+                view.setPadding(safe.left, safe.top, safe.right, Math.max(safe.bottom,keyboard.bottom));
                 return insets;
             });
         }
@@ -559,6 +636,7 @@ public final class ZikaWebActivity extends Activity {
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setGeolocationEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
@@ -594,6 +672,27 @@ public final class ZikaWebActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                if (!officialPageActive() || !sameOrigin(Uri.parse(origin)) || pendingLocation!=null) {
+                    callback.invoke(origin,false,false); return;
+                }
+                pendingLocation=callback; pendingLocationOrigin=origin;
+                new AlertDialog.Builder(ZikaWebActivity.this)
+                    .setTitle("Utiliser ma position")
+                    .setMessage("Autoriser ZikaMansle à obtenir ta position pour cette demande ? Aucun suivi en arrière-plan.")
+                    .setNegativeButton("Refuser",(d,w)->finishLocation(false))
+                    .setOnCancelListener(d->finishLocation(false))
+                    .setPositiveButton("Autoriser",(d,w)->{
+                        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED
+                            || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED) {
+                            finishLocation(true);
+                        } else {
+                            try { requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION_REQUEST); }
+                            catch (RuntimeException error) { finishLocation(false); }
+                        }
+                    }).show();
+            }
+            @Override public void onGeolocationPermissionsHidePrompt() { finishLocation(false); }
             @Override public void onPermissionRequest(PermissionRequest request) {
                 handleMicrophoneRequest(request);
             }
@@ -641,7 +740,7 @@ public final class ZikaWebActivity extends Activity {
                 String[] accepted = params.getAcceptTypes();
                 if (accepted != null) for (String type : accepted)
                     if (type != null && type.toLowerCase(java.util.Locale.ROOT).contains("image/")) image = true;
-                if (image && isReportPage()) {
+                if (image) {
                     Intent camera = photoIntent();
                     if (camera != null) {
                         if (params.isCaptureEnabled()) picker = camera;
@@ -666,6 +765,7 @@ public final class ZikaWebActivity extends Activity {
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 stopTalkDevice();
                 cancelPendingMicrophone();
+                finishLocation(false);
                 pendingDictation = null;
                 loadError = false;
                 if (sameOrigin(Uri.parse(url))) recoveryUrl = Uri.parse(url);
@@ -707,6 +807,12 @@ public final class ZikaWebActivity extends Activity {
                 if (request.isForMainFrame()) {
                     loadError = true;
                     showRecovery("Impossible de charger ZikaMansle. Vérifie ta connexion Internet.");
+                }
+            }
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 500) {
+                    loadError = true;
+                    showRecovery("Le service ZikaMansle est temporairement indisponible.");
                 }
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
@@ -769,6 +875,8 @@ public final class ZikaWebActivity extends Activity {
           + "(function(){"
           + " if(window.__zikaNativeUiCleanup)return;"
           + " window.__zikaNativeUiCleanup=true;"
+          + " if(window.ZikaAndroid&&typeof ZikaAndroid.shareText==='function'&&!navigator.share){try{Object.defineProperty(navigator,'share',{configurable:true,value:function(data){return new Promise(function(ok,fail){if(!navigator.userActivation||!navigator.userActivation.isActive){fail(new DOMException('Action requise','NotAllowedError'));return;}if(!data||data.files){fail(new DOMException('Partage de fichier non disponible','TypeError'));return;}if(ZikaAndroid.shareText(String(data.title||''),String(data.text||''),String(data.url||'')))ok();else fail(new Error('Partage refusé'));});}});}catch(e){}}"
+          + " window.__zikaNativeCloseOverlay=function(){var dialogs=document.querySelectorAll('[data-zika-native-overlay]');var last=dialogs[dialogs.length-1];if(last){last.remove();return true;}return false;};"
           + " function text(el){return (el.textContent||'').replace(/\\s+/g,' ').trim();}"
           + " function isTeam(a){return a.matches('a[href]')&&(/(?:^|\\/)zikateam(?:\\/|$|[?#])/i.test(a.getAttribute('href')||'')||/^ZikaTeam(?:\\s|$)/i.test(text(a)));}"
           + " function isNews(){"
@@ -840,6 +948,7 @@ public final class ZikaWebActivity extends Activity {
           + "       });}else{window.open(frame.src,'_blank');}"
           + "     });"
           + "   });"
+          + "   if(isNews()&&!document.getElementById('zika-native-tools')){var tools=document.createElement('div');tools.id='zika-native-tools';tools.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;padding:10px;align-items:center';var version=document.createElement('small');version.textContent='Version '+ZikaAndroid.getAppVersion();var reload=document.createElement('button');reload.type='button';reload.textContent='Relancer';reload.onclick=function(){ZikaAndroid.recoverApplication()};var settings=document.createElement('button');settings.type='button';settings.textContent='Permissions Android';settings.onclick=function(){ZikaAndroid.openAndroidSettings()};tools.append(version,reload,settings);var head=Array.from(document.querySelectorAll('h1,h2,h3')).find(function(h){return /actualit.s.*notifications/i.test(text(h))});if(head)head.insertAdjacentElement('afterend',tools);}"
           + "   if(!isNews())return;"
           + "   var heading=Array.from(document.querySelectorAll('h2,h3')).find(function(h){return /gardons le contact/i.test(text(h));});"
           + "   if(!heading)return;"
@@ -1003,8 +1112,11 @@ public final class ZikaWebActivity extends Activity {
             closeFullscreen();
             return;
         }
-        if (web != null && web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (web == null) { super.onBackPressed(); return; }
+        web.evaluateJavascript("(function(){if(window.__zikaNativeCloseOverlay){try{return !!window.__zikaNativeCloseOverlay()}catch(e){}}return false})()",result->{
+            if ("true".equals(result) || web == null || isFinishing()) return;
+            if (web.canGoBack()) web.goBack(); else finish();
+        });
     }
 
     // Persist the authenticated ZikaTeam cookie when the app goes to the background.
@@ -1025,6 +1137,7 @@ public final class ZikaWebActivity extends Activity {
     @Override protected void onDestroy() {
         stopTalkDevice();
         cancelPendingMicrophone();
+        finishLocation(false);
         clearCamera(true);
         if (pendingExport != null) { pendingExport.delete(); pendingExport=null; }
         pendingDictation = null;
