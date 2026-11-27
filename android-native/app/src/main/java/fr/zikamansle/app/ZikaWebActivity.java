@@ -27,6 +27,11 @@ import android.content.ClipData;
 import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileInputStream;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -54,6 +59,8 @@ public final class ZikaWebActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 701;
     private static final int DICTATION_REQUEST = 712;
     private String pendingDictation;
+    private static final int DOCUMENT_SAVE_REQUEST = 713;
+    private File pendingExport;
     private static final String NOTIFICATION_PREFS = "zika_notification_prompt";
     private static final String ASKED = "notification_permission_asked";
     private WebView web;
@@ -109,6 +116,28 @@ public final class ZikaWebActivity extends Activity {
 
     /** Android-only notification controls. No browser PushManager is used. */
     public final class NativeNotificationBridge {
+        @JavascriptInterface public boolean exportDocument(String name, String mime, String encoded) {
+            if (name == null || mime == null || encoded == null || encoded.length() > 28_000_000
+                || !name.matches("[A-Za-z0-9_-]{1,90}\\.(pdf|docx)")) return false;
+            boolean pdf = "application/pdf".equals(mime) && name.endsWith(".pdf");
+            boolean word = "application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(mime)
+                && name.endsWith(".docx");
+            if (!pdf && !word) return false;
+            runOnUiThread(() -> {
+                if (!isReportPage() || !hasWindowFocus() || pendingExport != null) {
+                    Toast.makeText(ZikaWebActivity.this,"Export indisponible pour le moment.",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                new AlertDialog.Builder(ZikaWebActivity.this)
+                    .setTitle("Document prêt")
+                    .setMessage(name)
+                    .setItems(new String[]{"Enregistrer sur le téléphone","Partager par mail ou messagerie"},(dialog, which) ->
+                        prepareExport(name,mime,encoded,pdf,which == 0))
+                    .setNegativeButton("Annuler",null).show();
+            });
+            return true;
+        }
+
         @JavascriptInterface public void recoverApplication() {
             runOnUiThread(() -> {
                 if (web != null && web.getUrl() != null && sameOrigin(Uri.parse(web.getUrl())))
@@ -234,6 +263,43 @@ public final class ZikaWebActivity extends Activity {
     // The WebView may only request audio capture on the official ZikaTeam page.
     // No microphone is opened by this activity; the site's push-to-talk gesture
     // remains the sole trigger for getUserMedia. Never grant video or unknown resources.
+    private void prepareExport(String name, String mime, String encoded, boolean pdf, boolean save) {
+        if (!isReportPage() || pendingExport != null) return;
+        try {
+            File directory = new File(getCacheDir(),"zika-exports");
+            if (!directory.exists() && !directory.mkdirs()) throw new IOException("Cache indisponible");
+            File[] previous = directory.listFiles();
+            if (previous != null) for (File file : previous)
+                if (file.lastModified() < System.currentTimeMillis()-86400000L) file.delete();
+            byte[] bytes = Base64.decode(encoded,Base64.NO_WRAP);
+            if (bytes.length < 5 || bytes.length > 20*1024*1024
+                || (pdf ? !(bytes[0]=='%' && bytes[1]=='P' && bytes[2]=='D' && bytes[3]=='F' && bytes[4]=='-')
+                        : !(bytes[0]=='P' && bytes[1]=='K' && bytes[2]==3 && bytes[3]==4)))
+                throw new IOException("Fichier invalide");
+            File file = new File(directory,System.currentTimeMillis()+"-"+name);
+            try (FileOutputStream out = new FileOutputStream(file)) { out.write(bytes); }
+            if (save) {
+                pendingExport = file;
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType(mime);
+                intent.putExtra(Intent.EXTRA_TITLE,name);
+                startActivityForResult(intent,DOCUMENT_SAVE_REQUEST);
+            } else {
+                Uri uri = FileProvider.getUriForFile(this,getPackageName()+".zika.photos",file);
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType(mime);
+                send.putExtra(Intent.EXTRA_STREAM,uri);
+                send.setClipData(ClipData.newRawUri(name,uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(send,"Partager le document"));
+            }
+        } catch (IOException | RuntimeException error) {
+            pendingExport = null;
+            Toast.makeText(this,"Impossible de préparer le document.",Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void confirmRecovery() {
         new AlertDialog.Builder(this).setTitle("Relancer ZikaMansle")
             .setMessage("La connexion sera conservée. Les modifications non enregistrées et les échanges en cours peuvent être perdus.")
@@ -729,6 +795,25 @@ public final class ZikaWebActivity extends Activity {
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
         super.onActivityResult(code, result, data);
+        if (code == DOCUMENT_SAVE_REQUEST) {
+            File file = pendingExport;
+            pendingExport = null;
+            if (file != null) {
+                try {
+                    if (result == RESULT_OK && data != null && data.getData() != null) {
+                        try (InputStream in = new FileInputStream(file); OutputStream out = getContentResolver().openOutputStream(data.getData())) {
+                            if (out == null) throw new IOException("Destination indisponible");
+                            byte[] buffer = new byte[65536]; int count;
+                            while ((count=in.read(buffer))!=-1) out.write(buffer,0,count);
+                        }
+                        Toast.makeText(this,"Document enregistré.",Toast.LENGTH_SHORT).show();
+                    }
+                } catch (IOException | RuntimeException error) {
+                    Toast.makeText(this,"Enregistrement impossible.",Toast.LENGTH_LONG).show();
+                } finally { file.delete(); }
+            }
+            return;
+        }
         if (code == DICTATION_REQUEST) {
             String token = pendingDictation;
             pendingDictation = null;
@@ -789,6 +874,7 @@ public final class ZikaWebActivity extends Activity {
 
     @Override protected void onDestroy() {
         clearCamera(true);
+        if (pendingExport != null) { pendingExport.delete(); pendingExport=null; }
         pendingDictation = null;
         closeFullscreen();
         if (pendingFiles != null) {
